@@ -33,6 +33,11 @@ pip install foobar
 ```
 
 ## Utilizzo
+Ogni volta in cui cominciate a lavorare vi dovete assicurare di lavorare sull'ultima versione caricata. Per ottenerla dentro la cartella Taxicab-game lanciate
+```bash
+git pull
+```
+che vi scarica le ultime modifiche.
 Come prima cosa dovete capire in qualche branch vi trovate. Potete farlo con
 ```bash
 git branch
