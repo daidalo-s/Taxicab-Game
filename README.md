@@ -2,6 +2,46 @@
 
 Io speriamo che me la cavo
 
+## Uso tipico di comandi
+Se non avete sbatti di leggere tutto (vi capisco) vi elenco una sequenza di comandi in ordine cronologico che si usa di solito lavorando con git (sto dando per scontato che abbiate già fatto il clone e siate dentro la cartella Taxicab-game)
+1. Scaricate l'ultima versione del main
+```bash
+git pull
+```
+2. Scegliete a cosa lavorare e create la nuova branch(a titolo di esempio faccio finta di voler lavorare sul sistema di indici)
+```bash
+git branch indici
+```
+3. Vi spostate sulla nuova branch appena creata (tenete presente che questo "salto" lo potete fare in ogni branch presente all'interno del progetto -per vedere tutte le branch esistenti usate git branch- ma non potete fare salti se avete modifiche di cui non avete ancora fatto il commit)
+```bash
+git chechout indici
+```
+4. Fate il vostro lavoro. Quando avete finito usate
+```bash
+git status
+```
+e in base all'output che vi da usate git add per aggiungere i nuovi file che volete siano tracciati e i file modificati che volete vengano caricati (ogni tanto potrebbero uscire dei file come .DS_store o file del genere che non sapete cosa siano, aggiungeteli comunque con git add perché sono file di git che ci servono). Quando finite di fare git add (non serve facciate git add file1, poi git add file2 eccetera, potete fare git add file1 file2 file3 ecc) lanciate di nuovo git status e se tutto funziona i nomi dei file che stanno per essere caricati dovrebbero essere verdi
+5. Ora potete fare il commit
+```bash
+git commit -m "messaggio in cui descrivete brevemente il lavoro fatto"
+```
+6. Caricate sulla repository (state caricando sulla branch indici creata prima, non spaventatevi se quello che avete fatto non copare sul main)
+```bash
+git push
+```
+7. **Se siete sicuri che quello avete fatto funzioni correttamente e non crei problemi** (e ovviamente avete finito di lavorare su questi fantomatici indici) vi spostate di nuovo sulla branch main con (come detto prima lo potete fare solo se avete caricato tutte le modifiche fatte nella vostra branch)
+```bash
+git chechout main
+``` 
+8. Fate il merge 
+```bash
+git merge --no-ff indici 
+```
+9. Se avete finito di lavorare sugli indici e la branch indici non serve a più la eliminate
+```bash
+git branch -d indici
+``` 
+Se escono errori nel fare il merge poi ne parliamo e risolviamo, pls non date comandi a caso che altrimenti succede un bordello
 ## Installazione
 Dunque dunque, non so quale distro linux voi stiate utilizzando ma in ogni caso il comando dovrebbe essere abbastanza standard: ipotizzando stiate usando Ubuntu o una sua derivata il comando per installare git e tutto ciò che vi serve dovrebbe essere
 ```bash
@@ -26,11 +66,6 @@ git clone "url che avete copiato"
 ``` 
 Se tutto ha funzionato dovreste trovarvi dentro la cartella Taxicab-Game.
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
-
-```bash
-pip install foobar
-```
 
 ## Utilizzo
 Ogni volta in cui cominciate a lavorare vi dovete assicurare di lavorare sull'ultima versione caricata. Per ottenerla dentro la cartella Taxicab-game lanciate
@@ -101,4 +136,4 @@ git branch -d 'nomebranchsucuiavetelavoratoidicuiavetefattoilmerge'
 ```
 
 ## Problemi
-Probabilmente ogni tanto potrebbero uscire dei problemi ma ne parleremo sicuramente
+Probabilmente ogni tanto potrebbero uscire dei problemi ma ne parleremo sicuramente. Se trovate qualcosa che non va in questo obrobrio ditemelo che magari lo sistemo.
