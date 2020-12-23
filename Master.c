@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-/* Prima o poi dovremo toglierle */
+/* Ogni volta che le attivo al compilatore non piacciono */
+#if 0
 #define SO_WIDTH 3
 #define SO_HEIGHT 3
+#endif
 
 typedef struct 
 {
@@ -35,6 +37,23 @@ cell** Map_creation(int larghezza, int altezza, cell** map) {
 	}
 	return map;
 }
+
+/* Da modificare: dovrà leggere i parametri da file e con rand
+ * impostare i vari campi della struct. Hole necessita di 
+ * particolare attenzione per il discorso della generazione 
+ * casuale (parlane con gli altri)
+ */
+void Map_Setup(int larghezza, int altezza, cell** map) {
+	int i, j;
+	for (i = 0; i < larghezza; i++) {
+    	for (j = 0; j < altezza; j++) {
+    		map[i][j].cell_type = 1;
+    		/* Unico hole in mezzo alla mappa */
+    		if (i == 1 && j == 1) map[i][j].cell_type = 0;
+    	}
+    }
+}
+
 /* Dovrebbe andare */
 void Map_print(cell** map, int larghezza, int altezza) {
 	int i, j;
@@ -50,15 +69,6 @@ void Map_print(cell** map, int larghezza, int altezza) {
     	}
     	printf("\n");
   	}
-}
-/* Da modificare con la rand e i controlli per le hole */
-void Map_Setup(int larghezza, int altezza, cell** map) {
-	int i, j;
-	for (i = 0; i < larghezza; i++) {
-    	for (j = 0; j < altezza; j++) {
-    		map[i][j].cell_type = 1;
-    	}
-    }
 }
 
 int main () {
