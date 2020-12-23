@@ -14,7 +14,7 @@ git branch indici
 ```
 3. Vi spostate sulla nuova branch appena creata (tenete presente che questo "salto" lo potete fare in ogni branch presente all'interno del progetto -per vedere tutte le branch esistenti usate git branch- ma non potete fare salti se avete modifiche di cui non avete ancora fatto il commit)
 ```bash
-git chechout indici
+git checkout indici
 ```
 4. Fate il vostro lavoro. Quando avete finito usate
 ```bash
@@ -31,7 +31,7 @@ git push
 ```
 7. **Se siete sicuri che quello avete fatto funzioni correttamente e non crei problemi** (e ovviamente avete finito di lavorare su questi fantomatici indici) vi spostate di nuovo sulla branch main con (come detto prima lo potete fare solo se avete caricato tutte le modifiche fatte nella vostra branch)
 ```bash
-git chechout main
+git checkout main
 ``` 
 8. Fate il merge 
 ```bash
