@@ -1,6 +1,6 @@
 # TaxiCab Game
 
-Io speriamo che me la cavo
+Io speriamo che me la cavo  
 [Link alla board dei progressi su trello](https://trello.com/invite/b/O2KrWNmi/fd5cd9e71471b0cc023ba78780e45cfc/loyetivive)
 
 ## Uso tipico di comandi
