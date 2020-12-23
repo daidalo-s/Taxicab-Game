@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>  
+#include <errno.h>   
 /* Ogni volta che le attivo al compilatore non piacciono */
 #if 0
 #define SO_WIDTH 3
@@ -25,7 +27,6 @@ void Map_Setup(int larghezza, int altezza, cell** map);
 int larghezza = 3;
 int altezza = 3;
 
-
 /* ---------------- Metodi mappa ----------------- */
 
 /* Crea la mappa e la restituisce al main */
@@ -42,6 +43,7 @@ cell** Map_creation(int larghezza, int altezza, cell** map) {
  * impostare i vari campi della struct. Hole necessita di 
  * particolare attenzione per il discorso della generazione 
  * casuale (parlane con gli altri)
+ * La codifica è: 0 hole, 1 no SO_SOURCE, 2 SO_SOURCES già presente
  */
 void Map_Setup(int larghezza, int altezza, cell** map) {
 	int i, j;
