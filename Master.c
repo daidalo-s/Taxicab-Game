@@ -18,6 +18,7 @@ typedef struct
 } cell; 
 
 /****************** Prototipi ******************/
+void Reading_Input_Values () 
 cell** Map_creation(int larghezza, int altezza, cell** map);
 void Map_print(cell** map, int larghezza, int altezza);
 void Map_Setup(int larghezza, int altezza, cell** map);
