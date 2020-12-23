@@ -18,7 +18,7 @@ typedef struct
 } cell; 
 
 /****************** Prototipi ******************/
-void Reading_Input_Values () 
+void Reading_Input_Values (); 
 cell** Map_creation(int larghezza, int altezza, cell** map);
 void Map_print(cell** map, int larghezza, int altezza);
 void Map_Setup(int larghezza, int altezza, cell** map);
@@ -43,58 +43,59 @@ int SO_DURATION = 0;
 
 /* ---------------- Lettura parametri da file ----------------- */
 void Reading_Input_Values () {
-	char tmpstr1[16];
-    char tmpstr2[16];
-    char tempbuff[100];
 
-    FILE *input = fopen("Parameters.txt", "r");
-    if (input == NULL) {
-        printf ("Errore, non riesco ad aprire il file \n");
-        exit(-1); /* oppure return -1 */
+	char tmpstr1[16];
+  char tmpstr2[16];
+  char tempbuff[100];
+
+  FILE *input = fopen("Parameters.txt", "r");
+  if (input == NULL) {
+    printf ("Errore, non riesco ad aprire il file \n");
+    exit(-1); /* oppure return -1 */
     }
     
-    while(!feof(input)) {
+  while(!feof(input)) {
 
-    	if (fgets(tempbuff,100,input)) {
+    if (fgets(tempbuff,100,input)) {
 
-    		sscanf(tempbuff, "%15s = %15[^;];", tmpstr1, tmpstr2);
+    	sscanf(tempbuff, "%15s = %15[^;];", tmpstr1, tmpstr2);
 
-    		if (strcmp(tmpstr1,"SO_HOLES")==0) {
-                 SO_HOLES = atoi(tmpstr2);
-            } 
-            else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
-                 SO_TOP_CELLS = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
-                 SO_SOURCES = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
-                 SO_CAP_MIN = atoi(tmpstr2);
-            } 
-            else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
-                 SO_CAP_MAX = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_TAXI")==0) {
-                 SO_TAXI = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
-                 SO_TIMENSEC_MIN = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
-                 SO_TIMENSEC_MAX = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
-                 SO_TIMEOUT = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_DURATION")==0) {
-                 SO_DURATION = atoi(tmpstr2);
-            }
-            else{
-                printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
-            }
+    	if (strcmp(tmpstr1,"SO_HOLES")==0) {
+        SO_HOLES = atoi(tmpstr2);
+      }       
+      else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
+        SO_TOP_CELLS = atoi(tmpstr2);
+      }
+      else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
+        SO_SOURCES = atoi(tmpstr2);
+      }
+      else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
+        SO_CAP_MIN = atoi(tmpstr2);
+      } 
+      else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
+        SO_CAP_MAX = atoi(tmpstr2);
+      }
+      else if (strcmp(tmpstr1,"SO_TAXI")==0) {
+        SO_TAXI = atoi(tmpstr2);
+      }
+      else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
+        SO_TIMENSEC_MIN = atoi(tmpstr2);
+      }
+      else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
+        SO_TIMENSEC_MAX = atoi(tmpstr2);
+      }
+      else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
+        SO_TIMEOUT = atoi(tmpstr2);
+      }
+      else if (strcmp(tmpstr1,"SO_DURATION")==0) {
+        SO_DURATION = atoi(tmpstr2);
+      }
+      else{
+        printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
+      }
 
-    	}
     }
+  }
     fclose(input);
     #ifdef STAMPA_PARAMETRI
     printf("SO_HOLES : %i\n", SO_HOLES);
@@ -148,9 +149,9 @@ void Map_print(cell** map, int larghezza, int altezza) {
       		#ifdef STAMPA_VALORI_CELLA
       		printf ("%i", mappa[i][j].taxi_capacity);
       		printf ("%i", mappa[i][j].active_taxis);
-     		printf ("%i", mappa[i][j].travel_time);
-     		printf ("%i", mappa[i][j].crossings);
-    		#endif
+     		  printf ("%i", mappa[i][j].travel_time);
+     		  printf ("%i", mappa[i][j].crossings);
+    		  #endif
     	}
     	printf("\n");
   	}
@@ -163,8 +164,8 @@ int main () {
 
 	/* Creazione e inizializzazione mappa DA SISTEMARE COI PARAMETRI 
 	 * CHE LEGGO */ 
-  	map = Map_creation(larghezza, altezza, map);
-  	Map_Setup(larghezza, altezza, map);
+  map = Map_creation(larghezza, altezza, map);
+  Map_Setup(larghezza, altezza, map);
  	Map_print(map, larghezza, altezza);
 
 	return 0;
