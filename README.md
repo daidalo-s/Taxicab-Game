@@ -1,6 +1,7 @@
 # TaxiCab Game
 
 Io speriamo che me la cavo
+[Link alla board dei progressi su trello](https://trello.com/invite/b/O2KrWNmi/fd5cd9e71471b0cc023ba78780e45cfc/loyetivive)
 
 ## Uso tipico di comandi
 Se non avete sbatti di leggere tutto (vi capisco) vi elenco una sequenza di comandi in ordine cronologico che si usa di solito lavorando con git (sto dando per scontato che abbiate già fatto il clone e siate dentro la cartella Taxicab-game)
