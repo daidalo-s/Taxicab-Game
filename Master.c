@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>  
-#include <errno.h>   
+#include <errno.h> 
+#include <time.h>  
 /* Ogni volta che le attivo al compilatore non piacciono */
 #if 0
 #define SO_WIDTH 3
@@ -20,7 +21,7 @@ typedef struct
 /****************** Prototipi ******************/
 void Reading_Input_Values (); 
 cell** Map_creation(int larghezza, int altezza, cell** map);
-void Map_print(cell** map, int larghezza, int altezza);
+void Map_print(int larghezza, int altezza, cell** map);
 void Map_Setup(int larghezza, int altezza, cell** map);
 
 /* ---------------- Variabili globali ----------------- */
@@ -127,13 +128,21 @@ cell** Map_creation(int larghezza, int altezza, cell** map) {
  * impostare i vari campi della struct. Hole necessita di 
  * particolare attenzione per il discorso della generazione 
  * casuale (parlane con gli altri)
- * La codifica è: 0 hole, 1 no SO_SOURCE, 2 SO_SOURCES già presente
+ * Se la mappa generata non è corretta si termina con errore
+ * La codifica è: 0 hole, 1 no SO_SOURCE, 2 cella libera,
+ * 3 SO_SOURCES già presente
  */
 void Map_Setup(int larghezza, int altezza, cell** map) {
 	int i, j;
+  srand(time(0));
 	for (i = 0; i < larghezza; i++) {
     	for (j = 0; j < altezza; j++) {
-    		map[i][j].cell_type = 1;
+        /* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand 
+           rand() % (2+1-0) + 0; */
+    		map[i][j].cell_type = Random_Cell_Type(map, i, j);
+        map[i][j].taxi_capacity = Random_Taxi_Capacity();
+        map[i][j].active_taxis = 0;
+        map[i][j].travel_time = Random_Travel_Time();
     		/* Unico hole in mezzo alla mappa */
     		if (i == 1 && j == 1) map[i][j].cell_type = 0;
     	}
@@ -141,7 +150,7 @@ void Map_Setup(int larghezza, int altezza, cell** map) {
 }
 
 /* Dovrebbe andare */
-void Map_print(cell** map, int larghezza, int altezza) {
+void Map_print(int larghezza, int altezza, cell** map) {
 	int i, j;
 	for (i = 0; i < larghezza; i++) {
     	for (j = 0; j < altezza; j++) {
@@ -166,7 +175,7 @@ int main () {
 	 * CHE LEGGO */ 
   map = Map_creation(larghezza, altezza, map);
   Map_Setup(larghezza, altezza, map);
- 	Map_print(map, larghezza, altezza);
+ 	Map_print(larghezza, altezza, map);
 
 	return 0;
 }
