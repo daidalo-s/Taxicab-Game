@@ -8,7 +8,7 @@
 #define SO_WIDTH 3
 #define SO_HEIGHT 3
 #endif
-
+  
 typedef struct 
 {
 	int cell_type;
@@ -20,15 +20,16 @@ typedef struct
 
 /****************** Prototipi ******************/
 void Reading_Input_Values (); 
-cell** Map_creation(int larghezza, int altezza, cell** map);
-void Map_print(int larghezza, int altezza, cell** map);
-void Map_Setup(int larghezza, int altezza, cell** map);
+cell** Map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map);
+void Map_print(int SO_WIDTH, int SO_HEIGHT, cell** map);
+void Map_Setup(int SO_WIDTH, int SO_HEIGHT, cell** map);
+int Random_Cell_Type(cell** map, int i, int j);
+int Random_Taxi_Capacity();
+int Random_Travel_Time();
 
 /* ---------------- Variabili globali ----------------- */
 cell** map = NULL;
-/* Larghezza e altezza andranno sistemati */
-int larghezza = 3;
-int altezza = 3;
+/* Larghezza e SO_HEIGHT andranno sistemati */
 int SO_WIDTH = 0;
 int SO_HEIGHT = 0;
 int SO_HOLES = 0;
@@ -46,58 +47,58 @@ int SO_DURATION = 0;
 void Reading_Input_Values () {
 
 	char tmpstr1[16];
-  char tmpstr2[16];
-  char tempbuff[100];
+    char tmpstr2[16];
+    char tempbuff[100];
 
-  FILE *input = fopen("Parameters.txt", "r");
-  if (input == NULL) {
-    printf ("Errore, non riesco ad aprire il file \n");
-    exit(-1); /* oppure return -1 */
+    FILE *input = fopen("Parameters.txt", "r");
+    if (input == NULL) {
+        printf ("Errore, non riesco ad aprire il file \n");
+        exit(-1); /* oppure return -1 */
     }
     
-  while(!feof(input)) {
+    while(!feof(input)) {
 
-    if (fgets(tempbuff,100,input)) {
+        if (fgets(tempbuff,100,input)) {
+    	    sscanf(tempbuff, "%15s = %15[^;];", tmpstr1, tmpstr2);
 
-    	sscanf(tempbuff, "%15s = %15[^;];", tmpstr1, tmpstr2);
-
-    	if (strcmp(tmpstr1,"SO_HOLES")==0) {
-        SO_HOLES = atoi(tmpstr2);
-      }       
-      else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
-        SO_TOP_CELLS = atoi(tmpstr2);
-      }
-      else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
-        SO_SOURCES = atoi(tmpstr2);
-      }
-      else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
-        SO_CAP_MIN = atoi(tmpstr2);
-      } 
-      else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
-        SO_CAP_MAX = atoi(tmpstr2);
-      }
-      else if (strcmp(tmpstr1,"SO_TAXI")==0) {
-        SO_TAXI = atoi(tmpstr2);
-      }
-      else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
-        SO_TIMENSEC_MIN = atoi(tmpstr2);
-      }
-      else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
-        SO_TIMENSEC_MAX = atoi(tmpstr2);
-      }
-      else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
-        SO_TIMEOUT = atoi(tmpstr2);
-      }
-      else if (strcmp(tmpstr1,"SO_DURATION")==0) {
-        SO_DURATION = atoi(tmpstr2);
-      }
-      else{
-        printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
-      }
-
+    	    if (strcmp(tmpstr1,"SO_HOLES")==0) {
+                SO_HOLES = atoi(tmpstr2);
+            }       
+            else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
+                SO_TOP_CELLS = atoi(tmpstr2);
+            }
+            else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
+                SO_SOURCES = atoi(tmpstr2);
+            }
+            else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
+                SO_CAP_MIN = atoi(tmpstr2);
+            }  
+            else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
+                SO_CAP_MAX = atoi(tmpstr2);
+            }
+            else if (strcmp(tmpstr1,"SO_TAXI")==0) {
+                SO_TAXI = atoi(tmpstr2);
+            }
+            else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
+                SO_TIMENSEC_MIN = atoi(tmpstr2);
+            }
+            else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
+                SO_TIMENSEC_MAX = atoi(tmpstr2);
+            }
+            else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
+                SO_TIMEOUT = atoi(tmpstr2);
+            }
+            else if (strcmp(tmpstr1,"SO_DURATION")==0) {
+                SO_DURATION = atoi(tmpstr2);
+            }
+            else {
+                printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
+            }
+        }
     }
-  }
+
     fclose(input);
+
     #ifdef STAMPA_PARAMETRI
     printf("SO_HOLES : %i\n", SO_HOLES);
     printf("SO_TOP_CELLS : %i\n", SO_TOP_CELLS);
@@ -113,13 +114,137 @@ void Reading_Input_Values () {
 }
 
 /* ---------------- Metodi mappa ----------------- */
+#if 0
+/* Inizializza cell_type in modo casuale */
+int Random_Cell_Type(cell** map, int i, int j) {
+    /* c assumera' il valore della codifica da restituire (0 hole, 1 no SO_SOURCES, 2 cella libera),
+     * nei seguenti rami if-else si valuta invece quale valore assegnare ad x ed y per capire in seguito
+     * quale case eseguire all'interno degli switch (questo risolve il problema di "case i>0:")
+     */
+    int c, x, y;
+    static int so_holes;
+    static int so_sources;
+    so_holes = SO_HOLES;
+    so_sources = SO_SOURCES;
+    if (i == 0) { x = 0; } else x = 1;
+    if (j == 0) { y = 0; } else if (j > 0 && j < (SO_WIDTH-1)) { y = 1; } else y = 2;
+    /* In questo if seguente si esamina il caso in cui si e' alla prima cella controllando
+     * so_holes e so_sources per verificare che si possano inserire altri "buchi" o processi che
+     * potrebbero richiedere taxi
+     */
+    if (i == 0 && j == 0) {
+        do {
+        c = rand() % (2-0+1) + 0;
+        } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
+        if (c == 0) so_holes--;
+        if (c == 1) so_sources--;
+        return c;
+    }
+    /* I case che fanno parte di "switch (x)" verificano cosa fare in base all'indice della riga
+     * che e' stata opportunamente codifica alla riga 11 del medesimo file
+     */
+    switch (x) {
+        case 0:
+            if (map[i][j-1].cell_type == 0) { 
+                if (so_sources == 0) {
+                    c = 2;
+                } else {
+                    c = rand() % (2-1+1) + 1;
+                    if (c == 1) so_sources--;
+                }
+            } else {
+                do {
+                c = rand() % (2-0+1) + 0;
+                } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
+                so_sources--;
+            }
+            break;
+        case 1:
+            /* la stessa cosa spiegata alle righe 25-26 vale anche per "switch (y)", prima di 
+             * questo switch e' stata fatta un'opportuna codifica alla riga 12 considerando
+             * l'indice delle colonne.
+             * Ci sono tre case in quanto si devono controllare piu' o meno celle precedenti
+             * in base alla posizione dell'indice delle colonne appunto.
+             */
+            switch (y) {
+                case 0:
+                    if ((map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+                        do {
+                        c = rand() % (2-0+1) + 0;
+                        } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
+                        if (c == 0) so_holes--;
+                        if (c == 1) so_sources--;
+                    } else {
+                        do {
+                        c = rand() % (2-1+1) + 1;
+                        } while (c == 1 && so_sources == 0);
+                        if (c == 1) so_sources--;
+                    }
+                    break;
+                case 1:
+                    if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
+                         (map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+                        do {
+                        c = rand() % (2-0+1) + 0;
+                        } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
+                        if (c == 0) so_holes--;
+                        if (c == 1) so_sources--;
+                    } else {
+                        do {
+                        c = rand() % (2-1+1) + 1;
+                        } while (c == 1 && so_sources == 0);
+                        if (c == 1) so_sources--;
+                    }
+                    break;
+                case 2:
+                    if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
+                        (map[i-1][j].cell_type != 0)) {
+                        do {
+                        c = rand() % (2-0+1) + 0;
+                        } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
+                        if (c == 0) so_holes--;
+                        if (c == 1) so_sources--;
+                    } else {
+                        do {
+                        c = rand() % (2-1+1) + 1;
+                        } while ((c == 1 && so_sources == 0) || c == 0);
+                        if (c == 1) so_sources--;
+                    }
+                    break;
+                default:
+                    return 1;
+                }
+                break;
+        default:
+            return 1;
+    }
+    return c;
+}
+/* Nei casi in cui si odvesse verificare qualche anomalia viene restituito 1, 
+ * ma per generare un errore cosa possiamo fare?
+ */
+
+/* Assegna ad ogni cella taxi_capacity*/
+int Random_Taxi_Capacity() {
+    return (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
+}
+
+/* Assegna ad ogni cella travel_time*/
+int Random_Travel_Time() {
+    return (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
+}
+#endif
 
 /* Crea la mappa e la restituisce al main */
-cell** Map_creation(int larghezza, int altezza, cell** map) {
+cell** Map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
+
 	int i;
-	map = malloc(larghezza * sizeof(cell));
-	for (i = 0; i < larghezza; i++){
-		map[i] = calloc(altezza, sizeof(cell));
+    #if 0
+    printf("La larghezza della mappa è: %i\n", SO_WIDTH);
+    #endif 
+	map = malloc(SO_WIDTH * sizeof(cell));
+	for (i = 0; i < SO_WIDTH; i++){
+		map[i] = calloc(SO_HEIGHT, sizeof(cell));
 	}
 	return map;
 }
@@ -129,54 +254,72 @@ cell** Map_creation(int larghezza, int altezza, cell** map) {
  * particolare attenzione per il discorso della generazione 
  * casuale (parlane con gli altri)
  * Se la mappa generata non è corretta si termina con errore
- * La codifica è: 0 hole, 1 no SO_SOURCE, 2 cella libera,
- * 3 SO_SOURCES già presente
+ * La codifica è: 0 hole, 1 SO_SOURCE, 2 no SO_SORUCE
+ * 
  */
-void Map_Setup(int larghezza, int altezza, cell** map) {
+void Map_Setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
+
 	int i, j;
-  srand(time(0));
-	for (i = 0; i < larghezza; i++) {
-    	for (j = 0; j < altezza; j++) {
-        /* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand 
-           rand() % (2+1-0) + 0; */
-    		map[i][j].cell_type = Random_Cell_Type(map, i, j);
-        map[i][j].taxi_capacity = Random_Taxi_Capacity();
-        map[i][j].active_taxis = 0;
-        map[i][j].travel_time = Random_Travel_Time();
-    		/* Unico hole in mezzo alla mappa */
-    		if (i == 1 && j == 1) map[i][j].cell_type = 0;
-    	}
+    /* È giusto inizializzarla così? */
+    srand(time(0));
+	/* Inizializzo la mappa con valore 1 */
+    for (i = 0; i < SO_WIDTH; i++) {
+        for (j = 0; j < SO_HEIGHT; j++) {
+            map[i][j].cell_type = 1;
+        }
     }
+    /* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand 
+       rand() % (2+1-0) + 0; */
+    #if 0
+    map[i][j].cell_type = Random_Cell_Type(map, i, j);
+    map[i][j].taxi_capacity = Random_Taxi_Capacity();
+    map[i][j].active_taxis = 0;
+    map[i][j].travel_time = Random_Travel_Time();
+    #endif
+ 	/* Unico hole in mezzo alla mappa */
+    #if 0
+	if (i == 1 && j == 1) map[i][j].cell_type = 0;
+    #endif
 }
 
 /* Dovrebbe andare */
-void Map_print(int larghezza, int altezza, cell** map) {
+void Map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 	int i, j;
-	for (i = 0; i < larghezza; i++) {
-    	for (j = 0; j < altezza; j++) {
+    #if 0
+    printf("La larghezza della mappa è: %i\n", SO_WIDTH);
+    #endif
+	for (i = 0; i < SO_HEIGHT; i++) {
+    	for (j = 0; j < SO_WIDTH; j++) {
       		printf ("%i ", map[i][j].cell_type);
-      		#ifdef STAMPA_VALORI_CELLA
+      		
+            #ifdef STAMPA_VALORI_CELLA
       		printf ("%i", mappa[i][j].taxi_capacity);
       		printf ("%i", mappa[i][j].active_taxis);
-     		  printf ("%i", mappa[i][j].travel_time);
-     		  printf ("%i", mappa[i][j].crossings);
-    		  #endif
-    	}
+     		printf ("%i", mappa[i][j].travel_time);
+     		printf ("%i", mappa[i][j].crossings);
+    	    #endif
+    	
+        }
     	printf("\n");
   	}
 }
 
 int main () {
-
-	/* Lettura parametri */
+    printf("Inizializzazione della simulazione \n");
+    printf("Inserire la larghezza della mappa: \n");
+	scanf("%i", &SO_WIDTH);
+    #if 1
+    printf("La larghezza della mappa è: %i\n", SO_WIDTH);
+    #endif
+    printf("Inserire l'altezza della mappa: \n");
+    scanf("%i", &SO_HEIGHT);
+    printf("L'altezza della mappa è: %i\n", SO_HEIGHT);
+    /* Lettura degli altri parametri specificati da file */
  	Reading_Input_Values();
-
 	/* Creazione e inizializzazione mappa DA SISTEMARE COI PARAMETRI 
 	 * CHE LEGGO */ 
-  map = Map_creation(larghezza, altezza, map);
-  Map_Setup(larghezza, altezza, map);
- 	Map_print(larghezza, altezza, map);
-
+    map = Map_creation(SO_WIDTH, SO_HEIGHT, map);
+    Map_Setup(SO_WIDTH, SO_HEIGHT, map);
+ 	Map_print(SO_WIDTH, SO_HEIGHT, map);
 	return 0;
 }
-
