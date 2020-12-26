@@ -309,7 +309,6 @@ void Map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 }
 
 int main () {
-	int i;
 	/* Lettura degli altri parametri specificati da file */
 	Reading_Input_Values();
 	/* Creazione e inizializzazione mappa */
