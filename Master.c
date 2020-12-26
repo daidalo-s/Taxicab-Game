@@ -3,11 +3,6 @@
 #include <string.h>  
 #include <errno.h> 
 #include <time.h>  
-/* Ogni volta che le attivo al compilatore non piacciono */
-#if 0
-#define SO_WIDTH 3
-#define SO_HEIGHT 3
-#endif
   
 typedef struct 
 {
@@ -29,7 +24,7 @@ int Random_Travel_Time();
 
 /* ---------------- Variabili globali ----------------- */
 cell** map = NULL;
-/* Larghezza e SO_HEIGHT andranno sistemati */
+/* SO_WIDTH e SO_HEIGHT vengono letti dal main */
 int SO_WIDTH = 0;
 int SO_HEIGHT = 0;
 int SO_HOLES = 0;
@@ -49,8 +44,14 @@ void Reading_Input_Values () {
 	char tmpstr1[16];
     char tmpstr2[16];
     char tempbuff[100];
-
     FILE *input = fopen("Parameters.txt", "r");
+
+    printf("Inizializzazione della simulazione \n");
+    printf("Inserire la larghezza della mappa: \n");
+    scanf("%i", &SO_WIDTH);
+    printf("Inserire l'altezza della mappa: \n");
+    scanf("%i", &SO_HEIGHT);
+
     if (input == NULL) {
         printf ("Errore, non riesco ad aprire il file \n");
         exit(-1); /* oppure return -1 */
@@ -98,7 +99,7 @@ void Reading_Input_Values () {
     }
 
     fclose(input);
-
+    /* Aggiungere logica per il controllo dei parametri inseriti */
     #ifdef STAMPA_PARAMETRI
     printf("SO_HOLES : %i\n", SO_HOLES);
     printf("SO_TOP_CELLS : %i\n", SO_TOP_CELLS);
@@ -114,7 +115,7 @@ void Reading_Input_Values () {
 }
 
 /* ---------------- Metodi mappa ----------------- */
-#if 0
+#ifdef MAPPA_VALORI_CASUALI
 /* Inizializza cell_type in modo casuale */
 int Random_Cell_Type(cell** map, int i, int j) {
     /* c assumera' il valore della codifica da restituire (0 hole, 1 no SO_SOURCES, 2 cella libera),
@@ -233,15 +234,13 @@ int Random_Taxi_Capacity() {
 int Random_Travel_Time() {
     return (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
 }
+
 #endif
 
 /* Crea la mappa e la restituisce al main */
 cell** Map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 
 	int i;
-    #if 0
-    printf("La larghezza della mappa è: %i\n", SO_WIDTH);
-    #endif 
 	map = malloc(SO_WIDTH * sizeof(cell));
 	for (i = 0; i < SO_WIDTH; i++){
 		map[i] = calloc(SO_HEIGHT, sizeof(cell));
@@ -250,35 +249,40 @@ cell** Map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 }
 
 /* Da modificare: dovrà leggere i parametri da file e con rand
- * impostare i vari campi della struct. Hole necessita di 
- * particolare attenzione per il discorso della generazione 
- * casuale (parlane con gli altri)
+ * impostare i vari campi della struct. 
  * Se la mappa generata non è corretta si termina con errore
  * La codifica è: 0 hole, 1 SO_SOURCE, 2 no SO_SORUCE
- * 
+ * Al momento usiamo una mappa 5x4 (quindi non importa quello che date
+ * al programma in input che larghezza e altezza, ne faccio override nel
+ * main) se volete lo schema della mappa che sto usando lo trovate nel 
+ * documento condiviso
  */
 void Map_Setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 
 	int i, j;
     /* È giusto inizializzarla così? */
     srand(time(0));
-	/* Inizializzo la mappa con valore 1 */
+	/* Inizializzo la mappa con valore 2 */
     for (i = 0; i < SO_WIDTH; i++) {
         for (j = 0; j < SO_HEIGHT; j++) {
-            map[i][j].cell_type = 1;
+            map[i][j].cell_type = 2;
         }
     }
+    /* Creo la mappa come nel documento condiviso */
+    map[0][0].cell_type = 0;
+    map[3][1].cell_type = 0;
+    map[2][3].cell_type = 0;
+    map[2][2].cell_type = 1;
+    map[2][2].taxi_capacity = 0;
+    map[2][2].active_taxis = 0;
+    map[2][2].travel_time = 0;
     /* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand 
        rand() % (2+1-0) + 0; */
-    #if 0
+    #ifdef MAPPA_VALORI_CASUALI
     map[i][j].cell_type = Random_Cell_Type(map, i, j);
     map[i][j].taxi_capacity = Random_Taxi_Capacity();
     map[i][j].active_taxis = 0;
     map[i][j].travel_time = Random_Travel_Time();
-    #endif
- 	/* Unico hole in mezzo alla mappa */
-    #if 0
-	if (i == 1 && j == 1) map[i][j].cell_type = 0;
     #endif
 }
 
@@ -305,19 +309,11 @@ void Map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 }
 
 int main () {
-    printf("Inizializzazione della simulazione \n");
-    printf("Inserire la larghezza della mappa: \n");
-	scanf("%i", &SO_WIDTH);
-    #if 1
-    printf("La larghezza della mappa è: %i\n", SO_WIDTH);
-    #endif
-    printf("Inserire l'altezza della mappa: \n");
-    scanf("%i", &SO_HEIGHT);
-    printf("L'altezza della mappa è: %i\n", SO_HEIGHT);
     /* Lettura degli altri parametri specificati da file */
  	Reading_Input_Values();
-	/* Creazione e inizializzazione mappa DA SISTEMARE COI PARAMETRI 
-	 * CHE LEGGO */ 
+	/* Creazione e inizializzazione mappa */
+    SO_WIDTH = 5;
+    SO_HEIGHT = 4; 
     map = Map_creation(SO_WIDTH, SO_HEIGHT, map);
     Map_Setup(SO_WIDTH, SO_HEIGHT, map);
  	Map_print(SO_WIDTH, SO_HEIGHT, map);
