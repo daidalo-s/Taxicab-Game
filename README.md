@@ -15,7 +15,7 @@ git branch indici
 ```
 3. Prima di fare qualsiasi cosa dovete dire a git quale branch fa capo alla branch indici che avete appena creato. A meno che non stiate creando branch nelle branch fate capo al main. Per impostare il main usate 
 ```bash
-git --set-upstream origin indici
+git push --set-upstream origin indici
 ```
 4. Vi spostate sulla nuova branch appena creata (tenete presente che questo "salto" lo potete fare in ogni branch presente all'interno del progetto -per vedere tutte le branch esistenti usate git branch- ma non potete fare salti se avete modifiche di cui non avete ancora fatto il commit)
 ```bash
