@@ -14,13 +14,14 @@ typedef struct
 } cell; 
 
 /****************** Prototipi ******************/
-void Reading_Input_Values (); 
-cell** Map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map);
-void Map_print(int SO_WIDTH, int SO_HEIGHT, cell** map);
-void Map_Setup(int SO_WIDTH, int SO_HEIGHT, cell** map);
-int Random_Cell_Type(cell** map, int i, int j);
-int Random_Taxi_Capacity();
-int Random_Travel_Time();
+void reading_input_values (); 
+cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map);
+void free_map(cell** map);
+void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map);
+void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map);
+int random_cell_type(cell** map, int i, int j);
+int random_taxi_capacity();
+int random_travel_time();
 
 /* ---------------- Variabili globali ----------------- */
 cell** map = NULL;
@@ -39,7 +40,7 @@ int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
 
 /* ---------------- Lettura parametri da file ----------------- */
-void Reading_Input_Values () {
+void reading_input_values () {
 
 	char tmpstr1[16];
 	char tmpstr2[16];
@@ -117,7 +118,7 @@ void Reading_Input_Values () {
 /* ---------------- Metodi mappa ----------------- */
 #ifdef MAPPA_VALORI_CASUALI
 /* Inizializza cell_type in modo casuale */
-int Random_Cell_Type(cell** map, int i, int j) {
+int random_cell_type(cell** map, int i, int j) {
 	/* c assumera' il valore della codifica da restituire (0 hole, 1 no SO_SOURCES, 2 cella libera),
 	 * nei seguenti rami if-else si valuta invece quale valore assegnare ad x ed y per capire in seguito
 	 * quale case eseguire all'interno degli switch (questo risolve il problema di "case i>0:")
@@ -226,19 +227,19 @@ int Random_Cell_Type(cell** map, int i, int j) {
  */
 
 /* Assegna ad ogni cella taxi_capacity*/
-int Random_Taxi_Capacity() {
+int random_taxi_capacity() {
 	return (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
 }
 
 /* Assegna ad ogni cella travel_time*/
-int Random_Travel_Time() {
+int random_travel_time() {
 	return (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
 }
 
 #endif
 
 /* Crea la mappa e la restituisce al main */
-cell** Map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
+cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 
 	int i;
 	map = malloc(SO_WIDTH * sizeof(cell));
@@ -257,7 +258,7 @@ cell** Map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
  * main) se volete lo schema della mappa che sto usando lo trovate nel 
  * documento condiviso
  */
-void Map_Setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
+void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 
 	int i, j;
 	/* È giusto inizializzarla così? */
@@ -279,15 +280,15 @@ void Map_Setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 	/* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand 
 	   rand() % (2+1-0) + 0; */
 #ifdef MAPPA_VALORI_CASUALI
-	map[i][j].cell_type = Random_Cell_Type(map, i, j);
-	map[i][j].taxi_capacity = Random_Taxi_Capacity();
+	map[i][j].cell_type = random_cell_type(map, i, j);
+	map[i][j].taxi_capacity = random_taxi_capacity();
 	map[i][j].active_taxis = 0;
-	map[i][j].travel_time = Random_Travel_Time();
+	map[i][j].travel_time = random_travel_time();
 #endif
 }
 
 /* Dovrebbe andare */
-void Map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
+void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 	int i, j;
 #if 0
 	printf("La larghezza della mappa è: %i\n", SO_WIDTH);
@@ -308,14 +309,24 @@ void Map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 	}
 }
 
+void free_map(cell** map) {
+    int i;
+    for (i = 0; i < SO_WIDTH; i++){
+        free(map[i]);
+    }
+    free(map);
+}
+
+
 int main () {
 	/* Lettura degli altri parametri specificati da file */
-	Reading_Input_Values();
+	reading_input_values();
 	/* Creazione e inizializzazione mappa */
 	SO_WIDTH = 5;
 	SO_HEIGHT = 4; 
-	map = Map_creation(SO_WIDTH, SO_HEIGHT, map);
-	Map_Setup(SO_WIDTH, SO_HEIGHT, map);
-	Map_print(SO_WIDTH, SO_HEIGHT, map);
+	map = map_creation(SO_WIDTH, SO_HEIGHT, map);
+	map_setup(SO_WIDTH, SO_HEIGHT, map);
+	map_print(SO_WIDTH, SO_HEIGHT, map);
+    free_map(map);
 	return 0;
 }
