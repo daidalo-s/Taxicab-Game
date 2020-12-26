@@ -327,6 +327,7 @@ int main () {
 	map = map_creation(SO_WIDTH, SO_HEIGHT, map);
 	map_setup(SO_WIDTH, SO_HEIGHT, map);
 	map_print(SO_WIDTH, SO_HEIGHT, map);
-    free_map(map);
+  free_map(map);
+  printf("Ciao");
 	return 0;
 }
