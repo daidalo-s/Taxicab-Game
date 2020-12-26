@@ -46,13 +46,13 @@ void reading_input_values () {
 	char tmpstr2[16];
 	char tempbuff[100];
 	FILE *input = fopen("Parameters.txt", "r");
-
+    #if 0
 	printf("Inizializzazione della simulazione \n");
 	printf("Inserire la larghezza della mappa: \n");
 	scanf("%i", &SO_WIDTH);
 	printf("Inserire l'altezza della mappa: \n");
 	scanf("%i", &SO_HEIGHT);
-
+    #endif
 	if (input == NULL) {
 		printf ("Errore, non riesco ad aprire il file \n");
 		exit(-1); /* oppure return -1 */
@@ -322,12 +322,11 @@ int main () {
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creazione e inizializzazione mappa */
-	SO_WIDTH = 5;
-	SO_HEIGHT = 4; 
+    SO_WIDTH = 5;
+	SO_HEIGHT = 4;
 	map = map_creation(SO_WIDTH, SO_HEIGHT, map);
 	map_setup(SO_WIDTH, SO_HEIGHT, map);
 	map_print(SO_WIDTH, SO_HEIGHT, map);
-  free_map(map);
-  printf("Ciao");
+    free_map(map);
 	return 0;
 }
