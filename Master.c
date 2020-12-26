@@ -317,10 +317,6 @@ int main () {
 	SO_HEIGHT = 4; 
 	map = Map_creation(SO_WIDTH, SO_HEIGHT, map);
 	Map_Setup(SO_WIDTH, SO_HEIGHT, map);
-	for (i = 0; i < 10; i++){
-		sleep(1);
-		Map_print(SO_WIDTH, SO_HEIGHT, map);
-		printf("\n");
-	}
+	Map_print(SO_WIDTH, SO_HEIGHT, map);
 	return 0;
 }
