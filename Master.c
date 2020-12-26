@@ -65,33 +65,83 @@ void reading_input_values () {
 
 			if (strcmp(tmpstr1,"SO_HOLES")==0) {
 				SO_HOLES = atoi(tmpstr2);
+                if (SO_HOLES < 1) {
+                    printf("Errore, parametro SO_HOLES non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
 			}       
 			else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
 				SO_TOP_CELLS = atoi(tmpstr2);
+                if (SO_TOP_CELLS < 1) {
+                    printf("Errore, parametro SO_TOP_CELLS non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
 			}
 			else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
 				SO_SOURCES = atoi(tmpstr2);
+                if (SO_SOURCES < 1) {
+                    printf("Errore, parametro SO_SOURCES non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
 			}
-			else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
+            else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
 				SO_CAP_MIN = atoi(tmpstr2);
+                if (SO_CAP_MIN < 0) {
+                    printf("Errore, parametro SO_CAP_MIN non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
 			}  
 			else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
 				SO_CAP_MAX = atoi(tmpstr2);
+                if (SO_CAP_MAX < SO_CAP_MIN){
+                    printf("Errore, parametro SO_CAP_MAX non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
 			}
-			else if (strcmp(tmpstr1,"SO_TAXI")==0) {
-				SO_TAXI = atoi(tmpstr2);
-			}
+            else if (strcmp(tmpstr1,"SO_TAXI")==0) {
+                SO_TAXI = atoi(tmpstr2);
+                if (SO_TAXI < 0){
+                    printf("Errore, parametro SO_TAXI non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
+            }
 			else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
 				SO_TIMENSEC_MIN = atoi(tmpstr2);
+                if (SO_TIMENSEC_MIN < 0) {
+                    printf("Errore, parametro SO_TIMENSEC_MIN non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
 			}
 			else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
 				SO_TIMENSEC_MAX = atoi(tmpstr2);
+                if (SO_TIMENSEC_MAX < SO_TIMENSEC_MIN){
+                    printf("Errore, parametro SO_TIMENSEC_MAX non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
 			}
 			else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
 				SO_TIMEOUT = atoi(tmpstr2);
+                if (SO_TIMEOUT < 0) {
+                    printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
 			}
 			else if (strcmp(tmpstr1,"SO_DURATION")==0) {
 				SO_DURATION = atoi(tmpstr2);
+                if (SO_DURATION < SO_TIMEOUT) {
+                    printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
+                    fclose(input);
+                    exit(1);
+                }
 			}
 			else {
 				printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
@@ -100,7 +150,7 @@ void reading_input_values () {
 	}
 
 	fclose(input);
-	/* Aggiungere logica per il controllo dei parametri inseriti */
+
 #ifdef STAMPA_PARAMETRI
 	printf("SO_HOLES : %i\n", SO_HOLES);
 	printf("SO_TOP_CELLS : %i\n", SO_TOP_CELLS);
