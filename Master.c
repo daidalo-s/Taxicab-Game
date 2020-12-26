@@ -3,7 +3,7 @@
 #include <string.h>  
 #include <errno.h> 
 #include <time.h>  
-  
+#include <unistd.h>  
 typedef struct 
 {
 	int cell_type;
@@ -60,57 +60,57 @@ void Reading_Input_Values () {
     while(!feof(input)) {
 
         if (fgets(tempbuff,100,input)) {
-    	    sscanf(tempbuff, "%15s = %15[^;];", tmpstr1, tmpstr2);
+           sscanf(tempbuff, "%15s = %15[^;];", tmpstr1, tmpstr2);
 
-    	    if (strcmp(tmpstr1,"SO_HOLES")==0) {
-                SO_HOLES = atoi(tmpstr2);
-            }       
-            else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
-                SO_TOP_CELLS = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
-                SO_SOURCES = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
-                SO_CAP_MIN = atoi(tmpstr2);
-            }  
-            else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
-                SO_CAP_MAX = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_TAXI")==0) {
-                SO_TAXI = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
-                SO_TIMENSEC_MIN = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
-                SO_TIMENSEC_MAX = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
-                SO_TIMEOUT = atoi(tmpstr2);
-            }
-            else if (strcmp(tmpstr1,"SO_DURATION")==0) {
-                SO_DURATION = atoi(tmpstr2);
-            }
-            else {
-                printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
-            }
+           if (strcmp(tmpstr1,"SO_HOLES")==0) {
+            SO_HOLES = atoi(tmpstr2);
+        }       
+        else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
+            SO_TOP_CELLS = atoi(tmpstr2);
+        }
+        else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
+            SO_SOURCES = atoi(tmpstr2);
+        }
+        else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
+            SO_CAP_MIN = atoi(tmpstr2);
+        }  
+        else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
+            SO_CAP_MAX = atoi(tmpstr2);
+        }
+        else if (strcmp(tmpstr1,"SO_TAXI")==0) {
+            SO_TAXI = atoi(tmpstr2);
+        }
+        else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
+            SO_TIMENSEC_MIN = atoi(tmpstr2);
+        }
+        else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
+            SO_TIMENSEC_MAX = atoi(tmpstr2);
+        }
+        else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
+            SO_TIMEOUT = atoi(tmpstr2);
+        }
+        else if (strcmp(tmpstr1,"SO_DURATION")==0) {
+            SO_DURATION = atoi(tmpstr2);
+        }
+        else {
+            printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
         }
     }
+}
 
-    fclose(input);
+fclose(input);
     /* Aggiungere logica per il controllo dei parametri inseriti */
     #ifdef STAMPA_PARAMETRI
-    printf("SO_HOLES : %i\n", SO_HOLES);
-    printf("SO_TOP_CELLS : %i\n", SO_TOP_CELLS);
-    printf("SO_CAP_MIN : %i\n", SO_CAP_MIN);
-    printf("SO_CAP_MAX : %i\n", SO_CAP_MAX);
-    printf("SO_TAXI : %i\n", SO_TAXI);
-    printf("SO_TIMENSEC_MIN : %i\n", SO_TIMENSEC_MIN);
-    printf("SO_TIMENSEC_MAX : %i\n", SO_TIMENSEC_MAX);
-    printf("SO_TIMEOUT : %i\n", SO_TIMEOUT);
-    printf("SO_DURATION : %i\n", SO_DURATION);
-    printf("SO_HOLES : %i\n", SO_HOLES);
+printf("SO_HOLES : %i\n", SO_HOLES);
+printf("SO_TOP_CELLS : %i\n", SO_TOP_CELLS);
+printf("SO_CAP_MIN : %i\n", SO_CAP_MIN);
+printf("SO_CAP_MAX : %i\n", SO_CAP_MAX);
+printf("SO_TAXI : %i\n", SO_TAXI);
+printf("SO_TIMENSEC_MIN : %i\n", SO_TIMENSEC_MIN);
+printf("SO_TIMENSEC_MAX : %i\n", SO_TIMENSEC_MAX);
+printf("SO_TIMEOUT : %i\n", SO_TIMEOUT);
+printf("SO_DURATION : %i\n", SO_DURATION);
+printf("SO_HOLES : %i\n", SO_HOLES);
    	#endif
 }
 
@@ -135,7 +135,7 @@ int Random_Cell_Type(cell** map, int i, int j) {
      */
     if (i == 0 && j == 0) {
         do {
-        c = rand() % (2-0+1) + 0;
+            c = rand() % (2-0+1) + 0;
         } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
         if (c == 0) so_holes--;
         if (c == 1) so_sources--;
@@ -146,20 +146,20 @@ int Random_Cell_Type(cell** map, int i, int j) {
      */
     switch (x) {
         case 0:
-            if (map[i][j-1].cell_type == 0) { 
-                if (so_sources == 0) {
-                    c = 2;
-                } else {
-                    c = rand() % (2-1+1) + 1;
-                    if (c == 1) so_sources--;
-                }
+        if (map[i][j-1].cell_type == 0) { 
+            if (so_sources == 0) {
+                c = 2;
             } else {
-                do {
-                c = rand() % (2-0+1) + 0;
-                } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
-                so_sources--;
+                c = rand() % (2-1+1) + 1;
+                if (c == 1) so_sources--;
             }
-            break;
+        } else {
+            do {
+                c = rand() % (2-0+1) + 0;
+            } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
+            so_sources--;
+        }
+        break;
         case 1:
             /* la stessa cosa spiegata alle righe 25-26 vale anche per "switch (y)", prima di 
              * questo switch e' stata fatta un'opportuna codifica alla riga 12 considerando
@@ -167,57 +167,57 @@ int Random_Cell_Type(cell** map, int i, int j) {
              * Ci sono tre case in quanto si devono controllare piu' o meno celle precedenti
              * in base alla posizione dell'indice delle colonne appunto.
              */
-            switch (y) {
-                case 0:
-                    if ((map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
-                        do {
-                        c = rand() % (2-0+1) + 0;
-                        } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
-                        if (c == 0) so_holes--;
-                        if (c == 1) so_sources--;
-                    } else {
-                        do {
-                        c = rand() % (2-1+1) + 1;
-                        } while (c == 1 && so_sources == 0);
-                        if (c == 1) so_sources--;
-                    }
-                    break;
-                case 1:
-                    if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
-                         (map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
-                        do {
-                        c = rand() % (2-0+1) + 0;
-                        } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
-                        if (c == 0) so_holes--;
-                        if (c == 1) so_sources--;
-                    } else {
-                        do {
-                        c = rand() % (2-1+1) + 1;
-                        } while (c == 1 && so_sources == 0);
-                        if (c == 1) so_sources--;
-                    }
-                    break;
-                case 2:
-                    if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
-                        (map[i-1][j].cell_type != 0)) {
-                        do {
-                        c = rand() % (2-0+1) + 0;
-                        } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
-                        if (c == 0) so_holes--;
-                        if (c == 1) so_sources--;
-                    } else {
-                        do {
-                        c = rand() % (2-1+1) + 1;
-                        } while ((c == 1 && so_sources == 0) || c == 0);
-                        if (c == 1) so_sources--;
-                    }
-                    break;
-                default:
-                    return 1;
-                }
-                break;
-        default:
+        switch (y) {
+            case 0:
+            if ((map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+                do {
+                    c = rand() % (2-0+1) + 0;
+                } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
+                if (c == 0) so_holes--;
+                if (c == 1) so_sources--;
+            } else {
+                do {
+                    c = rand() % (2-1+1) + 1;
+                } while (c == 1 && so_sources == 0);
+                if (c == 1) so_sources--;
+            }
+            break;
+            case 1:
+            if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
+               (map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+                do {
+                    c = rand() % (2-0+1) + 0;
+                } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
+                if (c == 0) so_holes--;
+                if (c == 1) so_sources--;
+            } else {
+                do {
+                    c = rand() % (2-1+1) + 1;
+                } while (c == 1 && so_sources == 0);
+                if (c == 1) so_sources--;
+            }
+            break;
+            case 2:
+            if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
+                (map[i-1][j].cell_type != 0)) {
+                do {
+                    c = rand() % (2-0+1) + 0;
+                } while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
+                if (c == 0) so_holes--;
+                if (c == 1) so_sources--;
+            } else {
+                do {
+                    c = rand() % (2-1+1) + 1;
+                } while ((c == 1 && so_sources == 0) || c == 0);
+                if (c == 1) so_sources--;
+            }
+            break;
+            default:
             return 1;
+        }
+        break;
+        default:
+        return 1;
     }
     return c;
 }
@@ -293,29 +293,34 @@ void Map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
     printf("La larghezza della mappa è: %i\n", SO_WIDTH);
     #endif
 	for (i = 0; i < SO_HEIGHT; i++) {
-    	for (j = 0; j < SO_WIDTH; j++) {
-      		printf ("%i ", map[i][j].cell_type);
-      		
+       for (j = 0; j < SO_WIDTH; j++) {
+        printf ("%i ", map[i][j].cell_type);
+        
             #ifdef STAMPA_VALORI_CELLA
-      		printf ("%i", mappa[i][j].taxi_capacity);
-      		printf ("%i", mappa[i][j].active_taxis);
-     		printf ("%i", mappa[i][j].travel_time);
-     		printf ("%i", mappa[i][j].crossings);
+        printf ("%i", mappa[i][j].taxi_capacity);
+        printf ("%i", mappa[i][j].active_taxis);
+        printf ("%i", mappa[i][j].travel_time);
+        printf ("%i", mappa[i][j].crossings);
     	    #endif
-    	
-        }
-    	printf("\n");
-  	}
+        
+    }
+    printf("\n");
+}
 }
 
 int main () {
+    int i;
     /* Lettura degli altri parametri specificati da file */
- 	Reading_Input_Values();
+    Reading_Input_Values();
 	/* Creazione e inizializzazione mappa */
     SO_WIDTH = 5;
     SO_HEIGHT = 4; 
     map = Map_creation(SO_WIDTH, SO_HEIGHT, map);
     Map_Setup(SO_WIDTH, SO_HEIGHT, map);
- 	Map_print(SO_WIDTH, SO_HEIGHT, map);
-	return 0;
+    for (i = 0; i < 10; i++){
+        sleep(1);
+        Map_print(SO_WIDTH, SO_HEIGHT, map);
+        printf("\n");
+    }
+    return 0;
 }
