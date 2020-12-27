@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>  
+#include <string.h> 
+#include <sys/types.h> 
 #include <errno.h> 
 #include <time.h>  
 #include <unistd.h>  
+/* Struttura cella */
 typedef struct 
 {
 	int cell_type;
@@ -12,8 +14,14 @@ typedef struct
 	int travel_time;
 	int crossings;
 } cell; 
+/* Vettore dove tengo informazioni sui processi*/
+typedef struct 
+{
+    pid_t pid;
+} process_info;
 
 /****************** Prototipi ******************/
+void kill_all();
 void reading_input_values (); 
 cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map);
 void free_map(cell** map);
@@ -311,7 +319,7 @@ void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 
 	int i, j;
 	/* È giusto inizializzarla così? */
-	srand(time(0));
+	srand(getpid());
 	/* Inizializzo la mappa con valore 2 */
 	for (i = 0; i < SO_WIDTH; i++) {
 		for (j = 0; j < SO_HEIGHT; j++) {
@@ -366,6 +374,16 @@ void free_map(cell** map) {
 	free(map);
 }
 
+/* Chiusura di tutti i processi */
+void kill_all() {
+    /* Dobbiamo bloccare i segnali ke ankora nn abbiamo okkio*/
+
+    /* Per terminare i processi scorriamo la matrice e appena ne
+       troviamo uno zap */
+
+}
+
+/* Main */
 int main () {
 	int i, j, valore_fork_sources, valore_fork_taxi;
 	/* Lettura degli altri parametri specificati da file */
