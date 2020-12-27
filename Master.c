@@ -15,13 +15,13 @@ typedef struct
 
 /****************** Prototipi ******************/
 void reading_input_values (); 
+int random_cell_type(cell** map);
+int random_taxi_capacity(cell** map);
+int random_travel_time(cell** map);
 cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map);
-void free_map(cell** map);
 void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map);
 void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map);
-int random_cell_type(cell** map, int i, int j);
-int random_taxi_capacity();
-int random_travel_time();
+void free_map(cell** map);
 
 /* ---------------- Variabili globali ----------------- */
 cell** map = NULL;
@@ -167,135 +167,147 @@ void reading_input_values () {
 /* ---------------- Metodi mappa ----------------- */
 #ifdef MAPPA_VALORI_CASUALI
 /* Inizializza cell_type in modo casuale */
-int random_cell_type(cell** map, int i, int j) {
-	/* c assumera' il valore della codifica da restituire (0 hole, 1 no SO_SOURCES, 2 cella libera),
-	 * nei seguenti rami if-else si valuta invece quale valore assegnare ad x ed y per capire in seguito
-	 * quale case eseguire all'interno degli switch (questo risolve il problema di "case i>0:")
-	 */
-	int c, x, y;
-	static int so_holes;
-	static int so_sources;
-	so_holes = SO_HOLES;
-	so_sources = SO_SOURCES;
-	if (i == 0) { x = 0; } else x = 1;
-	if (j == 0) { y = 0; } else if (j > 0 && j < (SO_WIDTH-1)) { y = 1; } else y = 2;
-	/* In questo if seguente si esamina il caso in cui si e' alla prima cella controllando
-	 * so_holes e so_sources per verificare che si possano inserire altri "buchi" o processi che
-	 * potrebbero richiedere taxi
-	 */
-	if (i == 0 && j == 0) {
-		do {
-			c = rand() % (2-0+1) + 0;
-		} while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
-		if (c == 0) so_holes--;
-		if (c == 1) so_sources--;
-		return c;
-	}
-	/* I case che fanno parte di "switch (x)" verificano cosa fare in base all'indice della riga
-	 * che e' stata opportunamente codifica alla riga 11 del medesimo file
-	 */
-	switch (x) {
-		case 0:
-			if (map[i][j-1].cell_type == 0) { 
-				if (so_sources == 0) {
-					c = 2;
-				} else {
-					c = rand() % (2-1+1) + 1;
-					if (c == 1) so_sources--;
-				}
-			} else {
-				do {
-					c = rand() % (2-0+1) + 0;
-				} while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
-				so_sources--;
-			}
-			break;
-		case 1:
-			/* la stessa cosa spiegata alle righe 25-26 vale anche per "switch (y)", prima di 
-			 * questo switch e' stata fatta un'opportuna codifica alla riga 12 considerando
-			 * l'indice delle colonne.
-			 * Ci sono tre case in quanto si devono controllare piu' o meno celle precedenti
-			 * in base alla posizione dell'indice delle colonne appunto.
-			 */
-			switch (y) {
-				case 0:
-					if ((map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
-						do {
-							c = rand() % (2-0+1) + 0;
-						} while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
-						if (c == 0) so_holes--;
-						if (c == 1) so_sources--;
-					} else {
-						do {
-							c = rand() % (2-1+1) + 1;
-						} while (c == 1 && so_sources == 0);
-						if (c == 1) so_sources--;
-					}
-					break;
-				case 1:
-					if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
-							(map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
-						do {
-							c = rand() % (2-0+1) + 0;
-						} while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
-						if (c == 0) so_holes--;
-						if (c == 1) so_sources--;
-					} else {
-						do {
-							c = rand() % (2-1+1) + 1;
-						} while (c == 1 && so_sources == 0);
-						if (c == 1) so_sources--;
-					}
-					break;
-				case 2:
-					if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
-							(map[i-1][j].cell_type != 0)) {
-						do {
-							c = rand() % (2-0+1) + 0;
-						} while ((c == 0 && so_holes == 0) || (c == 1 && so_sources == 0));
-						if (c == 0) so_holes--;
-						if (c == 1) so_sources--;
-					} else {
-						do {
-							c = rand() % (2-1+1) + 1;
-						} while ((c == 1 && so_sources == 0) || c == 0);
-						if (c == 1) so_sources--;
-					}
-					break;
-				default:
-					return 1;
-			}
-			break;
-		default:
-			return 1;
-	}
-	return c;
+void random_cell_type(cell** map) {
+    /* Variabili locali utilizzate:
+     * - value assume il valore della codifica (0 hole, 1 no SO_SOURCES, 2 cella libera) 
+     *   da assegnare alla cella[i][j]; i e j assumono il valore degli indici della cella di riferimento;
+     * - row_pos (row position) e col_pot (column position) sono variabili utilizzate 
+     *   per capire in seguito quale case eseguire all'interno degli switch;
+     * - so_holes e so_sources assumono i valori delle variabili SO_HOLES ed SO_SOURCES,
+     *   dato che quest'ultime sono variabili globali e' meglio non modificarne il valore
+     *   ma bensi' utilizzarne una copia all'interno della funzione
+     */
+    int value, i, j, row_pos, col_pos, so_holes, so_sources;
+    so_holes = SO_HOLES;
+    so_sources = SO_SOURCES;
+    for (i = 0; i < SO_HEIGHT; i++) {
+        for (j = 0; j < SO_WIDTH; j++) {
+        if (i == 0) { row_pos = 0; } else row_pos = 1;
+        if (j == 0) { col_pos = 0; } else if (j > 0 && j < (SO_WIDTH-1)) { col_pos = 1; } else col_pos = 2;
+        if (row_pos == 0 && col_pos == 0) {
+            do {
+            value = rand() % (2-0+1) + 0;
+            } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+            if (value == 0) so_holes = so_holes-1;
+            if (value == 1) so_sources = so_sources-1;
+            map[i][j].cell_type = value;
+        } else {    
+            switch (row_pos) {
+                case 0:
+                    if (map[i][j-1].cell_type == 0) { 
+                        do {
+                        value = rand() % (2-1+1) + 1;
+                        } while (value == 1 && so_sources == 0);
+                        if (value == 1) so_sources = so_sources-1;
+                        map[i][j].cell_type = value;
+                    } else {
+                        do {
+                        value = rand() % (2-0+1) + 0;
+                        } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+                        if (value == 0) so_holes = so_holes-1;
+                        if (value == 1) so_sources = so_sources-1;
+                        map[i][j].cell_type = value;
+                    }
+                    break;
+                case 1:
+                    switch (col_pos) {
+                        case 0:
+                            if ((map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+                                do {
+                                value = rand() % (2-0+1) + 0;
+                                } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+                                if (value == 0) so_holes = so_holes-1;
+                                if (value == 1) so_sources = so_sources-1;
+                                map[i][j].cell_type = value;
+                            } else {
+                                do {
+                                value = rand() % (2-1+1) + 1;
+                                } while (value == 1 && so_sources == 0);
+                                if (value == 1) so_sources = so_sources-1;
+                                map[i][j].cell_type = value;
+                            }
+                            break;
+                        case 1:
+                            if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
+                                        (map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+                                do {
+                                value = rand() % (2-0+1) + 0;
+                                } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+                                if (value == 0) so_holes = so_holes-1;
+                                if (value == 1) so_sources = so_sources-1;
+                                map[i][j].cell_type = value;
+                            } else {
+                                do {
+                                value = rand() % (2-1+1) + 1;
+                                } while (value == 1 && so_sources == 0);
+                                if (value == 1) so_sources = so_sources-1;
+                                map[i][j].cell_type = value;
+                            }
+                            break;
+                        case 2:
+                            if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
+                                    (map[i-1][j].cell_type != 0)) {
+                                do {
+                                value = rand() % (2-0+1) + 0;
+                                } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+                                if (value == 0) so_holes = so_holes-1;
+                                if (value == 1) so_sources = so_sources-1;
+                                map[i][j].cell_type = value;
+                            } else {
+                                do {
+                                value = rand() % (2-1+1) + 1;
+                                } while (value == 1 && so_sources == 0);
+                                if (value == 1) so_sources = so_sources-1;
+                                map[i][j].cell_type = value;
+                            }
+                            break;
+                        default:
+                            printf("Errore\n");
+                            exit(-1);
+                    }
+                    break;
+                default:
+                    printf("Errore\n");
+                    exit(-1);
+            }   
+        }
+    } 
+    }
 }
+
 /* Nei casi in cui si odvesse verificare qualche anomalia viene restituito 1, 
  * ma per generare un errore cosa possiamo fare?
  */
 
 /* Assegna ad ogni cella taxi_capacity*/
-int random_taxi_capacity() {
-	return (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
+void random_taxi_capacity(cell** map) {
+    int i, j;
+    for (i = 0; i < SO_HEIGHT; i++) {
+            for (j = 0; j < SO_WIDTH; j++) {
+                map[i][j].taxi_capacity = (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
+            }
+        }
 }
 
 /* Assegna ad ogni cella travel_time*/
-int random_travel_time() {
-	return (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
+void random_travel_time(cell** map) {
+    int i, j;
+    for (i = 0; i < SO_HEIGHT; i++) {
+            for (j = 0; j < SO_WIDTH; j++) {
+                map[i][j].travel_time = (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
+            }
+        }
 }
-
 #endif
 
 /* Crea la mappa e la restituisce al main */
 cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
-
-	int i;
-	map = malloc(SO_WIDTH * sizeof(cell));
-	for (i = 0; i < SO_WIDTH; i++){
-		map[i] = calloc(SO_HEIGHT, sizeof(cell));
-	}
-	return map;
+    int i;
+    map = malloc(SO_HEIGHT * sizeof(cell));
+    for (i = 0; i < SO_HEIGHT; i++) {
+        map[i] = calloc(SO_WIDTH, sizeof(cell));
+    }
+    return map;
 }
 
 /* Da modificare: dovrà leggere i parametri da file e con rand
@@ -308,32 +320,29 @@ cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
  * documento condiviso
  */
 void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
-
-	int i, j;
-	/* È giusto inizializzarla così? */
-	srand(time(0));
-	/* Inizializzo la mappa con valore 2 */
-	for (i = 0; i < SO_WIDTH; i++) {
-		for (j = 0; j < SO_HEIGHT; j++) {
-			map[i][j].cell_type = 2;
-		}
-	}
-	/* Creo la mappa come nel documento condiviso */
-	map[0][0].cell_type = 0;
-	map[3][1].cell_type = 0;
-	map[2][3].cell_type = 0;
-	map[2][2].cell_type = 1;
-	map[2][2].taxi_capacity = 0;
-	map[2][2].active_taxis = 0;
-	map[2][2].travel_time = 0;
-	/* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand 
-	   rand() % (2+1-0) + 0; */
-#ifdef MAPPA_VALORI_CASUALI
-	map[i][j].cell_type = random_cell_type(map, i, j);
-	map[i][j].taxi_capacity = random_taxi_capacity();
-	map[i][j].active_taxis = 0;
-	map[i][j].travel_time = random_travel_time();
-#endif
+    int i, j;
+    srand(time(0));
+    for (i = 0; i < SO_HEIGHT; i++) {
+            for (j = 0; j < SO_WIDTH; j++) {
+                map[i][j].cell_type = 2;
+                map[i][j].active_taxis = 0;
+            }
+        }
+    #ifdef MAPPA_VALORI_CASUALI
+    Random_Cell_Type(map);
+    Random_Taxi_Capacity(map);
+    Random_Travel_Time(map);
+    #endif
+    #ifndef MAPPA_VALORI_CASUALI
+    map[0][0].cell_type = 0;
+    map[3][1].cell_type = 0;
+    map[2][3].cell_type = 0;
+    map[2][2].cell_type = 1;
+    map[2][2].taxi_capacity = 0;
+    map[2][2].active_taxis = 0;
+    map[2][2].travel_time = 0;
+    #endif
+    /* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand */
 }
 
 /* Dovrebbe andare */
@@ -345,14 +354,12 @@ void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
 			printf ("%i ", map[i][j].cell_type);
-
 #ifdef STAMPA_VALORI_CELLA
 			printf ("%i", mappa[i][j].taxi_capacity);
 			printf ("%i", mappa[i][j].active_taxis);
 			printf ("%i", mappa[i][j].travel_time);
 			printf ("%i", mappa[i][j].crossings);
 #endif
-
 		}
 		printf("\n");
 	}
@@ -360,7 +367,7 @@ void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 /* Libera la mappa */
 void free_map(cell** map) {
 	int i;
-	for (i = 0; i < SO_WIDTH; i++){
+	for (i = 0; i < SO_HEIGHT; i++){
 		free(map[i]);
 	}
 	free(map);
