@@ -20,9 +20,9 @@ void reading_input_values ();
 void random_cell_type(cell** map);
 void random_taxi_capacity(cell** map);
 void random_travel_time(cell** map);
-cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map);
-void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map);
-void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map);
+cell** map_creation(cell** map);
+void map_print(cell** map);
+void map_setup(cell** map);
 void free_map(cell** map);
 
 /* ---------------- Variabili globali ----------------- */
@@ -303,7 +303,7 @@ void random_travel_time(cell** map) {
 #endif
 
 /* Crea la mappa e la restituisce al main */
-cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
+cell** map_creation(cell** map) {
 	int i;
 	map = malloc(SO_HEIGHT * sizeof(cell));
 	for (i = 0; i < SO_HEIGHT; i++) {
@@ -321,7 +321,7 @@ cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
  * main) se volete lo schema della mappa che sto usando lo trovate nel 
  * documento condiviso
  */
-void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
+void map_setup(cell** map) {
 	int i, j;
 	srand(getpid());
 	for (i = 0; i < SO_HEIGHT; i++) {
@@ -345,7 +345,7 @@ void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 }
 
 /* Dovrebbe andare */
-void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
+void map_print(cell** map) {
 	int i, j;
 #if 0
 	printf("La larghezza della mappa è: %i\n", SO_WIDTH);
@@ -378,9 +378,9 @@ int main () {
 	/* Creazione e inizializzazione mappa */
 	SO_WIDTH = 5;
 	SO_HEIGHT = 4;
-	map = map_creation(SO_WIDTH, SO_HEIGHT, map);
-	map_setup(SO_WIDTH, SO_HEIGHT, map);
-	map_print(SO_WIDTH, SO_HEIGHT, map);
+	map = map_creation(map);
+	map_setup(map);
+	map_print(map);
 	free_map(map);
 	return 0;
 }
