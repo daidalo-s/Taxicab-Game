@@ -148,7 +148,6 @@ void reading_input_values () {
 			}
 		}
 	}
-
 	fclose(input);
 
 #ifdef STAMPA_PARAMETRI
@@ -358,7 +357,7 @@ void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 		printf("\n");
 	}
 }
-
+/* Libera la mappa */
 void free_map(cell** map) {
 	int i;
 	for (i = 0; i < SO_WIDTH; i++){
@@ -367,9 +366,9 @@ void free_map(cell** map) {
 	free(map);
 }
 
-
 int main () {
-	/* Lettura degli altri parametri specificati da file */
+	int i, j;
+    /* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creazione e inizializzazione mappa */
 	SO_WIDTH = 5;
