@@ -65,83 +65,83 @@ void reading_input_values () {
 
 			if (strcmp(tmpstr1,"SO_HOLES")==0) {
 				SO_HOLES = atoi(tmpstr2);
-                if (SO_HOLES < 1) {
-                    printf("Errore, parametro SO_HOLES non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
+				if (SO_HOLES < 1) {
+					printf("Errore, parametro SO_HOLES non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
 			}       
 			else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
 				SO_TOP_CELLS = atoi(tmpstr2);
-                if (SO_TOP_CELLS < 1) {
-                    printf("Errore, parametro SO_TOP_CELLS non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
+				if (SO_TOP_CELLS < 1) {
+					printf("Errore, parametro SO_TOP_CELLS non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
 			}
 			else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
 				SO_SOURCES = atoi(tmpstr2);
-                if (SO_SOURCES < 1) {
-                    printf("Errore, parametro SO_SOURCES non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
+				if (SO_SOURCES < 1) {
+					printf("Errore, parametro SO_SOURCES non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
 			}
-            else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
+			else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
 				SO_CAP_MIN = atoi(tmpstr2);
-                if (SO_CAP_MIN < 0) {
-                    printf("Errore, parametro SO_CAP_MIN non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
+				if (SO_CAP_MIN < 0) {
+					printf("Errore, parametro SO_CAP_MIN non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
 			}  
 			else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
 				SO_CAP_MAX = atoi(tmpstr2);
-                if (SO_CAP_MAX < SO_CAP_MIN){
-                    printf("Errore, parametro SO_CAP_MAX non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
+				if (SO_CAP_MAX < SO_CAP_MIN){
+					printf("Errore, parametro SO_CAP_MAX non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
 			}
-            else if (strcmp(tmpstr1,"SO_TAXI")==0) {
-                SO_TAXI = atoi(tmpstr2);
-                if (SO_TAXI < 0){
-                    printf("Errore, parametro SO_TAXI non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
-            }
+			else if (strcmp(tmpstr1,"SO_TAXI")==0) {
+				SO_TAXI = atoi(tmpstr2);
+				if (SO_TAXI < 0){
+					printf("Errore, parametro SO_TAXI non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
+			}
 			else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
 				SO_TIMENSEC_MIN = atoi(tmpstr2);
-                if (SO_TIMENSEC_MIN < 0) {
-                    printf("Errore, parametro SO_TIMENSEC_MIN non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
+				if (SO_TIMENSEC_MIN < 0) {
+					printf("Errore, parametro SO_TIMENSEC_MIN non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
 			}
 			else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
 				SO_TIMENSEC_MAX = atoi(tmpstr2);
-                if (SO_TIMENSEC_MAX < SO_TIMENSEC_MIN){
-                    printf("Errore, parametro SO_TIMENSEC_MAX non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
+				if (SO_TIMENSEC_MAX < SO_TIMENSEC_MIN){
+					printf("Errore, parametro SO_TIMENSEC_MAX non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
 			}
 			else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
 				SO_TIMEOUT = atoi(tmpstr2);
-                if (SO_TIMEOUT < 0) {
-                    printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
+				if (SO_TIMEOUT < 0) {
+					printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
 			}
 			else if (strcmp(tmpstr1,"SO_DURATION")==0) {
 				SO_DURATION = atoi(tmpstr2);
-                if (SO_DURATION < SO_TIMEOUT) {
-                    printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
-                    fclose(input);
-                    exit(1);
-                }
+				if (SO_DURATION < SO_TIMEOUT) {
+					printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
+					fclose(input);
+					exit(1);
+				}
 			}
 			else {
 				printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
@@ -368,7 +368,7 @@ void free_map(cell** map) {
 
 int main () {
 	int i, j, valore_fork_sources, valore_fork_taxi;
-    /* Lettura degli altri parametri specificati da file */
+	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creazione e inizializzazione mappa */
 	SO_WIDTH = 5;
@@ -376,29 +376,29 @@ int main () {
 	map = map_creation(SO_WIDTH, SO_HEIGHT, map);
 	map_setup(SO_WIDTH, SO_HEIGHT, map);
 
-    /* Creo processi SO_SOURCES*/
-    for (i = 0; i < SO_SOURCES; i++) {
-        switch(valore_fork_sources = fork()) {
-            case -1:
-                printf("Errore nella fork. Esco.\n");
-                /*shutdown*/
-                break;
-            case 0:
-                execve();
-        }
-    }
+	/* Creo processi SO_SOURCES*/
+	for (i = 0; i < SO_SOURCES; i++) {
+		switch(valore_fork_sources = fork()) {
+			case -1:
+				printf("Errore nella fork. Esco.\n");
+				/*shutdown*/
+				break;
+			case 0:
+				execve();
+		}
+	}
 
-    /* Creo processi Taxi */
-    for (j = 0; j < SO_TAXI; j++) {
-        switch(valore_fork_taxi = fork()) {
-            case -1:
-                printf("Errore nella fork. Esco.\n");
-                /*shutdown*/
-                break;
-            case 0:
-                execve();
-        }
-    }
+	/* Creo processi Taxi */
+	for (j = 0; j < SO_TAXI; j++) {
+		switch(valore_fork_taxi = fork()) {
+			case -1:
+				printf("Errore nella fork. Esco.\n");
+				/*shutdown*/
+				break;
+			case 0:
+				execve();
+		}
+	}
 
 	map_print(SO_WIDTH, SO_HEIGHT, map);
 	free_map(map);
