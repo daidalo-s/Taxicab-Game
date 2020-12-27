@@ -367,7 +367,7 @@ void free_map(cell** map) {
 }
 
 int main () {
-	int i, j;
+	int i, j, valore_fork_sources, valore_fork_taxi;
     /* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creazione e inizializzazione mappa */
@@ -375,6 +375,31 @@ int main () {
 	SO_HEIGHT = 4;
 	map = map_creation(SO_WIDTH, SO_HEIGHT, map);
 	map_setup(SO_WIDTH, SO_HEIGHT, map);
+
+    /* Creo processi SO_SOURCES*/
+    for (i = 0; i < SO_SOURCES; i++) {
+        switch(valore_fork_sources = fork()) {
+            case -1:
+                printf("Errore nella fork. Esco.\n");
+                /*shutdown*/
+                break;
+            case 0:
+                execve();
+        }
+    }
+
+    /* Creo processi Taxi */
+    for (j = 0; j < SO_TAXI; j++) {
+        switch(valore_fork_taxi = fork()) {
+            case -1:
+                printf("Errore nella fork. Esco.\n");
+                /*shutdown*/
+                break;
+            case 0:
+                execve();
+        }
+    }
+
 	map_print(SO_WIDTH, SO_HEIGHT, map);
 	free_map(map);
 	return 0;
