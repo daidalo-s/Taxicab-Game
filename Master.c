@@ -4,6 +4,8 @@
 #include <errno.h> 
 #include <time.h>  
 #include <unistd.h>  
+#include <sys/types.h>
+
 typedef struct 
 {
 	int cell_type;
@@ -15,9 +17,9 @@ typedef struct
 
 /****************** Prototipi ******************/
 void reading_input_values (); 
-int random_cell_type(cell** map);
-int random_taxi_capacity(cell** map);
-int random_travel_time(cell** map);
+void random_cell_type(cell** map);
+void random_taxi_capacity(cell** map);
+void random_travel_time(cell** map);
 cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map);
 void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map);
 void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map);
@@ -321,7 +323,7 @@ cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
  */
 void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 	int i, j;
-	srand(time(0));
+	srand(getpid());
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
 			map[i][j].cell_type = 2;
@@ -329,9 +331,9 @@ void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 		}
 	}
 #ifdef MAPPA_VALORI_CASUALI
-	Random_Cell_Type(map);
-	Random_Taxi_Capacity(map);
-	Random_Travel_Time(map);
+	random_cell_type(map);
+	random_taxi_capacity(map);
+	random_travel_time(map);
 #endif
 #ifndef MAPPA_VALORI_CASUALI
 	map[0][0].cell_type = 0;
