@@ -368,7 +368,7 @@ void free_map(cell** map) {
 
 int main () {
 	int i, j;
-    /* Lettura degli altri parametri specificati da file */
+        /* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creazione e inizializzazione mappa */
 	SO_WIDTH = 5;
