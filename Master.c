@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h> 
 #include <sys/types.h> 
+#include <sys/wait.h>
 #include <errno.h> 
 #include <time.h>  
 #include <unistd.h>  
@@ -404,7 +405,7 @@ int main () {
 	map = map_creation(SO_WIDTH, SO_HEIGHT, map);
 	map_setup(SO_WIDTH, SO_HEIGHT, map);
 
-	/* Creo processi SO_SOURCES*/
+	/* Creo processi SO_SOURCES. Sto passando argomenti fittizi.*/
 	for (i = 0; i < SO_SOURCES; i++) {
 		switch(valore_fork_sources = fork()) {
 			case -1:
@@ -420,7 +421,7 @@ int main () {
 		}
 	}
 
-	/* Creo processi Taxi */
+	/* Creo processi Taxi. Sto passando argomenti fittizi. */
 	for (j = 0; j < SO_TAXI; j++) {
 		switch(valore_fork_taxi = fork()) {
 			case -1:
@@ -435,7 +436,10 @@ int main () {
                                 break;
 		}
 	}
-
+        /* Stampa tante volte quanti sono i processi che aspetta*/
+        while(wait(NULL) != -1) {
+            printf ("Ora tutti i figli sono terminati\n");
+        }
 	map_print(SO_WIDTH, SO_HEIGHT, map);
 	free_map(map);
 	return 0;
