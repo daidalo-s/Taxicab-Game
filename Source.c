@@ -7,6 +7,7 @@
 
 int main(int argc, char *argv[])
 {
-	/* code */
-	return 0;
+    /* code */
+    printf("Sono un processo SO_SOURCE \n");
+    return 0;
 }

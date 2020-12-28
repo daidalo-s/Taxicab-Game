@@ -382,17 +382,20 @@ void free_map(cell** map) {
 }
 
 /* Chiusura di tutti i processi */
-void kill_all() {
+void kill_all(cell** map) {
     /* Dobbiamo bloccare i segnali ke ankora nn abbiamo okkio*/
 
     /* Per terminare i processi scorriamo la matrice e appena ne
        troviamo uno zap */
+    free(map);
 
 }
 
 /* Main */
 int main () {
 	int i, j, valore_fork_sources, valore_fork_taxi;
+        char * args_a[] = {"Source", NULL, NULL, NULL, NULL};
+        char * args_b[] = {"Taxi", NULL, NULL, NULL, NULL};
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creazione e inizializzazione mappa */
@@ -407,9 +410,13 @@ int main () {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
 				/*shutdown*/
+                                kill_all(map);
 				break;
 			case 0:
-				execve();
+				execve("Source", args_a, NULL);
+                        default:
+                                printf("Sono il main \n");
+                                break;
 		}
 	}
 
@@ -419,9 +426,13 @@ int main () {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
 				/*shutdown*/
+                                kill_all(map);
 				break;
 			case 0:
-				execve();
+				execve("Taxi", args_b, NULL);
+                        default:
+                                printf("Sono il main \n");
+                                break;
 		}
 	}
 
