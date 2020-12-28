@@ -9,5 +9,6 @@ int main(int argc, char *argv[])
 {
     /* code */
     printf("Sono un processo SO_SOURCE \n");
+    printf("Questa e' una stampa di test di SO_SOURCE \n");
     return 0;
 }

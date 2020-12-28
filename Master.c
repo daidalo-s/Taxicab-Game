@@ -415,7 +415,7 @@ int main () {
 			case 0:
 				execve("Source", args_a, NULL);
                         default:
-                                printf("Sono il main \n");
+                                printf("Sono il main in SO_SOURCES \n");
                                 break;
 		}
 	}
@@ -431,7 +431,7 @@ int main () {
 			case 0:
 				execve("Taxi", args_b, NULL);
                         default:
-                                printf("Sono il main \n");
+                                printf("Sono il main in SO_TAXI\n");
                                 break;
 		}
 	}
