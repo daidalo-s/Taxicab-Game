@@ -323,7 +323,7 @@ void random_travel_time(cell** map) {
 /* Crea la mappa e la restituisce al main */
 cell** map_creation(cell** map) {
 	int size = ((SO_HEIGHT*sizeof(cell))*SO_WIDTH);
-	if ((shmid = shmget (key, size, shmflg)) == -1) {
+	if ((shmid = shmget (IPC_PRIVATE, size, shmflg)) == -1) {
 		perror("shmget: shmget failed"); 
 		exit(1); 
 	} else {
