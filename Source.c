@@ -11,6 +11,9 @@ int main(int argc, char *argv[])
     /* code */
     printf("Sono un processo SO_SOURCE \n");
     printf("Questa e' una stampa di test di SO_SOURCE \n");
+#if 0
+    printf("%i \n", map[2][2].cell_type);
+#endif
     printf("Ora perdo un po' di tempo e poi esco \n");
     sleep(10);
     printf("Ho finito di dormire \n");

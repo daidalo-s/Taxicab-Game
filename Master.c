@@ -69,7 +69,7 @@ void reading_input_values () {
 
 	while(!feof(input)) {
 
-		if (fgets(tempbuff,100,input)) {
+		if (fgets(tempbuff, sizeof(tempbuff),input)) {
 			sscanf(tempbuff, "%15s = %15[^;];", tmpstr1, tmpstr2);
 
 			if (strcmp(tmpstr1,"SO_HOLES")==0) {
@@ -395,8 +395,10 @@ void kill_all(cell** map) {
 /* Main */
 int main () {
 	int i, j, valore_fork_sources, valore_fork_taxi;
+        #if 1
         char * args_a[] = {"Source", NULL, NULL, NULL, NULL};
         char * args_b[] = {"Taxi", NULL, NULL, NULL, NULL};
+        #endif
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creazione e inizializzazione mappa */
@@ -410,7 +412,7 @@ int main () {
 		switch(valore_fork_sources = fork()) {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
-				/*shutdown*/
+				/*Il metodo al momento fa solo una free -SBAGLIATO-*/
                                 kill_all(map);
 				break;
 			case 0:
@@ -426,7 +428,7 @@ int main () {
 		switch(valore_fork_taxi = fork()) {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
-				/*shutdown*/
+				/*Il metodo al momento fa solo una free -SBAGLIATO-*/
                                 kill_all(map);
 				break;
 			case 0:

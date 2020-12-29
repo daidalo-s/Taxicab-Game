@@ -1,0 +1,9 @@
+Creiamo nel master il segmento di memoria condivisa. (Attento a quando richiamarlo se prima si map_setup ecc)
+Lo passiamo ai vari processi 
+Creare i semafori per l'accesso alle celle 
+I processi SO_SOURCE che vogliono attaccarsi a una cella impostano cell_type a 3
+I processi Taxi si attaccano a una cella a caso (stando attenti alla capienza massima di una cella) -magari la casualita' dopo-
+Creare la coda di messaggi 
+Implementiamo il sistema di generazione delle richieste (== ogni processo SO_SOURCE crea un processo che genera richieste)
+Creiamo il metodo per il movimento dei taxi
+grande capitolo della gestione dei segnali
