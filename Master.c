@@ -10,6 +10,9 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 #include <sys/ipc.h> 
+
+#define SO_HEIGHT 4
+#define SO_WIDTH 5
 /* Struttura cella */
 typedef struct 
 {
@@ -38,10 +41,8 @@ void map_setup(cell** map);
 void free_map(cell** map);
 
 /* ---------------- Variabili globali ----------------- */
-cell** map = NULL;
 /* SO_WIDTH e SO_HEIGHT vengono letti dal main */
-int SO_WIDTH = 0;
-int SO_HEIGHT = 0;
+cell map[SO_HEIGHT][SO_WIDTH];
 int SO_HOLES = 0;
 int SO_TOP_CELLS = 0;
 int SO_SOURCES = 0;
