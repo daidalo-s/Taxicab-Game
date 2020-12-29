@@ -5,7 +5,11 @@
 #include <sys/wait.h>
 #include <errno.h> 
 #include <time.h>  
-#include <unistd.h>  
+#include <unistd.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/types.h>
+#include <sys/ipc.h> 
 /* Struttura cella */
 typedef struct 
 {
@@ -14,11 +18,12 @@ typedef struct
 	int active_taxis;
 	int travel_time;
 	int crossings;
-} cell; 
+} cell;
+/* http://users.cs.cf.ac.uk/Dave.Marshall/C/node27.html */
 /* Vettore dove tengo informazioni sui processi*/
 typedef struct 
 {
-    pid_t pid;
+	pid_t pid;
 } process_info;
 
 /****************** Prototipi ******************/
@@ -27,9 +32,9 @@ void reading_input_values ();
 void random_cell_type(cell** map);
 void random_taxi_capacity(cell** map);
 void random_travel_time(cell** map);
-cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map);
-void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map);
-void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map);
+cell** map_creation(cell** map);
+void map_print(cell** map);
+void map_setup(cell** map);
 void free_map(cell** map);
 
 /* ---------------- Variabili globali ----------------- */
@@ -47,6 +52,11 @@ int SO_TIMENSEC_MIN = 0;
 int SO_TIMENSEC_MAX = 0;
 int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
+/* Variabili per la creazione della mappa*/
+key_t key = 9876; /* key da passare a shmget() */ 
+int shmflg = 0666; /* shmflg da passare a shmget() */ 
+int shmid; /* valore ritornato da shmget() */ 
+int size; /* dimemsione da passare a shmget() */ 
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -177,111 +187,111 @@ void reading_input_values () {
 #ifdef MAPPA_VALORI_CASUALI
 /* Inizializza cell_type in modo casuale */
 void random_cell_type(cell** map) {
-    /* Variabili locali utilizzate:
-     * - value assume il valore della codifica (0 hole, 1 no SO_SOURCES, 2 cella libera) 
-     *   da assegnare alla cella[i][j]; i e j assumono il valore degli indici della cella di riferimento;
-     * - row_pos (row position) e col_pot (column position) sono variabili utilizzate 
-     *   per capire in seguito quale case eseguire all'interno degli switch;
-     * - so_holes e so_sources assumono i valori delle variabili SO_HOLES ed SO_SOURCES,
-     *   dato che quest'ultime sono variabili globali e' meglio non modificarne il valore
-     *   ma bensi' utilizzarne una copia all'interno della funzione
-     */
-    int value, i, j, row_pos, col_pos, so_holes, so_sources;
-    so_holes = SO_HOLES;
-    so_sources = SO_SOURCES;
-    for (i = 0; i < SO_HEIGHT; i++) {
-        for (j = 0; j < SO_WIDTH; j++) {
-            if (i == 0) { row_pos = 0; } else row_pos = 1;
-            if (j == 0) { col_pos = 0; } else if (j > 0 && j < (SO_WIDTH-1)) { col_pos = 1; } else col_pos = 2;
-            if (row_pos == 0 && col_pos == 0) {
-                do {
-                    value = rand() % (2-0+1) + 0;
-                } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
-                if (value == 0) so_holes = so_holes-1;
-                if (value == 1) so_sources = so_sources-1;
-                map[i][j].cell_type = value;
-            } else {    
-                switch (row_pos) {
-                    case 0:
-                        if (map[i][j-1].cell_type == 0) { 
-                            do {
-                                value = rand() % (2-1+1) + 1;
-                            } while (value == 1 && so_sources == 0);
-                            if (value == 1) so_sources = so_sources-1;
-                            map[i][j].cell_type = value;
-                        } else {
-                            do {
-                                value = rand() % (2-0+1) + 0;
-                            } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
-                            if (value == 0) so_holes = so_holes-1;
-                            if (value == 1) so_sources = so_sources-1;
-                            map[i][j].cell_type = value;
-                        }
-                        break;
-                    case 1:
-                        switch (col_pos) {
-                            case 0:
-                                if ((map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
-                                    do {
-                                        value = rand() % (2-0+1) + 0;
-                                    } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
-                                    if (value == 0) so_holes = so_holes-1;
-                                    if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
-                                } else {
-                                    do {
-                                        value = rand() % (2-1+1) + 1;
-                                    } while (value == 1 && so_sources == 0);
-                                    if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
-                                }
-                                break;
-                            case 1:
-                                if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
-                                        (map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
-                                    do {
-                                        value = rand() % (2-0+1) + 0;
-                                    } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
-                                    if (value == 0) so_holes = so_holes-1;
-                                    if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
-                                } else {
-                                    do {
-                                        value = rand() % (2-1+1) + 1;
-                                    } while (value == 1 && so_sources == 0);
-                                    if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
-                                }
-                                break;
-                            case 2:
-                                if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
-                                        (map[i-1][j].cell_type != 0)) {
-                                    do {
-                                        value = rand() % (2-0+1) + 0;
-                                    } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
-                                    if (value == 0) so_holes = so_holes-1;
-                                    if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
-                                } else {
-                                    do {
-                                        value = rand() % (2-1+1) + 1;
-                                    } while (value == 1 && so_sources == 0);
-                                    if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
-                                }
-                                break;
-                            default:
-                                printf("Errore\n");
-                                exit(-1);
-                        }
-                        break;
-                    default:
-                        printf("Errore\n");
-                        exit(-1);
-                }   
-            }
-        } 
-    }
+	/* Variabili locali utilizzate:
+	 * - value assume il valore della codifica (0 hole, 1 no SO_SOURCES, 2 cella libera) 
+	 *   da assegnare alla cella[i][j]; i e j assumono il valore degli indici della cella di riferimento;
+	 * - row_pos (row position) e col_pot (column position) sono variabili utilizzate 
+	 *   per capire in seguito quale case eseguire all'interno degli switch;
+	 * - so_holes e so_sources assumono i valori delle variabili SO_HOLES ed SO_SOURCES,
+	 *   dato che quest'ultime sono variabili globali e' meglio non modificarne il valore
+	 *   ma bensi' utilizzarne una copia all'interno della funzione
+	 */
+	int value, i, j, row_pos, col_pos, so_holes, so_sources;
+	so_holes = SO_HOLES;
+	so_sources = SO_SOURCES;
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			if (i == 0) { row_pos = 0; } else row_pos = 1;
+			if (j == 0) { col_pos = 0; } else if (j > 0 && j < (SO_WIDTH-1)) { col_pos = 1; } else col_pos = 2;
+			if (row_pos == 0 && col_pos == 0) {
+				do {
+					value = rand() % (2-0+1) + 0;
+				} while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+				if (value == 0) so_holes = so_holes-1;
+				if (value == 1) so_sources = so_sources-1;
+				map[i][j].cell_type = value;
+			} else {    
+				switch (row_pos) {
+					case 0:
+						if (map[i][j-1].cell_type == 0) { 
+							do {
+								value = rand() % (2-1+1) + 1;
+							} while (value == 1 && so_sources == 0);
+							if (value == 1) so_sources = so_sources-1;
+							map[i][j].cell_type = value;
+						} else {
+							do {
+								value = rand() % (2-0+1) + 0;
+							} while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+							if (value == 0) so_holes = so_holes-1;
+							if (value == 1) so_sources = so_sources-1;
+							map[i][j].cell_type = value;
+						}
+						break;
+					case 1:
+						switch (col_pos) {
+							case 0:
+								if ((map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+									do {
+										value = rand() % (2-0+1) + 0;
+									} while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+									if (value == 0) so_holes = so_holes-1;
+									if (value == 1) so_sources = so_sources-1;
+									map[i][j].cell_type = value;
+								} else {
+									do {
+										value = rand() % (2-1+1) + 1;
+									} while (value == 1 && so_sources == 0);
+									if (value == 1) so_sources = so_sources-1;
+									map[i][j].cell_type = value;
+								}
+								break;
+							case 1:
+								if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
+										(map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+									do {
+										value = rand() % (2-0+1) + 0;
+									} while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+									if (value == 0) so_holes = so_holes-1;
+									if (value == 1) so_sources = so_sources-1;
+									map[i][j].cell_type = value;
+								} else {
+									do {
+										value = rand() % (2-1+1) + 1;
+									} while (value == 1 && so_sources == 0);
+									if (value == 1) so_sources = so_sources-1;
+									map[i][j].cell_type = value;
+								}
+								break;
+							case 2:
+								if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
+										(map[i-1][j].cell_type != 0)) {
+									do {
+										value = rand() % (2-0+1) + 0;
+									} while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+									if (value == 0) so_holes = so_holes-1;
+									if (value == 1) so_sources = so_sources-1;
+									map[i][j].cell_type = value;
+								} else {
+									do {
+										value = rand() % (2-1+1) + 1;
+									} while (value == 1 && so_sources == 0);
+									if (value == 1) so_sources = so_sources-1;
+									map[i][j].cell_type = value;
+								}
+								break;
+							default:
+								printf("Errore\n");
+								exit(-1);
+						}
+						break;
+					default:
+						printf("Errore\n");
+						exit(-1);
+				}   
+			}
+		} 
+	}
 }
 
 /* Nei casi in cui si odvesse verificare qualche anomalia viene restituito 1, 
@@ -290,34 +300,37 @@ void random_cell_type(cell** map) {
 
 /* Assegna ad ogni cella taxi_capacity*/
 void random_taxi_capacity(cell** map) {
-    int i, j;
-    for (i = 0; i < SO_HEIGHT; i++) {
-        for (j = 0; j < SO_WIDTH; j++) {
-            map[i][j].taxi_capacity = (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
-        }
-    }
+	int i, j;
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			map[i][j].taxi_capacity = (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
+		}
+	}
 }
 
 /* Assegna ad ogni cella travel_time*/
 void random_travel_time(cell** map) {
-    int i, j;
-    for (i = 0; i < SO_HEIGHT; i++) {
-        for (j = 0; j < SO_WIDTH; j++) {
-            map[i][j].travel_time = (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
-        }
-    }
+	int i, j;
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			map[i][j].travel_time = (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
+		}
+	}
 }
 
 #endif
 
 /* Crea la mappa e la restituisce al main */
-cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
-    int i;
-    map = malloc(SO_HEIGHT * sizeof(cell));
-    for (i = 0; i < SO_HEIGHT; i++) {
-        map[i] = calloc(SO_WIDTH, sizeof(cell));
-    }
-    return map;
+cell** map_creation(cell** map) {
+	int size = ((SO_HEIGHT*sizeof(cell))*SO_WIDTH);
+	if ((shmid = shmget (key, size, shmflg)) == -1) {
+		perror("shmget: shmget failed"); 
+		exit(1); 
+	} else {
+		map = shmat(shmid, NULL, shmflg);
+		/* Non controllo se non riesco ad attaccarmi */
+	}
+	return map;
 }
 
 /* Da modificare: dovrà leggere i parametri da file e con rand
@@ -329,31 +342,31 @@ cell** map_creation(int SO_WIDTH, int SO_HEIGHT, cell** map) {
  * main) se volete lo schema della mappa che sto usando lo trovate nel 
  * documento condiviso
  */
-void map_setup(int SO_WIDTH, int SO_HEIGHT, cell** map) {
-    int i, j;
-    srand(getpid());
-    for (i = 0; i < SO_HEIGHT; i++) {
-        for (j = 0; j < SO_WIDTH; j++) {
-            map[i][j].cell_type = 2;
-            map[i][j].active_taxis = 0;
-        }
-    }
+void map_setup(cell** map) {
+	int i, j;
+	srand(getpid());
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			map[i][j].cell_type = 2;
+			map[i][j].active_taxis = 0;
+		}
+	}
 #ifdef MAPPA_VALORI_CASUALI
-    random_cell_type(map);
-    random_taxi_capacity(map);
-    random_travel_time(map);
+	random_cell_type(map);
+	random_taxi_capacity(map);
+	random_travel_time(map);
 #endif
 #ifndef MAPPA_VALORI_CASUALI
-    map[0][0].cell_type = 0;
-    map[1][3].cell_type = 0;
-    map[3][2].cell_type = 0;
-    map[2][2].cell_type = 1;
+	map[0][0].cell_type = 0;
+	map[1][3].cell_type = 0;
+	map[3][2].cell_type = 0;
+	map[2][2].cell_type = 1;
 #endif
-    /* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand */
+	/* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand */
 }
 
 /* Dovrebbe andare */
-void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
+void map_print(cell** map) {
 	int i, j;
 #if 0
 	printf("La larghezza della mappa è: %i\n", SO_WIDTH);
@@ -375,37 +388,37 @@ void map_print(int SO_WIDTH, int SO_HEIGHT, cell** map) {
 }
 /* Libera la mappa */
 void free_map(cell** map) {
-    int i;
-    for (i = 0; i < SO_HEIGHT; i++){
-        free(map[i]);
-    }
-    free(map);
+	int i;
+	for (i = 0; i < SO_HEIGHT; i++){
+		free(map[i]);
+	}
+	free(map);
 }
 
-/* Chiusura di tutti i processi */
+/* Facciamo che al momento pulisce la memoria condivisa */
 void kill_all(cell** map) {
-    /* Dobbiamo bloccare i segnali ke ankora nn abbiamo okkio*/
+	/* Dobbiamo bloccare i segnali ke ankora nn abbiamo okkio*/
 
-    /* Per terminare i processi scorriamo la matrice e appena ne
-       troviamo uno zap */
-    free(map);
+	/* Per terminare i processi scorriamo la matrice e appena ne
+	   troviamo uno zap */
+	shmctl(shmid,IPC_RMID,NULL); 
 
 }
 
 /* Main */
 int main () {
 	int i, j, valore_fork_sources, valore_fork_taxi;
-        #if 1
-        char * args_a[] = {"Source", NULL, NULL, NULL, NULL};
-        char * args_b[] = {"Taxi", NULL, NULL, NULL, NULL};
-        #endif
+#if 1
+	char * args_a[] = {"Source", NULL, NULL, NULL, NULL};
+	char * args_b[] = {"Taxi", NULL, NULL, NULL, NULL};
+#endif
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creazione e inizializzazione mappa */
 	SO_WIDTH = 5;
 	SO_HEIGHT = 4;
-	map = map_creation(SO_WIDTH, SO_HEIGHT, map);
-	map_setup(SO_WIDTH, SO_HEIGHT, map);
+	map = map_creation(map);
+	map_setup(map);
 
 	/* Creo processi SO_SOURCES. Sto passando argomenti fittizi.*/
 	for (i = 0; i < SO_SOURCES; i++) {
@@ -413,13 +426,13 @@ int main () {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
 				/*Il metodo al momento fa solo una free -SBAGLIATO-*/
-                                kill_all(map);
+				kill_all(map);
 				break;
 			case 0:
 				execve("Source", args_a, NULL);
-                        default:
-                                printf("Sono il main in SO_SOURCES \n");
-                                break;
+			default:
+				printf("Sono il main in SO_SOURCES \n");
+				break;
 		}
 	}
 
@@ -429,20 +442,20 @@ int main () {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
 				/*Il metodo al momento fa solo una free -SBAGLIATO-*/
-                                kill_all(map);
+				kill_all(map);
 				break;
 			case 0:
 				execve("Taxi", args_b, NULL);
-                        default:
-                                printf("Sono il main in SO_TAXI\n");
-                                break;
+			default:
+				printf("Sono il main in SO_TAXI\n");
+				break;
 		}
 	}
-        /* Stampa tante volte quanti sono i processi che aspetta*/
-        while(wait(NULL) != -1) {
-            printf ("Ora tutti i figli sono terminati\n");
-        }
-	map_print(SO_WIDTH, SO_HEIGHT, map);
-	free_map(map);
+	/* Stampa tante volte quanti sono i processi che aspetta*/
+	while(wait(NULL) != -1) {
+		printf ("Ora tutti i figli sono terminati\n");
+	}
+	map_print(map);
+	kill_all(map);
 	return 0;
 }
