@@ -352,7 +352,7 @@ void map_print(map *pointer_at_map) {
 }
 
 void kill_all(map *pointer_at_map) {
-    /* Completare. Dovrà terminare le risorse IPC che allocheremo. */
+	/* Completare. Dovrà terminare le risorse IPC che allocheremo. */
 }
 
 /* Main */
@@ -372,8 +372,8 @@ int main () {
 		exit(1); 
 	}
 
-    pointer_at_map = shmat(shmid, NULL, shmflg);
-    map_setup(pointer_at_map);
+	pointer_at_map = shmat(shmid, NULL, shmflg);
+	map_setup(pointer_at_map);
 	sprintf(m_id_str, "%d", shmid);
 	args_b[1] = m_id_str;
 	args_a[1] = m_id_str;
@@ -390,8 +390,8 @@ int main () {
 				TEST_ERROR;
 				break;
 			default:
-                /* Codice che voglio esegua il Master */
-                break;
+				/* Codice che voglio esegua il Master */
+				break;
 		}
 	}
 
@@ -407,7 +407,7 @@ int main () {
 				TEST_ERROR;
 				break;
 			default:
-                /* Codice che voglio esegua il Master */
+				/* Codice che voglio esegua il Master */
 				break;
 		}
 	}
@@ -415,10 +415,10 @@ int main () {
 	while(wait(NULL) != -1) {
 		printf ("Ora tutti i figli sono terminati\n");
 	}
-    /* Marco per la deallocazione la memoria condivisa */
-    shmctl(shmid, IPC_RMID, NULL);
+	/* Marco per la deallocazione la memoria condivisa */
+	shmctl(shmid, IPC_RMID, NULL);
 	map_print(pointer_at_map);
-    /* Al momento non fa nulla */
+	/* Al momento non fa nulla */
 	kill_all(pointer_at_map);
 	return 0;
 }

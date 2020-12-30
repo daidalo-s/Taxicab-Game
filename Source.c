@@ -27,16 +27,16 @@ int main(int argc, char *argv[])
 	/* Mi attacco al segmento */
 	pointer_at_map = shmat(shmid, NULL, 0);
 
-    printf("Sono un processo SO_SOURCE \n");
-    printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
+	printf("Sono un processo SO_SOURCE \n");
+	printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
 
 #ifdef DEBUG_STAMPA_MAPPA    
-    printf("Uso il metodo di stampa tradizionale \n");
-    map_print(pointer_at_map);
+	printf("Uso il metodo di stampa tradizionale \n");
+	map_print(pointer_at_map);
 #endif
 
-    printf("Ora perdo un po' di tempo e poi esco \n");
-    sleep(2);
-    printf("Ho finito di dormire \n");
-    return 0;
+	printf("Ora perdo un po' di tempo e poi esco \n");
+	sleep(2);
+	printf("Ho finito di dormire \n");
+	return 0;
 }
