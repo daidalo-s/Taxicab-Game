@@ -15,20 +15,18 @@
 /****************** Prototipi ******************/
 void kill_all();
 void reading_input_values (); 
-void random_cell_type(map *lamiamappadiocan);
-void random_taxi_capacity(map *lamiamappadiocan);
-void random_travel_time(map *lamiamappadiocan);
-void map_creation(map *lamiamappadiocan);
-void map_print(map *lamiamappadiocan);
-void map_setup(map *lamiamappadiocan);
-void free_map(map *lamiamappadiocan);
+void random_cell_type(map *pointer_at_map);
+void random_taxi_capacity(map *pointer_at_map);
+void random_travel_time(map *pointer_at_map);
+void map_creation(map *pointer_at_map);
+void map_print(map *pointer_at_map);
+void map_setup(map *pointer_at_map);
+void free_map(map *pointer_at_map);
 
 /* ---------------- Variabili globali ----------------- */
 /* SO_WIDTH e SO_HEIGHT vengono letti dal main */
-#if 1
-map lamiamappadiocane;
-map *lamiamappadiocan = &lamiamappadiocane;
-#endif
+map mappa;
+map *pointer_at_map = &mappa;  
 int SO_HOLES = 0;
 int SO_TOP_CELLS = 0;
 int SO_SOURCES = 0;
@@ -52,13 +50,7 @@ void reading_input_values () {
 	char tmpstr2[16];
 	char tempbuff[100];
 	FILE *input = fopen("Parameters.txt", "r");
-#if 0
-	printf("Inizializzazione della simulazione \n");
-	printf("Inserire la larghezza della mappa: \n");
-	scanf("%i", &SO_WIDTH);
-	printf("Inserire l'altezza della mappa: \n");
-	scanf("%i", &SO_HEIGHT);
-#endif
+
 	if (input == NULL) {
 		printf ("Errore, non riesco ad aprire il file \n");
 		exit(-1); /* oppure return -1 */
@@ -173,7 +165,7 @@ void reading_input_values () {
 /* ---------------- Metodi mappa ----------------- */
 #ifdef MAPPA_VALORI_CASUALI
 /* Inizializza cell_type in modo casuale */
-void random_cell_type(map *lamiamappadiocan) {
+void random_cell_type(map *pointer_at_map) {
 	/* Variabili locali utilizzate:
 	 * - value assume il valore della codifica (0 hole, 1 no SO_SOURCES, 2 cella libera) 
 	 *   da assegnare alla cella[i][j]; i e j assumono il valore degli indici della cella di riferimento;
@@ -286,21 +278,21 @@ void random_cell_type(map *lamiamappadiocan) {
  */
 
 /* Assegna ad ogni cella taxi_capacity*/
-void random_taxi_capacity(map *lamiamappadiocan) {
+void random_taxi_capacity(map *pointer_at_map) {
 	int i, j;
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			lamiamappadiocan->mappa[i][j].taxi_capacity = (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
+			pointer_at_map->mappa[i][j].taxi_capacity = (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
 		}
 	}
 }
 
 /* Assegna ad ogni cella travel_time*/
-void random_travel_time(map *lamiamappadiocan) {
+void random_travel_time(map *pointer_at_map) {
 	int i, j;
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			lamiamappadiocan->mappa[i][j].travel_time = (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
+			pointer_at_map->mappa[i][j].travel_time = (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
 		}
 	}
 }
@@ -316,13 +308,13 @@ void random_travel_time(map *lamiamappadiocan) {
  * main) se volete lo schema della mappa che sto usando lo trovate nel 
  * documento condiviso
  */
-void map_setup(map *lamiamappadiocan) {
+void map_setup(map *pointer_at_map) {
 	int i, j;
 	srand(getpid());
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			lamiamappadiocan->mappa[i][j].cell_type = 2;
-			lamiamappadiocan->mappa[i][j].active_taxis = 0;
+			pointer_at_map->mappa[i][j].cell_type = 2;
+			pointer_at_map->mappa[i][j].active_taxis = 0;
 		}
 	}
 #ifdef MAPPA_VALORI_CASUALI
@@ -331,29 +323,27 @@ void map_setup(map *lamiamappadiocan) {
 	random_travel_time(map);
 #endif
 #ifndef MAPPA_VALORI_CASUALI
-	lamiamappadiocan->mappa[0][0].cell_type = 0;
-	lamiamappadiocan->mappa[1][3].cell_type = 0;
-	lamiamappadiocan->mappa[3][2].cell_type = 0;
-	lamiamappadiocan->mappa[2][2].cell_type = 1;
+	pointer_at_map->mappa[0][0].cell_type = 0;
+	pointer_at_map->mappa[1][3].cell_type = 0;
+	pointer_at_map->mappa[3][2].cell_type = 0;
+	pointer_at_map->mappa[2][2].cell_type = 1;
 #endif
 	/* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand */
 }
 
 /* Dovrebbe andare */
-void map_print(map *lamiamappadiocan) {
+void map_print(map *pointer_at_map) {
 	int i, j;
-#if 0
-	printf("La larghezza della mappa è: %i\n", SO_WIDTH);
-#endif
+
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			printf ("%i ", lamiamappadiocan->mappa[i][j].cell_type);
+			printf ("%i ", pointer_at_map->mappa[i][j].cell_type);
 
 #ifdef STAMPA_VALORI_CELLA
-			printf ("%i", lamiamappadiocan->mappa[i][j].taxi_capacity);
-			printf ("%i", lamiamappadiocan->mappa[i][j].active_taxis);
-			printf ("%i", lamiamappadiocan->mappa[i][j].travel_time);
-			printf ("%i", lamiamappadiocan->mappa[i][j].crossings);
+			printf ("%i", pointer_at_map->mappa[i][j].taxi_capacity);
+			printf ("%i", pointer_at_map->mappa[i][j].active_taxis);
+			printf ("%i", pointer_at_map->mappa[i][j].travel_time);
+			printf ("%i", pointer_at_map->mappa[i][j].crossings);
 #endif
 
 		}
@@ -361,26 +351,9 @@ void map_print(map *lamiamappadiocan) {
 	}
 }
 
-/* Facciamo che al momento pulisce la memoria condivisa */
-void kill_all(map *lamiamappadiocan) {
-	/* Dobbiamo bloccare i segnali ke ankora nn abbiamo okkio*/
-
-	/* Per terminare i processi scorriamo la matrice e appena ne
-	   troviamo uno zap */
-	shmctl(shmid,IPC_RMID,NULL); 
-
+void kill_all(map *pointer_at_map) {
+    /* Completare. Dovrà terminare le risorse IPC che allocheremo. */
 }
-
-#if 0
-int size = sizeof(map);
-	if ((shmid = shmget (IPC_PRIVATE, size, shmflg)) == -1) {
-		perror("shmget: shmget failed"); 
-		exit(1); 
-	} else {
-		 shmat(shmid, NULL, shmflg);
-		/* Non controllo se non riesco ad attaccarmi */
-	}
-#endif
 
 /* Main */
 int main () {
@@ -389,64 +362,63 @@ int main () {
 	char * args_a[] = {"Source", NULL, NULL};
 	char * args_b[] = {"Taxi", NULL, NULL};
 	char m_id_str[13]; 
+
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
+
 	/* Creazione e inizializzazione mappa */
-	map_setup(lamiamappadiocan);
 	if ((shmid = shmget (IPC_PRIVATE, sizeof(map), shmflg)) == -1) {
 		perror("Bastarda la madonna non vado a dormire "); 
 		exit(1); 
-	} else {
-		 shmat(shmid, NULL, shmflg);
-		/* Non controllo se non riesco ad attaccarmi */
 	}
+
+    pointer_at_map = shmat(shmid, NULL, shmflg);
+    map_setup(pointer_at_map);
 	sprintf(m_id_str, "%d", shmid);
 	args_b[1] = m_id_str;
 	args_a[1] = m_id_str;
-	/* Creo processi SO_SOURCES. Sto passando argomenti fittizi.*/
+
+	/* Creo processi SO_SOURCES. Sistema gli argomenti */
 	for (i = 0; i < SO_SOURCES; i++) {
 		switch(valore_fork_sources = fork()) {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
-				/*Il metodo al momento fa solo una free -SBAGLIATO-*/
-				kill_all(lamiamappadiocan);
+				kill_all(pointer_at_map);
 				break;
 			case 0:
-				printf("Qua arrivo dio stupido \n");
 				execve("Source", args_a, NULL);
 				TEST_ERROR;
 				break;
 			default:
-				printf("Sono il main in SO_SOURCES \n");
-				break;
+                /* Codice che voglio esegua il Master */
+                break;
 		}
 	}
 
-	/* Creo processi Taxi. Sto passando argomenti fittizi. */
+	/* Creo processi Taxi. Sistema gli argomenti */
 	for (j = 0; j < SO_TAXI; j++) {
 		switch(valore_fork_taxi = fork()) {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
-				/*Il metodo al momento fa solo una free -SBAGLIATO-*/
-				kill_all(lamiamappadiocan);
+				kill_all(pointer_at_map);
 				break;
 			case 0:
-				if (execve("Taxi", args_b, NULL) == -1) {
-					printf("Almeno qualcosa non funziona \n");
-				};
+				execve("Taxi", args_b, NULL);
+				TEST_ERROR;
 				break;
 			default:
-				printf("Sono il main in SO_TAXI\n");
+                /* Codice che voglio esegua il Master */
 				break;
 		}
 	}
-
-	/* Stampa tante volte quanti sono i processi che aspetta*/
+	/* Aspetto la terminazione dei figli */
 	while(wait(NULL) != -1) {
 		printf ("Ora tutti i figli sono terminati\n");
 	}
+    /* Marco per la deallocazione la memoria condivisa */
     shmctl(shmid, IPC_RMID, NULL);
-	map_print(lamiamappadiocan);
-	kill_all(lamiamappadiocan);
+	map_print(pointer_at_map);
+    /* Al momento non fa nulla */
+	kill_all(pointer_at_map);
 	return 0;
 }
