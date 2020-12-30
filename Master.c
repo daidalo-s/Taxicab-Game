@@ -11,36 +11,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h> 
 #include <sys/mman.h>
-
-#define SO_HEIGHT 4
-#define SO_WIDTH 5
-/* Struttura cella */
-
-typedef struct 
-{
-	int cell_type;
-	int taxi_capacity;
-	int active_taxis;
-	int travel_time;
-	int crossings;
-} cell;
-
-/* http://users.cs.cf.ac.uk/Dave.Marshall/C/node27.html */
-/* Vettore dove tengo informazioni sui processi*/
-typedef struct 
-{
-	cell mappa[SO_HEIGHT][SO_WIDTH];
-} map;
-
-#define TEST_ERROR    if (errno) {dprintf(STDERR_FILENO,		\
-					  "%s:%d: PID=%5d: Error %d (%s)\n", \
-					  __FILE__,			\
-					  __LINE__,			\
-					  getpid(),			\
-					  errno,			\
-					  strerror(errno));}
-
-
+#include "Map.h"
 /****************** Prototipi ******************/
 void kill_all();
 void reading_input_values (); 
@@ -413,6 +384,7 @@ int size = sizeof(map);
 
 /* Main */
 int main () {
+
 	int i, j, valore_fork_sources, valore_fork_taxi;
 	char * args_a[] = {"Source", NULL, NULL};
 	char * args_b[] = {"Taxi", NULL, NULL};
@@ -468,10 +440,12 @@ int main () {
 				break;
 		}
 	}
+
 	/* Stampa tante volte quanti sono i processi che aspetta*/
 	while(wait(NULL) != -1) {
 		printf ("Ora tutti i figli sono terminati\n");
 	}
+    shmctl(shmid, IPC_RMID, NULL);
 	map_print(lamiamappadiocan);
 	kill_all(lamiamappadiocan);
 	return 0;
