@@ -10,10 +10,12 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 #include <sys/ipc.h> 
+#include <sys/mman.h>
 
 #define SO_HEIGHT 4
 #define SO_WIDTH 5
 /* Struttura cella */
+
 typedef struct 
 {
 	int cell_type;
@@ -22,27 +24,40 @@ typedef struct
 	int travel_time;
 	int crossings;
 } cell;
+
 /* http://users.cs.cf.ac.uk/Dave.Marshall/C/node27.html */
 /* Vettore dove tengo informazioni sui processi*/
 typedef struct 
 {
-	pid_t pid;
-} process_info;
+	cell mappa[SO_HEIGHT][SO_WIDTH];
+} map;
+
+#define TEST_ERROR    if (errno) {dprintf(STDERR_FILENO,		\
+					  "%s:%d: PID=%5d: Error %d (%s)\n", \
+					  __FILE__,			\
+					  __LINE__,			\
+					  getpid(),			\
+					  errno,			\
+					  strerror(errno));}
+
 
 /****************** Prototipi ******************/
 void kill_all();
 void reading_input_values (); 
-void random_cell_type(cell** map);
-void random_taxi_capacity(cell** map);
-void random_travel_time(cell** map);
-cell** map_creation(cell** map);
-void map_print(cell** map);
-void map_setup(cell** map);
-void free_map(cell** map);
+void random_cell_type(map *lamiamappadiocan);
+void random_taxi_capacity(map *lamiamappadiocan);
+void random_travel_time(map *lamiamappadiocan);
+void map_creation(map *lamiamappadiocan);
+void map_print(map *lamiamappadiocan);
+void map_setup(map *lamiamappadiocan);
+void free_map(map *lamiamappadiocan);
 
 /* ---------------- Variabili globali ----------------- */
 /* SO_WIDTH e SO_HEIGHT vengono letti dal main */
-cell map[SO_HEIGHT][SO_WIDTH];
+#if 1
+map lamiamappadiocane;
+map *lamiamappadiocan = &lamiamappadiocane;
+#endif
 int SO_HOLES = 0;
 int SO_TOP_CELLS = 0;
 int SO_SOURCES = 0;
@@ -187,7 +202,7 @@ void reading_input_values () {
 /* ---------------- Metodi mappa ----------------- */
 #ifdef MAPPA_VALORI_CASUALI
 /* Inizializza cell_type in modo casuale */
-void random_cell_type(cell** map) {
+void random_cell_type(map *lamiamappadiocan) {
 	/* Variabili locali utilizzate:
 	 * - value assume il valore della codifica (0 hole, 1 no SO_SOURCES, 2 cella libera) 
 	 *   da assegnare alla cella[i][j]; i e j assumono il valore degli indici della cella di riferimento;
@@ -300,39 +315,26 @@ void random_cell_type(cell** map) {
  */
 
 /* Assegna ad ogni cella taxi_capacity*/
-void random_taxi_capacity(cell** map) {
+void random_taxi_capacity(map *lamiamappadiocan) {
 	int i, j;
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			map[i][j].taxi_capacity = (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
+			lamiamappadiocan->mappa[i][j].taxi_capacity = (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
 		}
 	}
 }
 
 /* Assegna ad ogni cella travel_time*/
-void random_travel_time(cell** map) {
+void random_travel_time(map *lamiamappadiocan) {
 	int i, j;
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			map[i][j].travel_time = (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
+			lamiamappadiocan->mappa[i][j].travel_time = (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
 		}
 	}
 }
 
 #endif
-
-/* Crea la mappa e la restituisce al main */
-cell** map_creation(cell** map) {
-	int size = ((SO_HEIGHT*sizeof(cell))*SO_WIDTH);
-	if ((shmid = shmget (IPC_PRIVATE, size, shmflg)) == -1) {
-		perror("shmget: shmget failed"); 
-		exit(1); 
-	} else {
-		map = shmat(shmid, NULL, shmflg);
-		/* Non controllo se non riesco ad attaccarmi */
-	}
-	return map;
-}
 
 /* Da modificare: dovrà leggere i parametri da file e con rand
  * impostare i vari campi della struct. 
@@ -343,13 +345,13 @@ cell** map_creation(cell** map) {
  * main) se volete lo schema della mappa che sto usando lo trovate nel 
  * documento condiviso
  */
-void map_setup(cell** map) {
+void map_setup(map *lamiamappadiocan) {
 	int i, j;
 	srand(getpid());
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			map[i][j].cell_type = 2;
-			map[i][j].active_taxis = 0;
+			lamiamappadiocan->mappa[i][j].cell_type = 2;
+			lamiamappadiocan->mappa[i][j].active_taxis = 0;
 		}
 	}
 #ifdef MAPPA_VALORI_CASUALI
@@ -358,46 +360,38 @@ void map_setup(cell** map) {
 	random_travel_time(map);
 #endif
 #ifndef MAPPA_VALORI_CASUALI
-	map[0][0].cell_type = 0;
-	map[1][3].cell_type = 0;
-	map[3][2].cell_type = 0;
-	map[2][2].cell_type = 1;
+	lamiamappadiocan->mappa[0][0].cell_type = 0;
+	lamiamappadiocan->mappa[1][3].cell_type = 0;
+	lamiamappadiocan->mappa[3][2].cell_type = 0;
+	lamiamappadiocan->mappa[2][2].cell_type = 1;
 #endif
 	/* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand */
 }
 
 /* Dovrebbe andare */
-void map_print(cell** map) {
+void map_print(map *lamiamappadiocan) {
 	int i, j;
 #if 0
 	printf("La larghezza della mappa è: %i\n", SO_WIDTH);
 #endif
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			printf ("%i ", map[i][j].cell_type);
+			printf ("%i ", lamiamappadiocan->mappa[i][j].cell_type);
 
 #ifdef STAMPA_VALORI_CELLA
-			printf ("%i", mappa[i][j].taxi_capacity);
-			printf ("%i", mappa[i][j].active_taxis);
-			printf ("%i", mappa[i][j].travel_time);
-			printf ("%i", mappa[i][j].crossings);
+			printf ("%i", lamiamappadiocan->mappa[i][j].taxi_capacity);
+			printf ("%i", lamiamappadiocan->mappa[i][j].active_taxis);
+			printf ("%i", lamiamappadiocan->mappa[i][j].travel_time);
+			printf ("%i", lamiamappadiocan->mappa[i][j].crossings);
 #endif
 
 		}
 		printf("\n");
 	}
 }
-/* Libera la mappa */
-void free_map(cell** map) {
-	int i;
-	for (i = 0; i < SO_HEIGHT; i++){
-		free(map[i]);
-	}
-	free(map);
-}
 
 /* Facciamo che al momento pulisce la memoria condivisa */
-void kill_all(cell** map) {
+void kill_all(map *lamiamappadiocan) {
 	/* Dobbiamo bloccare i segnali ke ankora nn abbiamo okkio*/
 
 	/* Per terminare i processi scorriamo la matrice e appena ne
@@ -406,31 +400,50 @@ void kill_all(cell** map) {
 
 }
 
+#if 0
+int size = sizeof(map);
+	if ((shmid = shmget (IPC_PRIVATE, size, shmflg)) == -1) {
+		perror("shmget: shmget failed"); 
+		exit(1); 
+	} else {
+		 shmat(shmid, NULL, shmflg);
+		/* Non controllo se non riesco ad attaccarmi */
+	}
+#endif
+
 /* Main */
 int main () {
 	int i, j, valore_fork_sources, valore_fork_taxi;
-#if 1
-	char * args_a[] = {"Source", NULL, NULL, NULL, NULL};
-	char * args_b[] = {"Taxi", NULL, NULL, NULL, NULL};
-#endif
+	char * args_a[] = {"Source", NULL, NULL};
+	char * args_b[] = {"Taxi", NULL, NULL};
+	char m_id_str[13]; 
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creazione e inizializzazione mappa */
-	SO_WIDTH = 5;
-	SO_HEIGHT = 4;
-	map = map_creation(map);
-	map_setup(map);
-
+	map_setup(lamiamappadiocan);
+	if ((shmid = shmget (IPC_PRIVATE, sizeof(map), shmflg)) == -1) {
+		perror("Bastarda la madonna non vado a dormire "); 
+		exit(1); 
+	} else {
+		 shmat(shmid, NULL, shmflg);
+		/* Non controllo se non riesco ad attaccarmi */
+	}
+	sprintf(m_id_str, "%d", shmid);
+	args_b[1] = m_id_str;
+	args_a[1] = m_id_str;
 	/* Creo processi SO_SOURCES. Sto passando argomenti fittizi.*/
 	for (i = 0; i < SO_SOURCES; i++) {
 		switch(valore_fork_sources = fork()) {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
 				/*Il metodo al momento fa solo una free -SBAGLIATO-*/
-				kill_all(map);
+				kill_all(lamiamappadiocan);
 				break;
 			case 0:
+				printf("Qua arrivo dio stupido \n");
 				execve("Source", args_a, NULL);
+				TEST_ERROR;
+				break;
 			default:
 				printf("Sono il main in SO_SOURCES \n");
 				break;
@@ -443,10 +456,13 @@ int main () {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
 				/*Il metodo al momento fa solo una free -SBAGLIATO-*/
-				kill_all(map);
+				kill_all(lamiamappadiocan);
 				break;
 			case 0:
-				execve("Taxi", args_b, NULL);
+				if (execve("Taxi", args_b, NULL) == -1) {
+					printf("Almeno qualcosa non funziona \n");
+				};
+				break;
 			default:
 				printf("Sono il main in SO_TAXI\n");
 				break;
@@ -456,7 +472,7 @@ int main () {
 	while(wait(NULL) != -1) {
 		printf ("Ora tutti i figli sono terminati\n");
 	}
-	map_print(map);
-	kill_all(map);
+	map_print(lamiamappadiocan);
+	kill_all(lamiamappadiocan);
 	return 0;
 }
