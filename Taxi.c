@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 #endif
 
 	printf("Ora perdo un po' di tempo e poi esco \n");
-	sleep(3);
+	sleep(5);
 	printf("ho finito di dormire, sono un processo Taxi\n");
 	return 0;
 }
