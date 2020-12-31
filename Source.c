@@ -18,8 +18,8 @@
 struct sembuf s_ops;
 map *pointer_at_map;
 int shm_id, sem_id;
-struct sembuf accesso = { 0, -1, 0}; /* semwait */
-struct sembuf rilascio = { 0, +1, 0}; /* semsignal */
+struct sembuf accesso = { 0, -1, SEM_UNDO}; /* semwait */
+struct sembuf rilascio = { 0, +1, SEM_UNDO}; /* semsignal */
 
 /********** Metodi per debug **********/
 void map_print(map *pointer_at_map) {
@@ -34,17 +34,24 @@ void map_print(map *pointer_at_map) {
 
 /********** Attach alla cella **********/
 void attach(map *pointer_at_map) {
-    int i,j;
+    int i,j,debug;
     for (i = 0; i < SO_HEIGHT; i++){
         for (j = 0; j < SO_WIDTH; j++){
             if (pointer_at_map->mappa[i][j].cell_type == 1){
                 /* Sezione critica */
 				printf("Fino a prima della semop arrivo \n"); 
+				debug = semctl(sem_id, 0, GETVAL);
+				printf("%i \n", debug);
 				semop(sem_id, &accesso, 1);
 				printf("Dopo il blocco della risorsa eseguo \n");
                 pointer_at_map->mappa[i][j].cell_type = 3;
+                debug = semctl(sem_id, 0, GETVAL);
+				printf("Durante il blocco vale %i \n", debug);
                 /* Rilascio la risorsa */
                 semop(sem_id, &rilascio, 1);
+                debug = semctl(sem_id, 0, GETVAL);
+				printf("Dopo il rilascio vale %i \n", debug);
+
             }
         }
     }

@@ -381,7 +381,7 @@ int main () {
     /* Creo il semaforo per il settaggio della cella */
     sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
     printf("L'id del semaforo che ho nel Master %i \n", sem_id);
-    semctl(sem_id, 0, SETVAL, 0);
+    semctl(sem_id, 0, SETVAL, 1);
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
     for (i = 0; i < SO_SOURCES; i++) {
         switch(valore_fork_sources = fork()) {
