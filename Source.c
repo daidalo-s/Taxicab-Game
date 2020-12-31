@@ -14,7 +14,6 @@
 #include <sys/sem.h>
 #include "Map.h"
 
-
 /********** Variabili globali **********/
 struct sembuf s_ops;
 map *pointer_at_map;
@@ -58,18 +57,19 @@ int main(int argc, char *argv[])
     /* Mi attacco al segmento */
     pointer_at_map = shmat(shm_id, NULL, 0);
     /* Ottengo l'accesso al semaforo */
-    sem_id = atoi(argv[2]);
     sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
+    printf("L'id del semaforo che ho in source è %i \n", sem_id);
     /* Cerco una cella SO_SOURCE e mi attacco */
+    #if 1
     attach(pointer_at_map);
-
+    #endif
     printf("Sono un processo SO_SOURCE \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
 
-  
+#ifdef DEBUG_STAMPA_MAPPA  
     printf("Uso il metodo di stampa tradizionale \n");
     map_print(pointer_at_map);
-
+#endif
 
     printf("Ora perdo un po' di tempo e poi esco \n");
     sleep(2);

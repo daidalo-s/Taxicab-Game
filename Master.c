@@ -380,6 +380,7 @@ int main () {
     args_a[1] = args_b[1] = m_id_str;
     /* Creo il semaforo per il settaggio della cella */
     sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
+    printf("L'id del semaforo che ho nel Master %i \n", sem_id);
     semctl(sem_id, 0, SETVAL, 0);
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
     for (i = 0; i < SO_SOURCES; i++) {
