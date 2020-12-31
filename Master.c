@@ -348,8 +348,11 @@ void map_print(map *pointer_at_map) {
 	}
 }
 
-void kill_all(map *pointer_at_map) {
+void kill_all() {
 	/* Completare. Dovrà terminare le risorse IPC che allocheremo. */
+    /* Marco per la deallocazione la memoria condivisa */
+    shmctl(shmid, IPC_RMID, NULL);
+
 }
 
 /* Main */
@@ -364,23 +367,24 @@ int main () {
 	reading_input_values();
 
 	/* Creazione e inizializzazione mappa */
-	if ((shmid = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG)) == -1) {
-		perror("Bastarda la madonna non vado a dormire "); 
-		exit(1); 
-	}
-
+	shmid = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
+    if (shmid == -1) {
+        perror("Non riesco a creare la memoria condivisa. Termino.");
+        exit(EXIT_FAILURE);
+    }
+    /* Mi attacco alla memoria condivisa */
 	pointer_at_map = shmat(shmid, NULL, SHM_FLG);
 	map_setup(pointer_at_map);
-	sprintf(m_id_str, "%d", shmid);
-	args_b[1] = m_id_str;
-	args_a[1] = m_id_str;
+	sprintf(m_id_str, "%d", shmid); 
+	args_a[1] = args_b[1] = m_id_str;
 
 	/* Creo processi SO_SOURCES. Sistema gli argomenti */
 	for (i = 0; i < SO_SOURCES; i++) {
 		switch(valore_fork_sources = fork()) {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
-				kill_all(pointer_at_map);
+				kill_all();
+                exit(EXIT_FAILURE);
 				break;
 			case 0:
 				execve("Source", args_a, NULL);
@@ -397,7 +401,8 @@ int main () {
 		switch(valore_fork_taxi = fork()) {
 			case -1:
 				printf("Errore nella fork. Esco.\n");
-				kill_all(pointer_at_map);
+				kill_all();
+                exit(EXIT_FAILURE);
 				break;
 			case 0:
 				execve("Taxi", args_b, NULL);
@@ -408,14 +413,14 @@ int main () {
 				break;
 		}
 	}
+
 	/* Aspetto la terminazione dei figli */
 	while(wait(NULL) != -1) {
 		printf ("Ora tutti i figli sono terminati\n");
 	}
-	/* Marco per la deallocazione la memoria condivisa */
-	shmctl(shmid, IPC_RMID, NULL);
 	map_print(pointer_at_map);
-	/* Al momento non fa nulla */
-	kill_all(pointer_at_map);
+
+	/* Dealloca la memoria condivisa dove ho la mappa */
+	kill_all();
 	return 0;
 }
