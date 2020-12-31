@@ -12,6 +12,7 @@
 		getpid(),         \
 		errno,            \
 		strerror(errno));}
+
 /* Struttura cella */
 typedef struct 
 {
@@ -21,7 +22,9 @@ typedef struct
 	int travel_time;
 	int crossings;
 } cell;
+
 /* http://users.cs.cf.ac.uk/Dave.Marshall/C/node27.html */
+
 typedef struct 
 {
 	cell mappa[SO_HEIGHT][SO_WIDTH];

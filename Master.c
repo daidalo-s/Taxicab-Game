@@ -39,7 +39,7 @@ int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
 /* Variabili per la gestione della mappa*/
 int shm_id; /* valore ritornato da shmget() */
-int sem_id; 
+int sem_id; /* valore ritornato da semget() */
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -363,8 +363,7 @@ int main () {
 	int i, j, valore_fork_sources, valore_fork_taxi;
 	char * args_a[] = {"Source", NULL, NULL};
 	char * args_b[] = {"Taxi", NULL, NULL};
-	char m_id_str[13]; 
-
+	char m_id_str[13];
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 

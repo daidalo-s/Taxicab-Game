@@ -1,11 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>  
+#include <string.h> 
+#include <sys/types.h> 
+#include <sys/wait.h>
 #include <errno.h> 
 #include <time.h>  
-#include <unistd.h> 
-#include "Map.h"
+#include <unistd.h>
+#include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/types.h>
+#include <sys/ipc.h> 
+#include <sys/sem.h>
+#include "Map.h"
 
 void map_print(map *pointer_at_map) {
 	int i, j;
