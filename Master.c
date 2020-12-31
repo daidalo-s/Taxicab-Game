@@ -10,7 +10,7 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 #include <sys/ipc.h> 
-#include <sys/mman.h>
+#include <sys/sem.h>
 #include "Map.h"
 /****************** Prototipi ******************/
 void kill_all();
@@ -38,7 +38,8 @@ int SO_TIMENSEC_MAX = 0;
 int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
 /* Variabili per la gestione della mappa*/
-int shmid; /* valore ritornato da shmget() */ 
+int shm_id; /* valore ritornato da shmget() */
+int sem_id; 
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -299,7 +300,7 @@ void random_travel_time(map *pointer_at_map) {
 /* Da modificare: dovrà leggere i parametri da file e con rand
  * impostare i vari campi della struct. 
  * Se la mappa generata non è corretta si termina con errore
- * La codifica è: 0 hole, 1 SO_SOURCE, 2 no SO_SORUCE
+ * La codifica è: 0 hole, 1 SO_SOURCES, 2 no SO_SOURCES
  * Al momento usiamo una mappa 5x4 (quindi non importa quello che date
  * al programma in input che larghezza e altezza, ne faccio override nel
  * main) se volete lo schema della mappa che sto usando lo trovate nel 
@@ -351,7 +352,8 @@ void map_print(map *pointer_at_map) {
 void kill_all() {
 	/* Completare. Dovrà terminare le risorse IPC che allocheremo. */
     /* Marco per la deallocazione la memoria condivisa */
-    shmctl(shmid, IPC_RMID, NULL);
+    shmctl(shm_id, IPC_RMID, NULL);
+    semctl(sem_id, 0, IPC_RMID);
 
 }
 
@@ -367,17 +369,19 @@ int main () {
 	reading_input_values();
 
 	/* Creazione e inizializzazione mappa */
-	shmid = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
-    if (shmid == -1) {
+	shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
+    if (shm_id == -1) {
         perror("Non riesco a creare la memoria condivisa. Termino.");
         exit(EXIT_FAILURE);
     }
-    /* Mi attacco alla memoria condivisa */
-	pointer_at_map = shmat(shmid, NULL, SHM_FLG);
+    /* Mi attacco alla memoria condivisa  e preparo gli argomenti da passare */
+	pointer_at_map = shmat(shm_id, NULL, SHM_FLG);
 	map_setup(pointer_at_map);
-	sprintf(m_id_str, "%d", shmid); 
+	sprintf(m_id_str, "%d", shm_id); 
 	args_a[1] = args_b[1] = m_id_str;
-
+    /* Creo il semaforo per il settaggio della cella */
+    sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
+    semctl(sem_id, 0, SETVAL, 0);
 	/* Creo processi SO_SOURCES. Sistema gli argomenti */
 	for (i = 0; i < SO_SOURCES; i++) {
 		switch(valore_fork_sources = fork()) {

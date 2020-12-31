@@ -3,6 +3,7 @@
 
 #define MAP_KEY 9876
 #define SHM_FLG 0666
+#define SEM_KEY 5432
 
 #define TEST_ERROR    if (errno) {dprintf(STDERR_FILENO,        \
 		"%s:%d: PID=%5d: Error %d (%s)\n", \
