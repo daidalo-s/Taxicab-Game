@@ -24,7 +24,7 @@ void map_setup(map *pointer_at_map);
 void free_map(map *pointer_at_map);
 
 /* ---------------- Variabili globali ----------------- */
-/* SO_WIDTH e SO_HEIGHT vengono letti dal main */
+/* SO_WIDTH e SO_HEIGHT sono delle define im map.h */
 map mappa;
 map *pointer_at_map = &mappa;  
 int SO_HOLES = 0;
@@ -37,11 +37,8 @@ int SO_TIMENSEC_MIN = 0;
 int SO_TIMENSEC_MAX = 0;
 int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
-/* Variabili per la creazione della mappa*/
-key_t key = 9876; /* key da passare a shmget() */ 
-int shmflg = 0666; /* shmflg da passare a shmget() */ 
+/* Variabili per la gestione della mappa*/
 int shmid; /* valore ritornato da shmget() */ 
-int size; /* dimemsione da passare a shmget() */ 
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -367,12 +364,12 @@ int main () {
 	reading_input_values();
 
 	/* Creazione e inizializzazione mappa */
-	if ((shmid = shmget (IPC_PRIVATE, sizeof(map), shmflg)) == -1) {
+	if ((shmid = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG)) == -1) {
 		perror("Bastarda la madonna non vado a dormire "); 
 		exit(1); 
 	}
 
-	pointer_at_map = shmat(shmid, NULL, shmflg);
+	pointer_at_map = shmat(shmid, NULL, SHM_FLG);
 	map_setup(pointer_at_map);
 	sprintf(m_id_str, "%d", shmid);
 	args_b[1] = m_id_str;
