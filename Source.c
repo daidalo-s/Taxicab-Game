@@ -18,6 +18,8 @@
 struct sembuf s_ops;
 map *pointer_at_map;
 int shm_id, sem_id;
+struct sembuf accesso = { 0, -1, 0}; /* semwait */
+struct sembuf rilascio = { 0, +1, 0}; /* semsignal */
 
 /********** Metodi per debug **********/
 void map_print(map *pointer_at_map) {
@@ -37,13 +39,12 @@ void attach(map *pointer_at_map) {
         for (j = 0; j < SO_WIDTH; j++){
             if (pointer_at_map->mappa[i][j].cell_type == 1){
                 /* Sezione critica */
-                s_ops.sem_num = 0;
-                s_ops.sem_op = 
-                    s_ops.sem_flg = 0;
-                semop(sem_id, &s_ops, 1);
+				printf("Fino a prima della semop arrivo \n"); 
+				semop(sem_id, &accesso, 1);
+				printf("Dopo il blocco della risorsa eseguo \n");
                 pointer_at_map->mappa[i][j].cell_type = 3;
-                s_ops.sem_op = 
-                    semop(sem_id, &s_ops, 1);
+                /* Rilascio la risorsa */
+                semop(sem_id, &rilascio, 1);
             }
         }
     }
@@ -60,9 +61,9 @@ int main(int argc, char *argv[])
     sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
     printf("L'id del semaforo che ho in source è %i \n", sem_id);
     /* Cerco una cella SO_SOURCE e mi attacco */
-#if 1
+    #if 1
     attach(pointer_at_map);
-#endif
+	#endif
     printf("Sono un processo SO_SOURCE \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
 
