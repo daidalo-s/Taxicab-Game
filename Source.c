@@ -60,9 +60,9 @@ int main(int argc, char *argv[])
     sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
     printf("L'id del semaforo che ho in source è %i \n", sem_id);
     /* Cerco una cella SO_SOURCE e mi attacco */
-    #if 1
+#if 1
     attach(pointer_at_map);
-    #endif
+#endif
     printf("Sono un processo SO_SOURCE \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
 
