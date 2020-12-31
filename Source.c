@@ -13,7 +13,7 @@
 #include <sys/ipc.h> 
 #include <sys/sem.h>
 #include "Map.h"
-#define DEBUG_STAMPA_MAPPA
+
 
 /********** Variabili globali **********/
 struct sembuf s_ops;
@@ -66,10 +66,10 @@ int main(int argc, char *argv[])
     printf("Sono un processo SO_SOURCE \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
 
-#ifdef DEBUG_STAMPA_MAPPA    
+  
     printf("Uso il metodo di stampa tradizionale \n");
     map_print(pointer_at_map);
-#endif
+
 
     printf("Ora perdo un po' di tempo e poi esco \n");
     sleep(2);
