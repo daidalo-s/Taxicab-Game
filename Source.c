@@ -71,7 +71,8 @@ void destination_and_call(map *pointer_at_map) {
 		i = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; 
 		j = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
 	} while (pointer_at_map->mappa[i][j].cell_type == 0);
-	
+	printf("Il valore di i e' %i \n", i);
+	printf("Il valore di j e' %i \n", j);
 	/* Immettere le coordinate nella coda di messaggi */
 	#if 0
 	strcpy(str1, i);
@@ -83,6 +84,7 @@ void destination_and_call(map *pointer_at_map) {
 	sprintf(destination, "%d", i);
     sprintf(str1, "%d", j);
     strcat(destination, str1);
+    printf("Stampo destination \n");
     printf("%s \n", destination);
 	#endif
 	#if 0
