@@ -94,6 +94,7 @@ void destination_and_call(map *pointer_at_map) {
     strcpy(msgp.message, destination);
     dimension_message = sizeof(msgp);
     dimension_long = sizeof(long);
+    printf("L'id della coda di messaggi in cui proverò a scrivere è %i \n", msg_queue_id);
     if (msgsnd(msg_queue_id, &msgp, (dimension_message - dimension_long), 0) == -1) {
     	perror("DIo bastardo \n");
     };
@@ -125,6 +126,13 @@ int main(int argc, char *argv[])
     printf("Uso il metodo di stampa tradizionale \n");
     map_print(pointer_at_map);
 #endif
+    printf("L'id della coda di messaggi da cui proverò a leggere è %i \n", msg_queue_id);
+    printf("Sono il processo source che proverà a ricevere il messaggio \n");
+    msg_queue_id = pointer_at_map->mappa[2][2].message_queue;
+
+    if (msgrcv(msg_queue_id, &msgp, (dimension_message - dimension_long), 0, 0) == -1) {
+    	perror("Madonna tacchina \n ");
+    };
     printf("Ora perdo un po' di tempo e poi esco \n");
     sleep(2);
     printf("Ho finito di dormire sono un processo Source \n");
