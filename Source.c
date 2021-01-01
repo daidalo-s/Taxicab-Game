@@ -105,6 +105,9 @@ void destination_and_call(map *pointer_at_map) {
 /********** Main **********/
 int main(int argc, char *argv[])
 {	
+	struct my_msgbuf msgp;
+	int dimension_message = sizeof(msgp);
+    int dimension_long = sizeof(long);
     sleep(5);
     /* Prendo l'indirizzo */ 
     shm_id = atoi(argv[1]);
