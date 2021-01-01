@@ -411,7 +411,7 @@ void createIPC(map *pointer_at_map) {
     pointer_at_msgq = malloc(SO_SOURCES*sizeof(int));
     for (i = 0; i < SO_SOURCES; i ++) {
         pointer_at_msgq[i] = ftok(path, i);
-        msgget(pointer_at_msgq[i], 0600 | IPC_CREAT | IPC_EXCL);
+        msgget(pointer_at_msgq[i], 0666 | IPC_CREAT | IPC_EXCL);
     }
 #ifdef DEBUG
     printf("Stampo l'array di chiavi \n");
