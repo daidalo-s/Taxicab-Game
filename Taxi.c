@@ -12,6 +12,7 @@
 #include <sys/ipc.h> 
 #include <sys/sem.h>
 #include "Map.h"
+#define DEBUG_STAMPA_MAPPA
 
 void map_print(map *pointer_at_map) {
     int i, j;

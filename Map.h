@@ -29,3 +29,5 @@ typedef struct
 {
 	cell mappa[SO_HEIGHT][SO_WIDTH];
 } map;
+
+/* Struct per la coda di messaggi */

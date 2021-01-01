@@ -18,8 +18,8 @@
 struct sembuf s_ops;
 map *pointer_at_map;
 int shm_id, sem_id;
-struct sembuf accesso = { 0, -1, SEM_UNDO}; /* semwait */
-struct sembuf rilascio = { 0, +1, SEM_UNDO}; /* semsignal */
+struct sembuf accesso = { 0, -1, 0}; /* semwait */
+struct sembuf rilascio = { 0, +1, 0}; /* semsignal */
 
 /********** Metodi per debug **********/
 void map_print(map *pointer_at_map) {
@@ -59,7 +59,8 @@ void attach(map *pointer_at_map) {
 
 /********** Main **********/
 int main(int argc, char *argv[])
-{
+{	
+	sleep(5);
     /* Prendo l'indirizzo */ 
     shm_id = atoi(argv[1]);
     /* Mi attacco al segmento */
