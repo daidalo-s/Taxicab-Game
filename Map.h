@@ -5,6 +5,7 @@
 #define SHM_FLG 0600
 #define SEM_KEY 5432
 
+#define SCEMO_CHI_LEGGE 14
 
 #define TEST_ERROR    if (errno) {dprintf(STDERR_FILENO,        \
 		"%s:%d: PID=%5d: Error %d (%s)\n", \
@@ -36,7 +37,7 @@ typedef struct
 struct my_msgbuf 
 {
 	long mtype; /* type of message */ 
-	char message[13]; 
+	char message[SCEMO_CHI_LEGGE]; 
 };
 #endif
 
