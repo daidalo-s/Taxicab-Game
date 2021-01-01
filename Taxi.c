@@ -12,7 +12,6 @@
 #include <sys/ipc.h> 
 #include <sys/sem.h>
 #include "Map.h"
-#define DEBUG_STAMPA_MAPPA
 
 void map_print(map *pointer_at_map) {
     int i, j;
@@ -26,8 +25,10 @@ void map_print(map *pointer_at_map) {
 
 int main(int argc, char *argv[])
 {
+    /* La rimpiazzeremo con un segnale */ 
     map *pointer_at_map;
     int shmid;
+    sleep(5);
     /* Prendo l'indirizzo */ 
     shmid = atoi(argv[1]);
     /* Mi attacco al segmento */
