@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
     printf("Sono un processo Taxi \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
-    
+
 
 #ifdef DEBUG_STAMPA_MAPPA    
     printf("Uso il metodo di stampa tradizionale \n");

@@ -44,10 +44,10 @@ void attach(map *pointer_at_map) {
 
                 pointer_at_map->mappa[i][j].cell_type = 3;
                 msg_queue_key = pointer_at_map->mappa[i][j].message_queue;
-                
+
                 x = i;
                 y = j;
-                
+
                 /* Rilascio la risorsa */
                 semop(sem_id, &rilascio, 1);
             }
@@ -57,7 +57,7 @@ void attach(map *pointer_at_map) {
 
 /********** Generazione di destinazione e messaggi **********/
 void destination_and_call(map *pointer_at_map) {
-    
+
     int destination_x, destination_y, message_queue_id;
     char str1[5], comma[] = {","};
     char destination_string[MESSAGE_WIDTH];
@@ -85,7 +85,7 @@ void destination_and_call(map *pointer_at_map) {
     message_queue_id = msgget(msg_queue_key, 0);
     printf("L'id della coda di messaggi in cui proverò a scrivere è %i \n", msg_queue_key);
     if (msgsnd(message_queue_id, &cell_message_queue, MESSAGE_WIDTH, 0) < 0) {
-    	perror("Errore non riesco a mandare il messaggio");
+        perror("Errore non riesco a mandare il messaggio");
     }
 }
 

@@ -217,11 +217,11 @@ void random_cell_type(map *pointer_at_map) {
                         switch (col_pos) {
                             case 0:
                                 if ((pointer_at_map->mappa[i-1][j].cell_type != 0) && 
-                                    (pointer_at_map->mappa[i-1][j+1].cell_type != 0)) {
+                                        (pointer_at_map->mappa[i-1][j+1].cell_type != 0)) {
                                     do {
                                         value = rand() % (2-0+1) + 0;
                                     } while ((value == 0 && so_holes == 0) || 
-                                             (value == 1 && so_sources == 0));
+                                            (value == 1 && so_sources == 0));
                                     if (value == 0) so_holes = so_holes-1;
                                     if (value == 1) so_sources = so_sources-1;
                                     pointer_at_map->mappa[i][j].cell_type = value;
@@ -235,13 +235,13 @@ void random_cell_type(map *pointer_at_map) {
                                 break;
                             case 1:
                                 if ((pointer_at_map->mappa[i][j-1].cell_type != 0) && 
-                                    (pointer_at_map->mappa[i-1][j-1].cell_type != 0) &&
-                                    (pointer_at_map->mappa[i-1][j].cell_type != 0) && 
-                                    (pointer_at_map->mappa[i-1][j+1].cell_type != 0)) {
+                                        (pointer_at_map->mappa[i-1][j-1].cell_type != 0) &&
+                                        (pointer_at_map->mappa[i-1][j].cell_type != 0) && 
+                                        (pointer_at_map->mappa[i-1][j+1].cell_type != 0)) {
                                     do {
                                         value = rand() % (2-0+1) + 0;
                                     } while ((value == 0 && so_holes == 0) || 
-                                             (value == 1 && so_sources == 0));
+                                            (value == 1 && so_sources == 0));
                                     if (value == 0) so_holes = so_holes-1;
                                     if (value == 1) so_sources = so_sources-1;
                                     pointer_at_map->mappa[i][j].cell_type = value;
@@ -255,12 +255,12 @@ void random_cell_type(map *pointer_at_map) {
                                 break;
                             case 2:
                                 if ((pointer_at_map->mappa[i][j-1].cell_type != 0) && 
-                                    (pointer_at_map->mappa[i-1][j-1].cell_type != 0) &&
-                                    (pointer_at_map->mappa[i-1][j].cell_type != 0)) {
+                                        (pointer_at_map->mappa[i-1][j-1].cell_type != 0) &&
+                                        (pointer_at_map->mappa[i-1][j].cell_type != 0)) {
                                     do {
                                         value = rand() % (2-0+1) + 0;
                                     } while ((value == 0 && so_holes == 0) || 
-                                             (value == 1 && so_sources == 0));
+                                            (value == 1 && so_sources == 0));
                                     if (value == 0) so_holes = so_holes-1;
                                     if (value == 1) so_sources = so_sources-1;
                                     pointer_at_map->mappa[i][j].cell_type = value;
@@ -419,12 +419,12 @@ int main () {
     int i, j, valore_fork_sources, valore_fork_taxi; 
     /* Lettura degli altri parametri specificati da file */
     reading_input_values();
-    #if 0
+#if 0
     printf("Stampo prima di inizializzare la mappa \n");
     map_print(pointer_at_map);
     printf("Stampo dopo l'inizializzazione della mappa \n");
     map_print(pointer_at_map);
-    #endif 
+#endif 
     /* Creo gli oggetti ipc */
     createIPC(pointer_at_map);
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
