@@ -57,7 +57,7 @@ void reading_input_values () {
 
     if (input == NULL) {
         printf ("Errore, non riesco ad aprire il file \n");
-        exit(-1); /* oppure return -1 */
+        exit(EXIT_FAILURE); /* oppure return -1 */
     }
 
     while(!feof(input)) {
@@ -70,7 +70,7 @@ void reading_input_values () {
                 if (SO_HOLES < 1) {
                     printf("Errore, parametro SO_HOLES non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }       
             else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
@@ -78,7 +78,7 @@ void reading_input_values () {
                 if (SO_TOP_CELLS < 1) {
                     printf("Errore, parametro SO_TOP_CELLS non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
             else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
@@ -86,7 +86,7 @@ void reading_input_values () {
                 if (SO_SOURCES < 1) {
                     printf("Errore, parametro SO_SOURCES non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
             else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
@@ -94,7 +94,7 @@ void reading_input_values () {
                 if (SO_CAP_MIN < 0) {
                     printf("Errore, parametro SO_CAP_MIN non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }  
             else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
@@ -102,7 +102,7 @@ void reading_input_values () {
                 if (SO_CAP_MAX < SO_CAP_MIN){
                     printf("Errore, parametro SO_CAP_MAX non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
             else if (strcmp(tmpstr1,"SO_TAXI")==0) {
@@ -110,7 +110,7 @@ void reading_input_values () {
                 if (SO_TAXI < 0){
                     printf("Errore, parametro SO_TAXI non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
             else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
@@ -118,7 +118,7 @@ void reading_input_values () {
                 if (SO_TIMENSEC_MIN < 0) {
                     printf("Errore, parametro SO_TIMENSEC_MIN non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
             else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
@@ -126,7 +126,7 @@ void reading_input_values () {
                 if (SO_TIMENSEC_MAX < SO_TIMENSEC_MIN){
                     printf("Errore, parametro SO_TIMENSEC_MAX non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
             else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
@@ -134,7 +134,7 @@ void reading_input_values () {
                 if (SO_TIMEOUT < 0) {
                     printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
             else if (strcmp(tmpstr1,"SO_DURATION")==0) {
@@ -142,7 +142,7 @@ void reading_input_values () {
                 if (SO_DURATION < SO_TIMEOUT) {
                     printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
                     fclose(input);
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             }
             else {
@@ -172,12 +172,14 @@ void reading_input_values () {
 void random_cell_type(map *pointer_at_map) {
     /* Variabili locali utilizzate:
      * - value assume il valore della codifica (0 hole, 1 no SO_SOURCES, 2 cella libera) 
-     *   da assegnare alla cella[i][j]; i e j assumono il valore degli indici della cella di riferimento;
+     *   da assegnare alla cella[i][j]; 
+     * - i e j assumono il valore degli indici della cella di riferimento;
      * - row_pos (row position) e col_pot (column position) sono variabili utilizzate 
      *   per capire in seguito quale case eseguire all'interno degli switch;
      * - so_holes e so_sources assumono i valori delle variabili SO_HOLES ed SO_SOURCES,
-     *   dato che quest'ultime sono variabili globali e' meglio non modificarne il valore
-     *   ma bensi' utilizzarne una copia all'interno della funzione
+     *   dato che quest'ultime sono variabili globali, una scelta implementativa migliore
+     *   e' di non modificarne il valore ma bensi' utilizzarne una copia 
+     *   all'interno della funzione in questione
      */
     int value, i, j, row_pos, col_pos, so_holes, so_sources;
     so_holes = SO_HOLES;
@@ -192,91 +194,97 @@ void random_cell_type(map *pointer_at_map) {
                 } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
                 if (value == 0) so_holes = so_holes-1;
                 if (value == 1) so_sources = so_sources-1;
-                map[i][j].cell_type = value;
+                pointer_at_map->mappa[i][j].cell_type = value;
             } else {    
                 switch (row_pos) {
                     case 0:
-                        if (map[i][j-1].cell_type == 0) { 
+                        if (pointer_at_map->mappa[i][j-1].cell_type == 0) { 
                             do {
                                 value = rand() % (2-1+1) + 1;
                             } while (value == 1 && so_sources == 0);
                             if (value == 1) so_sources = so_sources-1;
-                            map[i][j].cell_type = value;
+                            pointer_at_map->mappa[i][j].cell_type = value;
                         } else {
                             do {
                                 value = rand() % (2-0+1) + 0;
                             } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
                             if (value == 0) so_holes = so_holes-1;
                             if (value == 1) so_sources = so_sources-1;
-                            map[i][j].cell_type = value;
+                            pointer_at_map->mappa[i][j].cell_type = value;
                         }
                         break;
                     case 1:
                         switch (col_pos) {
                             case 0:
-                                if ((map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+                                if ((pointer_at_map->mappa[i-1][j].cell_type != 0) && 
+                                    (pointer_at_map->mappa[i-1][j+1].cell_type != 0)) {
                                     do {
                                         value = rand() % (2-0+1) + 0;
-                                    } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+                                    } while ((value == 0 && so_holes == 0) || 
+                                             (value == 1 && so_sources == 0));
                                     if (value == 0) so_holes = so_holes-1;
                                     if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
+                                    pointer_at_map->mappa[i][j].cell_type = value;
                                 } else {
                                     do {
                                         value = rand() % (2-1+1) + 1;
                                     } while (value == 1 && so_sources == 0);
                                     if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
+                                    pointer_at_map->mappa[i][j].cell_type = value;
                                 }
                                 break;
                             case 1:
-                                if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
-                                        (map[i-1][j].cell_type != 0) && (map[i-1][j+1].cell_type != 0)) {
+                                if ((pointer_at_map->mappa[i][j-1].cell_type != 0) && 
+                                    (pointer_at_map->mappa[i-1][j-1].cell_type != 0) &&
+                                    (pointer_at_map->mappa[i-1][j].cell_type != 0) && 
+                                    (pointer_at_map->mappa[i-1][j+1].cell_type != 0)) {
                                     do {
                                         value = rand() % (2-0+1) + 0;
-                                    } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+                                    } while ((value == 0 && so_holes == 0) || 
+                                             (value == 1 && so_sources == 0));
                                     if (value == 0) so_holes = so_holes-1;
                                     if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
+                                    pointer_at_map->mappa[i][j].cell_type = value;
                                 } else {
                                     do {
                                         value = rand() % (2-1+1) + 1;
                                     } while (value == 1 && so_sources == 0);
                                     if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
+                                    pointer_at_map->mappa[i][j].cell_type = value;
                                 }
                                 break;
                             case 2:
-                                if ((map[i][j-1].cell_type != 0) && (map[i-1][j-1].cell_type != 0) &&
-                                        (map[i-1][j].cell_type != 0)) {
+                                if ((pointer_at_map->mappa[i][j-1].cell_type != 0) && 
+                                    (pointer_at_map->mappa[i-1][j-1].cell_type != 0) &&
+                                    (pointer_at_map->mappa[i-1][j].cell_type != 0)) {
                                     do {
                                         value = rand() % (2-0+1) + 0;
-                                    } while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
+                                    } while ((value == 0 && so_holes == 0) || 
+                                             (value == 1 && so_sources == 0));
                                     if (value == 0) so_holes = so_holes-1;
                                     if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
+                                    pointer_at_map->mappa[i][j].cell_type = value;
                                 } else {
                                     do {
                                         value = rand() % (2-1+1) + 1;
                                     } while (value == 1 && so_sources == 0);
                                     if (value == 1) so_sources = so_sources-1;
-                                    map[i][j].cell_type = value;
+                                    pointer_at_map->mappa[i][j].cell_type = value;
                                 }
                                 break;
                             default:
                                 printf("Errore\n");
-                                exit(-1);
+                                exit(EXIT_FAILURE);
                         }
                         break;
                     default:
                         printf("Errore\n");
-                        exit(-1);
+                        exit(EXIT_FAILURE);
                 }   
             }
         } 
     }
 }
-
 /* Nei casi in cui si odvesse verificare qualche anomalia viene restituito 1, 
  * ma per generare un errore cosa possiamo fare?
  */
@@ -322,9 +330,9 @@ void map_setup(map *pointer_at_map) {
         }
     }
 #ifdef MAPPA_VALORI_CASUALI
-    random_cell_type(map);
-    random_taxi_capacity(map);
-    random_travel_time(map);
+    random_cell_type(pointer_at_map);
+    random_taxi_capacity(pointer_at_map);
+    random_travel_time(pointer_at_map);
 #endif
 #ifndef MAPPA_VALORI_CASUALI
     pointer_at_map->mappa[0][0].cell_type = 0;
@@ -356,44 +364,47 @@ void map_print(map *pointer_at_map) {
 }
 
 void createIPC(map *pointer_at_map) {
-    int i, debug;
-    #if 1
-    int counter = 0, j;
-    #endif
+    int i, j, counter = 0;
     /* Path per la ftok */
     char *path = "/tmp";
     /* Creo la memoria condivisa che contiene la mappa */
-    
+    #ifdef DEBUG
+    int debug;
     printf("L' id della memoria condivisa prima della get %i \n", shm_id);
-    
+    #endif
     shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
-    
-    printf("L' id della memoria condivisa e' %i \n", shm_id);
-    
+    #ifdef DEBUG
+    printf("L' id della memoria condivisa dopo la get e' %i \n", shm_id);
+    #endif
     if (shm_id == -1) {
         perror("Non riesco a creare la memoria condivisa. Termino.");
         exit(EXIT_FAILURE);
     }
-    #if 0
+    #ifdef DEBUG
     printf("Stampo la mappa che ho ricevuto -createIPC \n");
     map_print(pointer_at_map);
     #endif
     /* Mi attacco come master alla mappa */
+    #ifdef DEBUG
     printf("L' id della memoria condivisa prima della attach %c \n", shm_id);
+    #endif
     /*printf("******** VALORE PUNTATORE PRIMA ATTACH ****** %c \n", pointer_at_map);*/
     pointer_at_map = shmat(shm_id, NULL, SHM_FLG);
     map_setup(pointer_at_map);
     /*printf("******** VALORE PUNTATORE DOPO ATTACH ****** %c \n", pointer_at_map);*/
+    #ifdef DEBUG
     printf("L' id della memoria condivisa dopo l'attach %i \n", shm_id);
     printf("Stampo la mappa a cui mi sono attaccato -createIPC \n");
     map_print(pointer_at_map);
-
+    #endif
     /* Preparo gli argomenti per la execve */
     sprintf(m_id_str, "%d", shm_id); 
     args_a[1] = args_b[1] = m_id_str;
     /* Creo il semaforo per l'assegnazione delle celle 1 */
     sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
+    #ifdef DEBUG
     printf("L'id del semaforo che ho nel Master %i \n", sem_id);
+    #endif 
     /* Imposto il semaforo con valore 1 -MUTEX */
     semctl(sem_id, 0, SETVAL, 1);
     /* Creiamo le code di messaggi per le celle source */
@@ -402,11 +413,13 @@ void createIPC(map *pointer_at_map) {
         pointer_at_msgq[i] = ftok(path, i);
         msgget(pointer_at_msgq[i], 0600 | IPC_CREAT | IPC_EXCL);
     }
+    #ifdef DEBUG
     printf("Stampo l'array di chiavi \n");
     for (debug = 0; debug < SO_SOURCES; debug ++) {
         printf("Elemento numero %i : %i \n", debug, pointer_at_msgq[debug]);
     }
-    #if 1
+    #endif
+    /* Assegna al campo della cella il valore della sua coda di messaggi*/
     for (i = 0; i < SO_HEIGHT; i ++){
         for (j = 0; j < SO_WIDTH; j++) {
             if (pointer_at_map->mappa[i][j].cell_type == 1) { 
@@ -415,10 +428,11 @@ void createIPC(map *pointer_at_map) {
             }
         }
     } 
-    #endif
+    #ifdef DEBUG
     printf("Stampo la mappa alla fine -createIPC \n");
     map_print(pointer_at_map);
     printf("La coda di messaggi della cella 2.2 ha id %x \n", pointer_at_map->mappa[2][2].message_queue);
+    #endif
 }
 
 

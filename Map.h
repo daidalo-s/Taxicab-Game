@@ -5,6 +5,8 @@
 #define SHM_FLG 0600
 #define SEM_KEY 5432
 
+#define MAPPA_VALORI_CASUALI
+
 #define TEST_ERROR    if (errno) {dprintf(STDERR_FILENO,        \
 		"%s:%d: PID=%5d: Error %d (%s)\n", \
 		__FILE__,         \
