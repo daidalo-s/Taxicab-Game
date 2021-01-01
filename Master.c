@@ -356,7 +356,7 @@ void map_print(map *pointer_at_map) {
 }
 
 void createIPC() {
-    int i;
+    int i, debug;
     /* Path per la ftok */
     char *path = "/tmp";
     /* Creo la memoria condivisa che contiene la mappa */
@@ -381,7 +381,10 @@ void createIPC() {
         pointer_at_msgq[i] = ftok(path, i);
         msgget(pointer_at_msgq[i], 0600 | IPC_CREAT | IPC_EXCL);
     }
-
+    printf("Stampo l'array di chiavi \n");
+    for (debug = 0; debug < SO_SOURCES; debug ++) {
+        printf("Elemento numero %i : %i \n", debug, pointer_at_msgq[debug]);
+    }
 }
 
 
