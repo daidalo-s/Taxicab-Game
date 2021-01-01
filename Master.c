@@ -356,7 +356,7 @@ void map_print(map *pointer_at_map) {
 }
 
 void createIPC() {
-    int i, debug;
+    int i,j,debug, counter = 0;
     /* Path per la ftok */
     char *path = "/tmp";
     /* Creo la memoria condivisa che contiene la mappa */
@@ -385,6 +385,14 @@ void createIPC() {
     for (debug = 0; debug < SO_SOURCES; debug ++) {
         printf("Elemento numero %i : %i \n", debug, pointer_at_msgq[debug]);
     }
+    for (i = 0; i < SO_HEIGHT; i ++){
+        for (j = 0; j < SO_WIDTH; j++) {
+            if (pointer_at_map->mappa[i][j].cell_type == 1) { 
+                pointer_at_map->mappa[i][j].message_queue = pointer_at_msgq[counter];
+                counter++;
+            }
+        }
+    } 
 }
 
 
@@ -408,8 +416,8 @@ int main () {
     /* Lettura degli altri parametri specificati da file */
     reading_input_values();
     /* Creo gli oggetti ipc */
-    createIPC();
     map_setup(pointer_at_map);
+    createIPC();
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
     for (i = 0; i < SO_SOURCES; i++) {
         switch(valore_fork_sources = fork()) {

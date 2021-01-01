@@ -38,18 +38,18 @@ void attach(map *pointer_at_map) {
         for (j = 0; j < SO_WIDTH; j++){
             if (pointer_at_map->mappa[i][j].cell_type == 1){
                 /* Sezione critica */
-				printf("Fino a prima della semop arrivo \n"); 
-				debug = semctl(sem_id, 0, GETVAL);
-				printf("%i \n", debug);
-				semop(sem_id, &accesso, 1);
-				printf("Dopo il blocco della risorsa eseguo \n");
+                printf("Fino a prima della semop arrivo \n"); 
+                debug = semctl(sem_id, 0, GETVAL);
+                printf("%i \n", debug);
+                semop(sem_id, &accesso, 1);
+                printf("Dopo il blocco della risorsa eseguo \n");
                 pointer_at_map->mappa[i][j].cell_type = 3;
                 debug = semctl(sem_id, 0, GETVAL);
-				printf("Durante il blocco vale %i \n", debug);
+                printf("Durante il blocco vale %i \n", debug);
                 /* Rilascio la risorsa */
                 semop(sem_id, &rilascio, 1);
                 debug = semctl(sem_id, 0, GETVAL);
-				printf("Dopo il rilascio vale %i \n", debug);
+                printf("Dopo il rilascio vale %i \n", debug);
 
             }
         }
@@ -59,7 +59,7 @@ void attach(map *pointer_at_map) {
 /********** Main **********/
 int main(int argc, char *argv[])
 {	
-	sleep(5);
+    sleep(5);
     /* Prendo l'indirizzo */ 
     shm_id = atoi(argv[1]);
     /* Mi attacco al segmento */
@@ -68,9 +68,9 @@ int main(int argc, char *argv[])
     sem_id = semget(SEM_KEY, 1, 0600);
     printf("L'id del semaforo che ho in source è %i \n", sem_id);
     /* Cerco una cella SO_SOURCE e mi attacco */
-    #if 1
+#if 1
     attach(pointer_at_map);
-	#endif
+#endif
     printf("Sono un processo SO_SOURCE \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
 
