@@ -108,6 +108,7 @@ int main(int argc, char *argv[])
 #endif
     /* Cerco una cella SO_SOURCE e mi attacco */
     attach(pointer_at_map);
+    destination_and_call(pointer_at_map);
 #ifdef DEBUG
     printf("Sono un processo SO_SOURCE \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);

@@ -31,10 +31,12 @@ typedef struct
 {
 	cell mappa[SO_HEIGHT][SO_WIDTH];
 } map;
-
+#if 0
 /* Struct per la coda di messaggi */
 struct msgbuf 
 {
 	long mtype; /* type of message */ 
 	char message[13]; 
 };
+#endif
+
