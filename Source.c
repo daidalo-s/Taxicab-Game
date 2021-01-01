@@ -16,7 +16,7 @@
 #include "Map.h"
 /********** Variabili globali **********/
 map *pointer_at_map;
-int shm_id, sem_id, msg_queue_id;
+int shm_id, sem_id, msg_queue_id, x, y;
 struct sembuf accesso = { 0, -1, 0}; /* semwait */
 struct sembuf rilascio = { 0, +1, 0}; /* semsignal */
 
@@ -45,6 +45,8 @@ void attach(map *pointer_at_map) {
                 printf("Dopo il blocco della risorsa eseguo \n");
                 pointer_at_map->mappa[i][j].cell_type = 3;
                 msg_queue_id = pointer_at_map->mappa[i][j].message_queue;
+                x = i;
+                y = j;
                 debug = semctl(sem_id, 0, GETVAL);
                 printf("Durante il blocco vale %i \n", debug);
                 /* Rilascio la risorsa */
@@ -59,39 +61,41 @@ void attach(map *pointer_at_map) {
 
 /********** Generazione di destinazione e messaggi **********/
 void destination_and_call(map *pointer_at_map) {
-	int i,j;
-	/*struct msgbuf msgp;*/
-	char str1[4];
-	/*char str2[4];*/
-	char destination[13];
+    int i,j,dimension_message, dimension_long;
+    struct my_msgbuf msgp;
+    char str1[4];
+    /*char str2[4];*/
+    char destination[13];
 
-	/* Generare due coordinate tra le celle valide */
-	srand(getpid());
-	do { 
-		i = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; 
-		j = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
-	} while (pointer_at_map->mappa[i][j].cell_type == 0);
-	printf("Il valore di i e' %i \n", i);
-	printf("Il valore di j e' %i \n", j);
-	/* Immettere le coordinate nella coda di messaggi */
-	#if 0
-	strcpy(str1, i);
-	strcpy(str2, j);
-	strcat(destination, str1);
-	strcat(destination, str2);
-	#endif
-	#if 1
-	sprintf(destination, "%d", i);
+    /* Generare due coordinate tra le celle valide */
+    srand(getpid());
+    do { 
+        i = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; 
+        j = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
+    } while (pointer_at_map->mappa[i][j].cell_type == 0 || (i == x && j == y));
+    printf("Il valore di i e' %i \n", i);
+    printf("Il valore di j e' %i \n", j);
+    /* Immettere le coordinate nella coda di messaggi */
+#if 0
+    strcpy(str1, i);
+    strcpy(str2, j);
+    strcat(destination, str1);
+    strcat(destination, str2);
+#endif
+#if 1
+    sprintf(destination, "%d", i);
     sprintf(str1, "%d", j);
     strcat(destination, str1);
     printf("Stampo destination \n");
     printf("%s \n", destination);
-	#endif
-	#if 0
-	msgp.mtype = 0; /* Le richieste hanno long 0 */
-	msgp.message = destination;
-	msgsnd(msg_queue_id, msgp, sizeof(msgp - zero), 0);
-	#endif
+#endif
+#if 1
+    msgp.mtype = 0; /* Le richieste hanno long 0 */
+    strcpy(msgp.message, destination);
+    dimension_message = sizeof(msgp);
+    dimension_long = sizeof(long);
+    msgsnd(msg_queue_id, &msgp, (dimension_message - dimension_long), 0);
+#endif
 }
 
 
