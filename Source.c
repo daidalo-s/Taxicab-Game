@@ -15,7 +15,6 @@
 #include "Map.h"
 
 /********** Variabili globali **********/
-struct sembuf s_ops;
 map *pointer_at_map;
 int shm_id, sem_id;
 struct sembuf accesso = { 0, -1, 0}; /* semwait */

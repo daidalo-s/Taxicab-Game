@@ -38,6 +38,10 @@ int SO_TIMENSEC_MAX = 0;
 int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
 /* Variabili per la gestione della mappa*/
+/* Argomenti da passare alla execve */
+char * args_a[] = {"Source", NULL, NULL, NULL};
+char * args_b[] = {"Taxi", NULL, NULL};
+char m_id_str[4];
 int shm_id; /* valore ritornato da shmget() */
 int sem_id; /* valore ritornato da semget() */
 
@@ -349,6 +353,29 @@ void map_print(map *pointer_at_map) {
     }
 }
 
+void createIPC() {
+    char * args_a[] = {"Source", NULL, NULL, NULL};
+    char * args_b[] = {"Taxi", NULL, NULL};
+    char m_id_str[4];
+    /* Creo la memoria condivisa che contiene la mappa */
+    shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
+    if (shm_id == -1) {
+        perror("Non riesco a creare la memoria condivisa. Termino.");
+        exit(EXIT_FAILURE);
+    }
+    /* Mi attacco come master alla mappa */
+    pointer_at_map = shmat(shm_id, NULL, SHM_FLG);
+    /* Preparo gli argomenti per la execve */
+    sprintf(m_id_str, "%d", shm_id); 
+    args_a[1] = args_b[1] = m_id_str;
+    /* Creo il semaforo per l'assegnazione delle celle 1 */
+    sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
+    printf("L'id del semaforo che ho nel Master %i \n", sem_id);
+    /* Imposto il semaforo con valore 1 -MUTEX */
+    semctl(sem_id, 0, SETVAL, 1);
+}
+
+
 void kill_all() {
     /* Completare. Dovrà terminare le risorse IPC che allocheremo. */
     /* Marco per la deallocazione la memoria condivisa */
@@ -361,27 +388,11 @@ void kill_all() {
 int main () {
 
     int i, j, valore_fork_sources, valore_fork_taxi;
-    char * args_a[] = {"Source", NULL, NULL};
-    char * args_b[] = {"Taxi", NULL, NULL};
-    char m_id_str[13];
     /* Lettura degli altri parametri specificati da file */
     reading_input_values();
-
-    /* Creazione e inizializzazione mappa */
-    shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
-    if (shm_id == -1) {
-        perror("Non riesco a creare la memoria condivisa. Termino.");
-        exit(EXIT_FAILURE);
-    }
-    /* Mi attacco alla memoria condivisa  e preparo gli argomenti da passare */
-    pointer_at_map = shmat(shm_id, NULL, SHM_FLG);
+    /* Creo gli oggetti ipc */
+    createIPC();
     map_setup(pointer_at_map);
-    sprintf(m_id_str, "%d", shm_id); 
-    args_a[1] = args_b[1] = m_id_str;
-    /* Creo il semaforo per il settaggio della cella */
-    sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
-    printf("L'id del semaforo che ho nel Master %i \n", sem_id);
-    semctl(sem_id, 0, SETVAL, 1);
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
     for (i = 0; i < SO_SOURCES; i++) {
         switch(valore_fork_sources = fork()) {
