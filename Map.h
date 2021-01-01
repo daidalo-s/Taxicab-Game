@@ -6,7 +6,7 @@
 #define SHM_FLG 0600
 #define SEM_KEY 5432
 
-#define SCEMO_CHI_LEGGE 9
+#define MESSAGE_WIDTH 8
 
 #define TEST_ERROR    if (errno) {dprintf(STDERR_FILENO,        \
 		"%s:%d: PID=%5d: Error %d (%s)\n", \
@@ -33,12 +33,11 @@ typedef struct
 {
 	cell mappa[SO_HEIGHT][SO_WIDTH];
 } map;
-#if 1
+
 /* Struct per la coda di messaggi */
-typedef struct msgp 
+typedef struct message_queue 
 {
     long mtype;     /* message type, must be > 0 */
-    char message[SCEMO_CHI_LEGGE];  /* message data */
-} msgp;
-#endif
+    char message[MESSAGE_WIDTH];  /* message data */
+} message_queue;
 

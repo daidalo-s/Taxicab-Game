@@ -368,43 +368,19 @@ void createIPC(map *pointer_at_map) {
     /* Path per la ftok */
     char *path = "/tmp";
     /* Creo la memoria condivisa che contiene la mappa */
-#ifdef DEBUG
-    int debug;
-    printf("L' id della memoria condivisa prima della get %i \n", shm_id);
-#endif
     shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
-#ifdef DEBUG
-    printf("L' id della memoria condivisa dopo la get e' %i \n", shm_id);
-#endif
     if (shm_id == -1) {
         perror("Non riesco a creare la memoria condivisa. Termino.");
         exit(EXIT_FAILURE);
     }
-#ifdef DEBUG
-    printf("Stampo la mappa che ho ricevuto -createIPC \n");
-    map_print(pointer_at_map);
-#endif
     /* Mi attacco come master alla mappa */
-#ifdef DEBUG
-    printf("L' id della memoria condivisa prima della attach %c \n", shm_id);
-#endif
-    /*printf("******** VALORE PUNTATORE PRIMA ATTACH ****** %c \n", pointer_at_map);*/
     pointer_at_map = shmat(shm_id, NULL, SHM_FLG);
     map_setup(pointer_at_map);
-    /*printf("******** VALORE PUNTATORE DOPO ATTACH ****** %c \n", pointer_at_map);*/
-#ifdef DEBUG
-    printf("L' id della memoria condivisa dopo l'attach %i \n", shm_id);
-    printf("Stampo la mappa a cui mi sono attaccato -createIPC \n");
-    map_print(pointer_at_map);
-#endif
     /* Preparo gli argomenti per la execve */
     sprintf(m_id_str, "%d", shm_id); 
     args_a[1] = args_b[1] = m_id_str;
     /* Creo il semaforo per l'assegnazione delle celle 1 */
-    sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
-#ifdef DEBUG
-    printf("L'id del semaforo che ho nel Master %i \n", sem_id);
-#endif 
+    sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT); 
     /* Imposto il semaforo con valore 1 -MUTEX */
     semctl(sem_id, 0, SETVAL, 1);
     /* Creiamo le code di messaggi per le celle source */
@@ -413,12 +389,6 @@ void createIPC(map *pointer_at_map) {
         pointer_at_msgq[i] = ftok(path, i);
         msgget(pointer_at_msgq[i], 0666 | IPC_CREAT | IPC_EXCL);
     }
-#ifdef DEBUG
-    printf("Stampo l'array di chiavi \n");
-    for (debug = 0; debug < SO_SOURCES; debug ++) {
-        printf("Elemento numero %i : %i \n", debug, pointer_at_msgq[debug]);
-    }
-#endif
     /* Assegna al campo della cella il valore della sua coda di messaggi*/
     for (i = 0; i < SO_HEIGHT; i ++){
         for (j = 0; j < SO_WIDTH; j++) {
@@ -428,13 +398,7 @@ void createIPC(map *pointer_at_map) {
             }
         }
     } 
-#ifdef DEBUG
-    printf("Stampo la mappa alla fine -createIPC \n");
-    map_print(pointer_at_map);
-    printf("La coda di messaggi della cella 2.2 ha id %x \n", pointer_at_map->mappa[2][2].message_queue);
-#endif
 }
-
 
 void kill_all() {
     /* Completare. Dovrà terminare le risorse IPC che allocheremo. */
