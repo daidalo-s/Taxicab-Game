@@ -6,7 +6,7 @@
 #define SHM_FLG 0600
 #define SEM_KEY 5432
 
-#define SCEMO_CHI_LEGGE 120
+#define SCEMO_CHI_LEGGE 9
 
 #define TEST_ERROR    if (errno) {dprintf(STDERR_FILENO,        \
 		"%s:%d: PID=%5d: Error %d (%s)\n", \
