@@ -62,7 +62,7 @@ void attach(map *pointer_at_map) {
 /********** Generazione di destinazione e messaggi **********/
 void destination_and_call(map *pointer_at_map) {
     int i,j;
-    msgp;
+    msgp diocan;
     char str1[4];
     /*char str2[4];*/
     char destination[100];
@@ -90,15 +90,15 @@ void destination_and_call(map *pointer_at_map) {
     printf("%s \n", destination);
 #endif
 #if 1
-    msgp.mtype = 1; /* Le richieste hanno long 1 */
-    strcpy(msgp.message, destination);
+    diocan.mtype = 1; /* Le richieste hanno long 1 */
+    strcpy(diocan.message, destination);
 #if 0   
     dimension_message = sizeof(msgp);
     dimension_long = sizeof(long);
 #endif
-    printf("%s \n", msgp.message);
+    printf("%s \n", diocan.message);
     printf("L'id della coda di messaggi in cui proverò a scrivere è %i \n", msg_queue_id);
-    if (msgsnd(msg_queue_id, &msgp, SCEMO_CHI_LEGGE, 0) == -1) {
+    if (msgsnd(msg_queue_id, &diocan, SCEMO_CHI_LEGGE, 0) == -1) {
     	perror("DIo bastardo \n");
     };
 #endif
@@ -108,10 +108,12 @@ void destination_and_call(map *pointer_at_map) {
 /********** Main **********/
 int main(int argc, char *argv[])
 {	
+	#if 0
 	struct my_msgbuf msgp;
 	int dimension_message = sizeof(msgp);
     int dimension_long = sizeof(long);
-    sleep(5);
+    #endif
+    sleep(2);
     /* Prendo l'indirizzo */ 
     shm_id = atoi(argv[1]);
     /* Mi attacco al segmento */
@@ -132,6 +134,7 @@ int main(int argc, char *argv[])
     printf("Uso il metodo di stampa tradizionale \n");
     map_print(pointer_at_map);
 #endif
+    #if 0
     printf("L'id della coda di messaggi da cui proverò a leggere è %i \n", msg_queue_id);
     printf("Sono il processo source che proverà a ricevere il messaggio \n");
     msg_queue_id = pointer_at_map->mappa[2][2].message_queue;
@@ -139,6 +142,7 @@ int main(int argc, char *argv[])
     if (msgrcv(msg_queue_id, &msgp, (dimension_message - dimension_long), 0, 0) == -1) {
     	perror("Madonna tacchina \n ");
     };
+    #endif
     printf("Ora perdo un po' di tempo e poi esco \n");
     sleep(2);
     printf("Ho finito di dormire sono un processo Source \n");

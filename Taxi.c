@@ -16,7 +16,6 @@
 
 
 int msg_queue_id;
-struct my_msgbuf msgp;
 
 void map_print(map *pointer_at_map) {
     int i, j;
