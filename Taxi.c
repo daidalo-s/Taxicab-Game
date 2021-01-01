@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h> 
 #include <sys/sem.h>
+#include <sys/msg.h>
 #include "Map.h"
 
 
@@ -34,6 +35,7 @@ int main(int argc, char *argv[])
     int shmid;
     int dimension_message = sizeof(msgp);
     int dimension_long = sizeof(long);
+    int risultato;
     sleep(5);
     /* Prendo l'indirizzo */ 
     shmid = atoi(argv[1]);
@@ -45,8 +47,8 @@ int main(int argc, char *argv[])
     
     printf("Sono il processo taxi che proverà a ricevere il messaggio \n");
     msg_queue_id = pointer_at_map->mappa[2][2].message_queue;
-    msgrcv(msg_queue_id, &msgp, (dimension_message - dimension_long), 0, NULL);
-
+    risultato = msgrcv(msg_queue_id, &msgp, (dimension_message - dimension_long), 0, 0);
+    printf("Il risultato e' %i\n ", risultato);
 
 #ifdef DEBUG_STAMPA_MAPPA    
     printf("Uso il metodo di stampa tradizionale \n");
