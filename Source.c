@@ -62,7 +62,7 @@ void attach(map *pointer_at_map) {
 /********** Generazione di destinazione e messaggi **********/
 void destination_and_call(map *pointer_at_map) {
     int i,j;
-    struct my_msgbuf msgp;
+    msgp;
     char str1[4];
     /*char str2[4];*/
     char destination[100];

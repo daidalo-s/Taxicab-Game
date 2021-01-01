@@ -34,7 +34,7 @@ typedef struct
 } map;
 #if 1
 /* Struct per la coda di messaggi */
-typedef struct msgp
+typedef struct msgp 
 {
     long mtype;     /* message type, must be > 0 */
     char message[SCEMO_CHI_LEGGE];  /* message data */
