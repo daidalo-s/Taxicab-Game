@@ -13,6 +13,10 @@
 #include <sys/sem.h>
 #include "Map.h"
 
+
+int msg_queue_id;
+struct my_msgbuf msgp;
+
 void map_print(map *pointer_at_map) {
     int i, j;
     for (i = 0; i < SO_HEIGHT; i++) {
@@ -23,15 +27,13 @@ void map_print(map *pointer_at_map) {
     }
 }
 
-void attach() {
-	
-}
-
 int main(int argc, char *argv[])
 {
     /* La rimpiazzeremo con un segnale */ 
     map *pointer_at_map;
     int shmid;
+    int dimension_message = sizeof(msgp);
+    int dimension_long = sizeof(long);
     sleep(5);
     /* Prendo l'indirizzo */ 
     shmid = atoi(argv[1]);
@@ -40,6 +42,11 @@ int main(int argc, char *argv[])
 
     printf("Sono un processo Taxi \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
+    
+    printf("Sono il processo taxi che proverà a ricevere il messaggio \n");
+    msg_queue_id = pointer_at_map->mappa[2][2].message_queue;
+    msgrcv(msg_queue_id, &msgp, (dimension_message - dimension_long), 0, NULL);
+
 
 #ifdef DEBUG_STAMPA_MAPPA    
     printf("Uso il metodo di stampa tradizionale \n");
