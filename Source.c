@@ -62,6 +62,7 @@ void attach(map *pointer_at_map) {
 /********** Generazione di destinazione e messaggi **********/
 void destination_and_call(map *pointer_at_map) {
     int i,j;
+    int MADONNALADRABASTARDA;
     msgp diocan;
     char str1[4];
     /*char str2[4];*/
@@ -97,6 +98,7 @@ void destination_and_call(map *pointer_at_map) {
     dimension_long = sizeof(long);
 #endif
     printf("%s \n", diocan.message);
+    MADONNALADRABASTARDA = msgget(msg_queue_id, 0);
     printf("L'id della coda di messaggi in cui proverò a scrivere è %i \n", msg_queue_id);
     if (msgsnd(msg_queue_id, &diocan, SCEMO_CHI_LEGGE, 0) == -1) {
     	perror("DIo bastardo \n");
