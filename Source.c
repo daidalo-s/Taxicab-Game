@@ -13,7 +13,7 @@
 #include <sys/ipc.h> 
 #include <sys/sem.h>
 #include "Map.h"
-
+#define DEBUG_STAMPA_MAPPA
 /********** Variabili globali **********/
 map *pointer_at_map;
 int shm_id, sem_id;

@@ -338,7 +338,7 @@ void map_setup(map *pointer_at_map) {
 /* Dovrebbe andare */
 void map_print(map *pointer_at_map) {
     int i, j;
-
+    pointer_at_map = shmat(shm_id, NULL, SHM_FLG);
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
             printf ("%i ", pointer_at_map->mappa[i][j].cell_type);
@@ -355,18 +355,39 @@ void map_print(map *pointer_at_map) {
     }
 }
 
-void createIPC() {
-    int i,j,debug, counter = 0;
+void createIPC(map *pointer_at_map) {
+    int i, debug;
+    #if 1
+    int counter = 0, j;
+    #endif
     /* Path per la ftok */
     char *path = "/tmp";
     /* Creo la memoria condivisa che contiene la mappa */
+    
+    printf("L' id della memoria condivisa prima della get %i \n", shm_id);
+    
     shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
+    
+    printf("L' id della memoria condivisa e' %i \n", shm_id);
+    
     if (shm_id == -1) {
         perror("Non riesco a creare la memoria condivisa. Termino.");
         exit(EXIT_FAILURE);
     }
+    #if 0
+    printf("Stampo la mappa che ho ricevuto -createIPC \n");
+    map_print(pointer_at_map);
+    #endif
     /* Mi attacco come master alla mappa */
+    printf("L' id della memoria condivisa prima della attach %c \n", shm_id);
+    /*printf("******** VALORE PUNTATORE PRIMA ATTACH ****** %c \n", pointer_at_map);*/
     pointer_at_map = shmat(shm_id, NULL, SHM_FLG);
+    map_setup(pointer_at_map);
+    /*printf("******** VALORE PUNTATORE DOPO ATTACH ****** %c \n", pointer_at_map);*/
+    printf("L' id della memoria condivisa dopo l'attach %i \n", shm_id);
+    printf("Stampo la mappa a cui mi sono attaccato -createIPC \n");
+    map_print(pointer_at_map);
+
     /* Preparo gli argomenti per la execve */
     sprintf(m_id_str, "%d", shm_id); 
     args_a[1] = args_b[1] = m_id_str;
@@ -385,6 +406,7 @@ void createIPC() {
     for (debug = 0; debug < SO_SOURCES; debug ++) {
         printf("Elemento numero %i : %i \n", debug, pointer_at_msgq[debug]);
     }
+    #if 1
     for (i = 0; i < SO_HEIGHT; i ++){
         for (j = 0; j < SO_WIDTH; j++) {
             if (pointer_at_map->mappa[i][j].cell_type == 1) { 
@@ -393,6 +415,10 @@ void createIPC() {
             }
         }
     } 
+    #endif
+    printf("Stampo la mappa alla fine -createIPC \n");
+    map_print(pointer_at_map);
+    printf("La coda di messaggi della cella 2.2 ha id %x \n", pointer_at_map->mappa[2][2].message_queue);
 }
 
 
@@ -415,9 +441,14 @@ int main () {
     int i, j, valore_fork_sources, valore_fork_taxi; 
     /* Lettura degli altri parametri specificati da file */
     reading_input_values();
+    #if 0
+    printf("Stampo prima di inizializzare la mappa \n");
+    map_print(pointer_at_map);
+    printf("Stampo dopo l'inizializzazione della mappa \n");
+    map_print(pointer_at_map);
+    #endif 
     /* Creo gli oggetti ipc */
-    map_setup(pointer_at_map);
-    createIPC();
+    createIPC(pointer_at_map);
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
     for (i = 0; i < SO_SOURCES; i++) {
         switch(valore_fork_sources = fork()) {
@@ -459,7 +490,7 @@ int main () {
         printf ("Ora tutti i figli sono terminati\n");
     }
     map_print(pointer_at_map);
-
+    /* Stampo la coda di messaggi della cella 2.2 */
     /* Dealloca la memoria condivisa dove ho la mappa */
     kill_all();
     return 0;
