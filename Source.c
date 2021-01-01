@@ -12,10 +12,11 @@
 #include <sys/types.h>
 #include <sys/ipc.h> 
 #include <sys/sem.h>
+#include <sys/msg.h>
 #include "Map.h"
 /********** Variabili globali **********/
 map *pointer_at_map;
-int shm_id, sem_id;
+int shm_id, sem_id, msg_queue_id;
 struct sembuf accesso = { 0, -1, 0}; /* semwait */
 struct sembuf rilascio = { 0, +1, 0}; /* semsignal */
 
@@ -43,6 +44,7 @@ void attach(map *pointer_at_map) {
                 semop(sem_id, &accesso, 1);
                 printf("Dopo il blocco della risorsa eseguo \n");
                 pointer_at_map->mappa[i][j].cell_type = 3;
+                msg_queue_id = pointer_at_map->mappa[i][j].message_queue;
                 debug = semctl(sem_id, 0, GETVAL);
                 printf("Durante il blocco vale %i \n", debug);
                 /* Rilascio la risorsa */
@@ -55,6 +57,42 @@ void attach(map *pointer_at_map) {
     }
 } 
 
+/********** Generazione di destinazione e messaggi **********/
+void destination_and_call(map *pointer_at_map) {
+	int i,j;
+	/*struct msgbuf msgp;*/
+	char str1[4];
+	/*char str2[4];*/
+	char destination[13];
+
+	/* Generare due coordinate tra le celle valide */
+	srand(getpid());
+	do { 
+		i = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; 
+		j = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
+	} while (pointer_at_map->mappa[i][j].cell_type == 0);
+	
+	/* Immettere le coordinate nella coda di messaggi */
+	#if 0
+	strcpy(str1, i);
+	strcpy(str2, j);
+	strcat(destination, str1);
+	strcat(destination, str2);
+	#endif
+	#if 1
+	sprintf(destination, "%d", i);
+    sprintf(str1, "%d", j);
+    strcat(destination, str1);
+    printf("%s \n", destination);
+	#endif
+	#if 0
+	msgp.mtype = 0; /* Le richieste hanno long 0 */
+	msgp.message = destination;
+	msgsnd(msg_queue_id, msgp, sizeof(msgp - zero), 0);
+	#endif
+}
+
+
 /********** Main **********/
 int main(int argc, char *argv[])
 {	
@@ -65,19 +103,19 @@ int main(int argc, char *argv[])
     pointer_at_map = shmat(shm_id, NULL, 0);
     /* Ottengo l'accesso al semaforo */
     sem_id = semget(SEM_KEY, 1, 0600);
+#ifdef DEBUG
     printf("L'id del semaforo che ho in source è %i \n", sem_id);
-    /* Cerco una cella SO_SOURCE e mi attacco */
-#if 1
-    attach(pointer_at_map);
 #endif
+    /* Cerco una cella SO_SOURCE e mi attacco */
+    attach(pointer_at_map);
+#ifdef DEBUG
     printf("Sono un processo SO_SOURCE \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
-
+#endif
 #ifdef DEBUG_STAMPA_MAPPA  
     printf("Uso il metodo di stampa tradizionale \n");
     map_print(pointer_at_map);
 #endif
-
     printf("Ora perdo un po' di tempo e poi esco \n");
     sleep(2);
     printf("Ho finito di dormire sono un processo Source \n");

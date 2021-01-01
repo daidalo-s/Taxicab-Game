@@ -23,6 +23,10 @@ void map_print(map *pointer_at_map) {
     }
 }
 
+void attach() {
+	
+}
+
 int main(int argc, char *argv[])
 {
     /* La rimpiazzeremo con un segnale */ 

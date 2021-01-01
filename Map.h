@@ -33,3 +33,8 @@ typedef struct
 } map;
 
 /* Struct per la coda di messaggi */
+struct msgbuf 
+{
+	long mtype; /* type of message */ 
+	char message[13]; 
+};
