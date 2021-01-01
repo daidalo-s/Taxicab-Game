@@ -90,12 +90,12 @@ void destination_and_call(map *pointer_at_map) {
     printf("%s \n", destination);
 #endif
 #if 1
-    msgp.mtype = 0; /* Le richieste hanno long 0 */
+    msgp.mtype = 1; /* Le richieste hanno long 1 */
     strcpy(msgp.message, destination);
     dimension_message = sizeof(msgp);
     dimension_long = sizeof(long);
     printf("L'id della coda di messaggi in cui proverò a scrivere è %i \n", msg_queue_id);
-    if (msgsnd(msg_queue_id, (void *) &msgp, SCEMO_CHI_LEGGE, 0) == -1) {
+    if (msgsnd(msg_queue_id, &msgp, SCEMO_CHI_LEGGE, 0) == -1) {
     	perror("DIo bastardo \n");
     };
 #endif
