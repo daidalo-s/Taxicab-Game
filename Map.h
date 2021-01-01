@@ -2,7 +2,7 @@
 #define SO_WIDTH 5
 
 #define MAP_KEY 9876
-#define SHM_FLG 0666
+#define SHM_FLG 0600
 #define SEM_KEY 5432
 
 #define TEST_ERROR    if (errno) {dprintf(STDERR_FILENO,        \

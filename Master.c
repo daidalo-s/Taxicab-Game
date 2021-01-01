@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h> 
 #include <sys/sem.h>
+#include <sys/msg.h>
 #include "Map.h"
 /****************** Prototipi ******************/
 void kill_all();
@@ -44,6 +45,7 @@ char * args_b[] = {"Taxi", NULL, NULL};
 char m_id_str[4];
 int shm_id; /* valore ritornato da shmget() */
 int sem_id; /* valore ritornato da semget() */
+int * pointer_at_msgq; 
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -354,9 +356,9 @@ void map_print(map *pointer_at_map) {
 }
 
 void createIPC() {
-    char * args_a[] = {"Source", NULL, NULL, NULL};
-    char * args_b[] = {"Taxi", NULL, NULL};
-    char m_id_str[4];
+    int i;
+    /* Path per la ftok */
+    char *path = "/tmp";
     /* Creo la memoria condivisa che contiene la mappa */
     shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
     if (shm_id == -1) {
@@ -373,21 +375,33 @@ void createIPC() {
     printf("L'id del semaforo che ho nel Master %i \n", sem_id);
     /* Imposto il semaforo con valore 1 -MUTEX */
     semctl(sem_id, 0, SETVAL, 1);
+    /* Creiamo le code di messaggi per le celle source */
+    pointer_at_msgq = malloc(SO_SOURCES*sizeof(int));
+    for (i = 0; i < SO_SOURCES; i ++) {
+        pointer_at_msgq[i] = ftok(path, i);
+        msgget(pointer_at_msgq[i], 0600 | IPC_CREAT | IPC_EXCL);
+    }
+
 }
 
 
 void kill_all() {
     /* Completare. Dovrà terminare le risorse IPC che allocheremo. */
+    int msqid, i;
     /* Marco per la deallocazione la memoria condivisa */
     shmctl(shm_id, IPC_RMID, NULL);
     semctl(sem_id, 0, IPC_RMID);
-
+    for (i = 0; i < SO_SOURCES; i++) {
+        msqid = msgget(pointer_at_msgq[i], 0600);
+        /* Dealloco quella coda di messaggi */
+        msgctl(msqid , IPC_RMID , NULL);
+    }
 }
 
 /* Main */
 int main () {
 
-    int i, j, valore_fork_sources, valore_fork_taxi;
+    int i, j, valore_fork_sources, valore_fork_taxi; 
     /* Lettura degli altri parametri specificati da file */
     reading_input_values();
     /* Creo gli oggetti ipc */

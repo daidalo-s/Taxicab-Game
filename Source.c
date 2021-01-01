@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     /* Mi attacco al segmento */
     pointer_at_map = shmat(shm_id, NULL, 0);
     /* Ottengo l'accesso al semaforo */
-    sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT);
+    sem_id = semget(SEM_KEY, 1, 0600);
     printf("L'id del semaforo che ho in source è %i \n", sem_id);
     /* Cerco una cella SO_SOURCE e mi attacco */
     #if 1
