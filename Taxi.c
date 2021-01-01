@@ -47,8 +47,10 @@ int main(int argc, char *argv[])
     
     printf("Sono il processo taxi che proverà a ricevere il messaggio \n");
     msg_queue_id = pointer_at_map->mappa[2][2].message_queue;
-    risultato = msgrcv(msg_queue_id, &msgp, (dimension_message - dimension_long), 0, 0);
-    printf("Il risultato e' %i\n ", risultato);
+    if (msgrcv(msg_queue_id, &msgp, (dimension_message - dimension_long), 0, 0) == -1) {
+    	perror("Madonna tacchina \n ");
+    };
+
 
 #ifdef DEBUG_STAMPA_MAPPA    
     printf("Uso il metodo di stampa tradizionale \n");

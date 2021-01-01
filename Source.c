@@ -94,7 +94,9 @@ void destination_and_call(map *pointer_at_map) {
     strcpy(msgp.message, destination);
     dimension_message = sizeof(msgp);
     dimension_long = sizeof(long);
-    msgsnd(msg_queue_id, &msgp, (dimension_message - dimension_long), 0);
+    if (msgsnd(msg_queue_id, &msgp, (dimension_message - dimension_long), 0) == -1) {
+    	perror("DIo bastardo \n");
+    };
 #endif
 }
 
