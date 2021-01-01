@@ -61,11 +61,11 @@ void attach(map *pointer_at_map) {
 
 /********** Generazione di destinazione e messaggi **********/
 void destination_and_call(map *pointer_at_map) {
-    int i,j,dimension_message, dimension_long;
+    int i,j;
     struct my_msgbuf msgp;
     char str1[4];
     /*char str2[4];*/
-    char destination[13];
+    char destination[100];
 
     /* Generare due coordinate tra le celle valide */
     srand(getpid());
@@ -92,8 +92,11 @@ void destination_and_call(map *pointer_at_map) {
 #if 1
     msgp.mtype = 1; /* Le richieste hanno long 1 */
     strcpy(msgp.message, destination);
+#if 0   
     dimension_message = sizeof(msgp);
     dimension_long = sizeof(long);
+#endif
+    printf("%s \n", msgp.message);
     printf("L'id della coda di messaggi in cui proverò a scrivere è %i \n", msg_queue_id);
     if (msgsnd(msg_queue_id, &msgp, SCEMO_CHI_LEGGE, 0) == -1) {
     	perror("DIo bastardo \n");
