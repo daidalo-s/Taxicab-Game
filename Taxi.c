@@ -35,7 +35,6 @@ int main(int argc, char *argv[])
     int shmid;
     int dimension_message = sizeof(msgp);
     int dimension_long = sizeof(long);
-    int risultato;
     sleep(5);
     /* Prendo l'indirizzo */ 
     shmid = atoi(argv[1]);
