@@ -1,4 +1,4 @@
-SO_HOLES = 5;
+SO_HOLES = 3;
 SO_TOP_CELLS = 1;
 SO_SOURCES = 1;
 SO_TAXI = 1;

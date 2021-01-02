@@ -17,8 +17,7 @@
 /********** VARIABILI GLOBALI **********/
 /*  
  *	Deve accedere a: mappa in memoria condivisa, coda di messaggi della cella
- 					 che sceglie, semaforo per active_taxis, semaforo per 
- 					 crossings
+ *      che sceglie, semaforo per active_taxis, semaforo per crossings
  *	Deve ricordarsi di: dove si trova per scegliere il percorso.
  */	
 int x, y;
@@ -50,25 +49,26 @@ void attach(map *pointer_at_map) {
  */
 int main(int argc, char *argv[])
 {	
-	int i,j,SO_HOLES=0;
+    int i,j,SO_HOLES=0;
     /* Prendo l'id e mi attacco al segmento */ 
     map_shm_id = atoi(argv[1]);
     pointer_at_map = shmat(map_shm_id, NULL, 0);
     if (pointer_at_map == NULL){
-    	perror("Processo Taxi: non riesco ad accedere alla mappa. Termino.");
-    	exit(EXIT_FAILURE);
+        perror("Processo Taxi: non riesco ad accedere alla mappa. Termino.");
+        exit(EXIT_FAILURE);
     }
 
     /* Prendo visibilità dell'array di semafori Taxi*/
     for (i = 0; i < SO_HEIGHT; i ++) {
-    	for (j = 0; j < SO_WIDTH; j++){
-    		if (pointer_at_map->mappa[i][j].cell_type == 0) SO_HOLES++;
-    	}
+        for (j = 0; j < SO_WIDTH; j++){
+            if (pointer_at_map->mappa[i][j].cell_type == 0) SO_HOLES++;
+        }
     }
     taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, SEM_FLG);
     if (taxi_sem_id == -1){
-    	perror("Processo Taxi: non riesco ad accedere al mio semaforo. Termino.");
-    	exit(EXIT_FAILURE);
+        perror("Processo Taxi: non riesco ad accedere al mio semaforo. Termino.");
+        TEST_ERROR 
+            exit(EXIT_FAILURE);
     }
     /* Chiamo il metodo attach */
     /*attach(pointer_at_map);*/
