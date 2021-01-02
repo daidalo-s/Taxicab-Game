@@ -393,7 +393,7 @@ void createIPC(map *pointer_at_map) {
     for (i = 0; i < SO_HEIGHT; i ++){
         for (j = 0; j < SO_WIDTH; j++) {
             if (pointer_at_map->mappa[i][j].cell_type == 1) { 
-                pointer_at_map->mappa[i][j].message_queue = pointer_at_msgq[counter];
+                pointer_at_map->mappa[i][j].message_queue_key = pointer_at_msgq[counter];
                 counter++;
             }
         }

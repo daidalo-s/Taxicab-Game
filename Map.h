@@ -20,11 +20,12 @@
 typedef struct 
 {
     int cell_type;
-    int taxi_capacity;
+    int SO_CAP_MIN;
+    int SO_CAP_MAX;
     int active_taxis;
     int travel_time;
     int crossings;
-    int message_queue;
+    int message_queue_key;
 } cell;
 
 /* http://users.cs.cf.ac.uk/Dave.Marshall/C/node27.html */
