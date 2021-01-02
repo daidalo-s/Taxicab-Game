@@ -21,7 +21,7 @@
  */	
 map *pointer_at_map;
 message_queue cell_message_queue;
-int map_shm_id, sem_id, msg_queue_of_cell_key, message_queue_id;
+int map_shm_id, source_sem_id, msg_queue_of_cell_key, message_queue_id;
 int x, y;
 struct sembuf accesso = { 0, -1, 0}; 
 struct sembuf rilascio = { 0, +1, 0}; 
@@ -40,7 +40,7 @@ void attach(map *pointer_at_map) {
         for (j = 0; j < SO_WIDTH; j++){
             if (pointer_at_map->mappa[i][j].cell_type == 1){
                 /* Sezione critica */
-                semop(sem_id, &accesso, 1);
+                semop(source_sem_id, &accesso, 1);
 
                 pointer_at_map->mappa[i][j].cell_type = 3;
                 msg_queue_of_cell_key = pointer_at_map->mappa[i][j].message_queue_key;
@@ -49,7 +49,7 @@ void attach(map *pointer_at_map) {
                 y = j;
 
                 /* Rilascio la risorsa */
-                semop(sem_id, &rilascio, 1);
+                semop(source_sem_id, &rilascio, 1);
             }
         }
     }
@@ -95,10 +95,15 @@ void destination_and_call(map *pointer_at_map) {
 
     /* Prendo l'id della coda di messaggi e mando */
     message_queue_id = msgget(msg_queue_of_cell_key, 0);
+    if (message_queue_id == -1){
+    	perror("Processo Source: non riesco a collegarmi alla coda di messaggi della mia cella. Termino.");
+    	exit(EXIT_FAILURE);
+    }
     printf("L'id della coda di messaggi in cui proverò a scrivere è %i \n", msg_queue_of_cell_key);
     /* DA FARE IN MODO PERIODICO */
     if (msgsnd(message_queue_id, &cell_message_queue, MESSAGE_WIDTH, 0) < 0) {
-        perror("Errore non riesco a mandare il messaggio");
+        perror("Processo Source: errore, non riesco a mandare il messaggio");
+        /* Lo facciamo terminare? */
     }
 }
 
@@ -117,10 +122,16 @@ int main(int argc, char *argv[])
     /* Mi collego alla mappa */ 
     map_shm_id = atoi(argv[1]);
     pointer_at_map = shmat(map_shm_id, NULL, 0);
-    
+    if (pointer_at_map == NULL) {
+    	perror("Processo Source: non riesco ad attaccarmi alla mappa. Termino. ");
+    	exit(EXIT_FAILURE);
+    }
     /* Ottengo visibilità del semaforo a cui devo fare riferimento */
-    sem_id = semget(SEM_KEY, 1, 0600);
-
+    source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600);
+    if (source_sem_id == -1){
+    	perror("Processo Source: non riesco a prendere il semaforo. Termino.");
+    	exit(EXIT_FAILURE);
+    }
     /* Cerco una cella SO_SOURCE e mi attacco */
     attach(pointer_at_map);
     /* DA PROVARE */

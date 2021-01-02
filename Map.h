@@ -4,7 +4,11 @@
 
 #define MAP_KEY 9876
 #define SHM_FLG 0600
-#define SEM_KEY 5432
+#define SEM_FLG 0600
+#define SOURCE_SEM_KEY 5432
+#define TAXI_SEM_KEY 1098
+
+#define TAXI_SEM_ARRAY_DIM ((SO_WIDTH*SO_HEIGHT)-SO_HOLES)
 
 #define MESSAGE_WIDTH 8
 
@@ -25,6 +29,7 @@ typedef struct
     int travel_time;
     int crossings;
     int message_queue_key;
+    int reference_sem_number;
 } cell;
 
 /* http://users.cs.cf.ac.uk/Dave.Marshall/C/node27.html */

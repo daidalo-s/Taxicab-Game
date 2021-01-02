@@ -13,6 +13,7 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include "Map.h"
+
 /****************** Prototipi ******************/
 void kill_all();
 void reading_input_values (); 
@@ -42,9 +43,10 @@ int SO_DURATION = 0;
 /* Argomenti da passare alla execve */
 char * args_source[] = {"Source", NULL, NULL, NULL};
 char * args_taxi[] = {"Taxi", NULL, NULL};
-char m_id_str[4];
+char map_shm_id_execve[4];
 int map_shm_id; /* valore ritornato da shmget() */
-int source_sem_id; /* valore ritornato da semget() */
+int source_sem_id; /* valore ritornato da semget() per i SOURCE */
+int taxi_sem_id;
 int * pointer_at_msgq; 
 
 /* ---------------- Lettura parametri da file ----------------- */
@@ -285,6 +287,7 @@ void random_cell_type(map *pointer_at_map) {
         } 
     }
 }
+#endif
 /* Nei casi in cui si odvesse verificare qualche anomalia viene restituito 1, 
  * ma per generare un errore cosa possiamo fare?
  */
@@ -313,7 +316,6 @@ void random_travel_time(map *pointer_at_map) {
     }
 }
 
-#endif
 
 /* Da modificare: dovrà leggere i parametri da file e con rand
  * impostare i vari campi della struct. 
@@ -334,10 +336,10 @@ void map_setup(map *pointer_at_map) {
             pointer_at_map->mappa[i][j].active_taxis = 0;
         }
     }
-    /* Li porto fuori dall'ifdef perché voglio avere */
     random_taxi_capacity(pointer_at_map);
-    /* Per il momento la teniamo ma se ci fa impazzire torna nell'ifdef */
     random_travel_time(pointer_at_map);
+    /* Li porto fuori dall'ifdef perché voglio avere */
+    /* Per il momento la teniamo ma se ci fa impazzire torna nell'ifdef */
 #ifdef MAPPA_VALORI_CASUALI
     random_cell_type(pointer_at_map);
 #endif
@@ -378,18 +380,56 @@ void createIPC(map *pointer_at_map) {
     map_shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
     if (map_shm_id == -1) {
         perror("Non riesco a creare la memoria condivisa. Termino.");
+        kill_all();
         exit(EXIT_FAILURE);
     }
     /* Mi attacco come master alla mappa */
     pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
+    if (pointer_at_map == NULL) {
+        perror("Non riesco ad attaccarmi alla memoria condivisa con la mappa. Termino.");
+        kill_all();
+        exit(EXIT_FAILURE);
+    }
+    /* Inizializziamo la mappa */
     map_setup(pointer_at_map);
     /* Preparo gli argomenti per la execve */
-    sprintf(m_id_str, "%d", map_shm_id); 
-    args_source[1] = args_taxi[1] = m_id_str;
-    /* Creo il semaforo per l'assegnazione delle celle 1 */
-    source_sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT); 
+    sprintf(map_shm_id_execve, "%d", map_shm_id); 
+    args_source[1] = args_taxi[1] = map_shm_id_execve;
+    /* Creo il semaforo mutex per l'assegnazione delle celle di SOURCE */
+    source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600 | IPC_CREAT);
+    if (source_sem_id == -1){
+        perror("Non riesco a generare il semaforo per Source. Termino");
+        kill_all();
+        exit(EXIT_FAILURE);
+    } 
     /* Imposto il semaforo con valore 1 -MUTEX */
-    semctl(source_sem_id, 0, SETVAL, 1);
+    if (semctl(source_sem_id, 0, SETVAL, 1) == -1) {
+        perror("Non riesco a impostare il semaforo per Source. Termino");
+        kill_all();
+        exit(EXIT_FAILURE);
+    }
+    /* Creo l'array di semafori */
+    taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, 0600 | IPC_CREAT);
+    if (taxi_sem_id == -1){
+        perror("Non riesco a generare il semaforo per Taxi. Termino");
+        kill_all();
+        exit(EXIT_FAILURE);
+    }
+    /* Assegno il numero del semaforo Taxi di riferimento ad ogni cella */
+    counter = 0;
+    for (i = 0; i < SO_HEIGHT; i++){
+        for (j = 0; j < SO_WIDTH; j++){
+            if (pointer_at_map->mappa[i][j].cell_type != 0) {
+                if(semctl(taxi_sem_id, counter, SETVAL, pointer_at_map->mappa[i][j].taxi_capacity) == -1 ){
+                    perror("Non riesco a impostare il semaforo per Taxi. Termino");
+                    kill_all();
+                    exit(EXIT_FAILURE);
+                }
+                pointer_at_map->mappa[i][j].reference_sem_number = counter;
+                counter++;
+            }
+        }
+    }
     /* Creiamo le code di messaggi per le celle source */
     pointer_at_msgq = malloc(SO_SOURCES*sizeof(int));
     for (i = 0; i < SO_SOURCES; i ++) {
@@ -397,6 +437,7 @@ void createIPC(map *pointer_at_map) {
         msgget(pointer_at_msgq[i], 0666 | IPC_CREAT | IPC_EXCL);
     }
     /* Assegna al campo della cella il valore della sua coda di messaggi*/
+    counter = 0;
     for (i = 0; i < SO_HEIGHT; i ++){
         for (j = 0; j < SO_WIDTH; j++) {
             if (pointer_at_map->mappa[i][j].cell_type == 1) { 
@@ -412,7 +453,10 @@ void kill_all() {
     int msqid, i;
     /* Marco per la deallocazione la memoria condivisa */
     shmctl(map_shm_id, IPC_RMID, NULL);
+    /* Dealloco il semaforo per Source */
     semctl(source_sem_id, 0, IPC_RMID);
+    /* Dealloco l'array di semafori per Taxi */
+    semctl(taxi_sem_id, 0, IPC_RMID);
     for (i = 0; i < SO_SOURCES; i++) {
         msqid = msgget(pointer_at_msgq[i], 0600);
         /* Dealloco quella coda di messaggi */
