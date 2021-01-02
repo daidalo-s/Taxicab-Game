@@ -32,6 +32,7 @@ map *pointer_at_map;
  *	tra le libere e quelle che non eccedono già la capacità.
  *	Devo aggiungere due campi alla struct per SO_CAP_MIN e SO_CAP_MAX
  */
+#if 0
 void attach(map *pointer_at_map) {
     int x,y;
     srand(getpid());
@@ -41,6 +42,7 @@ void attach(map *pointer_at_map) {
     } while (pointer_at_map->mappa[x][y].cell_type == 0 && pointer_at_map->mappa[x][y].active_taxis < SO_CAP_MAX);
 } 
 
+#endif
 
 /********** MAIN **********/
 /*
