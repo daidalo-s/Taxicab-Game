@@ -40,11 +40,11 @@ int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
-char * args_a[] = {"Source", NULL, NULL, NULL};
-char * args_b[] = {"Taxi", NULL, NULL};
+char * args_source[] = {"Source", NULL, NULL, NULL};
+char * args_taxi[] = {"Taxi", NULL, NULL};
 char m_id_str[4];
-int shm_id; /* valore ritornato da shmget() */
-int sem_id; /* valore ritornato da semget() */
+int map_shm_id; /* valore ritornato da shmget() */
+int source_sem_id; /* valore ritornato da semget() */
 int * pointer_at_msgq; 
 
 /* ---------------- Lettura parametri da file ----------------- */
@@ -294,7 +294,9 @@ void random_taxi_capacity(map *pointer_at_map) {
     int i, j;
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
-            pointer_at_map->mappa[i][j].taxi_capacity = (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
+            if (pointer_at_map->mappa[i][j].cell_type != 0) { 
+                pointer_at_map->mappa[i][j].taxi_capacity = (rand() % (SO_CAP_MAX - SO_CAP_MIN + 1)) + SO_CAP_MIN;
+            }
         }
     }
 }
@@ -304,7 +306,9 @@ void random_travel_time(map *pointer_at_map) {
     int i, j;
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
-            pointer_at_map->mappa[i][j].travel_time = (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
+            if (pointer_at_map->mappa[i][j].cell_type != 0) { 
+                pointer_at_map->mappa[i][j].travel_time = (rand() % (SO_TIMENSEC_MAX - SO_TIMENSEC_MIN + 1)) + SO_TIMENSEC_MIN;
+            }
         }
     }
 }
@@ -325,14 +329,17 @@ void map_setup(map *pointer_at_map) {
     srand(getpid());
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
+            /* Imposto ogni cella con cell_type=2, active_taxis=0 */
             pointer_at_map->mappa[i][j].cell_type = 2;
             pointer_at_map->mappa[i][j].active_taxis = 0;
         }
     }
+    /* Li porto fuori dall'ifdef perché voglio avere */
+    random_taxi_capacity(pointer_at_map);
+    /* Per il momento la teniamo ma se ci fa impazzire torna nell'ifdef */
+    random_travel_time(pointer_at_map);
 #ifdef MAPPA_VALORI_CASUALI
     random_cell_type(pointer_at_map);
-    random_taxi_capacity(pointer_at_map);
-    random_travel_time(pointer_at_map);
 #endif
 #ifndef MAPPA_VALORI_CASUALI
     pointer_at_map->mappa[0][0].cell_type = 0;
@@ -346,7 +353,7 @@ void map_setup(map *pointer_at_map) {
 /* Dovrebbe andare */
 void map_print(map *pointer_at_map) {
     int i, j;
-    pointer_at_map = shmat(shm_id, NULL, SHM_FLG);
+    pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
             printf ("%i ", pointer_at_map->mappa[i][j].cell_type);
@@ -368,21 +375,21 @@ void createIPC(map *pointer_at_map) {
     /* Path per la ftok */
     char *path = "/tmp";
     /* Creo la memoria condivisa che contiene la mappa */
-    shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
-    if (shm_id == -1) {
+    map_shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
+    if (map_shm_id == -1) {
         perror("Non riesco a creare la memoria condivisa. Termino.");
         exit(EXIT_FAILURE);
     }
     /* Mi attacco come master alla mappa */
-    pointer_at_map = shmat(shm_id, NULL, SHM_FLG);
+    pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
     map_setup(pointer_at_map);
     /* Preparo gli argomenti per la execve */
-    sprintf(m_id_str, "%d", shm_id); 
-    args_a[1] = args_b[1] = m_id_str;
+    sprintf(m_id_str, "%d", map_shm_id); 
+    args_source[1] = args_taxi[1] = m_id_str;
     /* Creo il semaforo per l'assegnazione delle celle 1 */
-    sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT); 
+    source_sem_id = semget(SEM_KEY, 1, 0600 | IPC_CREAT); 
     /* Imposto il semaforo con valore 1 -MUTEX */
-    semctl(sem_id, 0, SETVAL, 1);
+    semctl(source_sem_id, 0, SETVAL, 1);
     /* Creiamo le code di messaggi per le celle source */
     pointer_at_msgq = malloc(SO_SOURCES*sizeof(int));
     for (i = 0; i < SO_SOURCES; i ++) {
@@ -404,8 +411,8 @@ void kill_all() {
     /* Completare. Dovrà terminare le risorse IPC che allocheremo. */
     int msqid, i;
     /* Marco per la deallocazione la memoria condivisa */
-    shmctl(shm_id, IPC_RMID, NULL);
-    semctl(sem_id, 0, IPC_RMID);
+    shmctl(map_shm_id, IPC_RMID, NULL);
+    semctl(source_sem_id, 0, IPC_RMID);
     for (i = 0; i < SO_SOURCES; i++) {
         msqid = msgget(pointer_at_msgq[i], 0600);
         /* Dealloco quella coda di messaggi */
@@ -436,7 +443,7 @@ int main () {
                 exit(EXIT_FAILURE);
                 break;
             case 0:
-                execve("Source", args_a, NULL);
+                execve("Source", args_source, NULL);
                 TEST_ERROR;
                 break;
             default:
@@ -454,7 +461,7 @@ int main () {
                 exit(EXIT_FAILURE);
                 break;
             case 0:
-                execve("Taxi", args_b, NULL);
+                execve("Taxi", args_taxi, NULL);
                 TEST_ERROR;
                 break;
             default:

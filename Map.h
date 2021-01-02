@@ -20,8 +20,7 @@
 typedef struct 
 {
     int cell_type;
-    int SO_CAP_MIN;
-    int SO_CAP_MAX;
+    int taxi_capacity;
     int active_taxis;
     int travel_time;
     int crossings;
