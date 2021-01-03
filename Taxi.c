@@ -91,12 +91,17 @@ void attach(map *pointer_at_map) {
 }  
 
 void receive_and_go() {
+	int x_destination, y_destination;
 	printf("Sono il processo Taxi che proverà a ricevere il messaggio \n");
 	printf("L'id della coda di messaggi da cui proverò a leggere è %i \n", msg_queue_of_cell_key);
     /* msg_queue_of_cell_key = pointer_at_map->mappa[2][2].message_queue_key; */
-    if (msgrcv(msg_queue_of_cell, &cell_message_queue, MESSAGE_WIDTH, 0, 0) < 0) {
+    if (msgrcv(msg_queue_of_cell, &cell_message_queue, MESSAGE_WIDTH, 0, 0) < 0) { /* In teoria non ha flag ipcnowait */
         perror("Errore non riesco a ricevere il messaggio\n ");
-    };
+    }
+    x_destination = atoi(&cell_message_queue.message[0]);
+    y_destination = atoi(&cell_message_queue.message[2]);
+    printf("La x_destination e' % i \n", x_destination);
+    printf("La y_destination e' %i \n", y_destination);
     printf("Ho ricevuto il messaggio %s \n", cell_message_queue.message);
 }
 
