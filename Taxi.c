@@ -29,9 +29,7 @@ struct sembuf rilascio;
 message_queue cell_message_queue;    
 map *pointer_at_map;
 
-
 void random_cell() {
-    srand(getpid());
     /* Possibile loop infinito, dipende dai controlli */
     do {
         random_coordinates[0] = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; /* x */
@@ -111,6 +109,7 @@ void receive_and_go() {
 int main(int argc, char *argv[])
 {	
     int i,j,SO_HOLES=0;
+    srand(time(NULL));
     /* Prendo l'id e mi attacco al segmento */ 
     map_shm_id = atoi(argv[1]);
     pointer_at_map = shmat(map_shm_id, NULL, 0);

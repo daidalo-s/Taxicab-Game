@@ -74,7 +74,6 @@ void destination_and_call(map *pointer_at_map) {
     char destination_string[MESSAGE_WIDTH];
 
     /* Generare due coordinate tra le celle valide */
-    srand(getpid());
     do { 
         destination_x = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; 
         destination_y = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
@@ -120,7 +119,8 @@ void destination_and_call(map *pointer_at_map) {
    */
 int main(int argc, char *argv[])
 {
-    /* Mi collego alla mappa */ 
+    /* Mi collego alla mappa */
+    srand(time(NULL)); 
     map_shm_id = atoi(argv[1]);
     pointer_at_map = shmat(map_shm_id, NULL, 0);
     if (pointer_at_map == NULL) {

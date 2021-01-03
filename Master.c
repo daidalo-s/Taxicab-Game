@@ -350,7 +350,6 @@ void random_travel_time(map *pointer_at_map) {
  */
 void map_setup(map *pointer_at_map) {
     int i, j, max_taxi_map = 0, condizione_ok = 0;
-    srand(getpid());
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
             /* Imposto ogni cella con cell_type=2, active_taxis=0 */
@@ -526,7 +525,8 @@ void kill_all() {
 /* Main */
 int main () {
 
-    int i, j, valore_fork_sources, valore_fork_taxi; 
+    int i, j, valore_fork_sources, valore_fork_taxi;
+    srand(time(NULL)); 
     /* Lettura degli altri parametri specificati da file */
     reading_input_values();
 #if 0
