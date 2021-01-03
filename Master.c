@@ -408,7 +408,7 @@ void createIPC(map *pointer_at_map) {
         kill_all();
         exit(EXIT_FAILURE);
     }
-    /* Creo l'array di semafori */
+    /* Creo l'array di semafori per i TAXI*/
     taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, 0600 | IPC_CREAT);
     if (taxi_sem_id == -1){
         perror("Non riesco a generare il semaforo per Taxi. Termino");
@@ -478,6 +478,7 @@ int main () {
 #endif 
     /* Creo gli oggetti ipc */
     createIPC(pointer_at_map);
+    printf("Sono il master: l'array di semafori ha id %i e la cella 2.2 ha numero %i \n", taxi_sem_id, pointer_at_map->mappa[2][2].reference_sem_number);
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
     for (i = 0; i < SO_SOURCES; i++) {
         switch(valore_fork_sources = fork()) {
