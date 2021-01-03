@@ -41,7 +41,7 @@ void attach(map *pointer_at_map) {
             if (pointer_at_map->mappa[i][j].cell_type == 1){
                 /* Sezione critica */
                 semop(source_sem_id, &accesso, 1);
-
+                TEST_ERROR
                 pointer_at_map->mappa[i][j].cell_type = 3;
                 msg_queue_of_cell_key = pointer_at_map->mappa[i][j].message_queue_key;
 
@@ -50,6 +50,7 @@ void attach(map *pointer_at_map) {
 
                 /* Rilascio la risorsa */
                 semop(source_sem_id, &rilascio, 1);
+                TEST_ERROR
             }
         }
     }

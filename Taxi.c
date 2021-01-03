@@ -68,7 +68,7 @@ void attach(map *pointer_at_map) {
         y = tmpy;
     }
     semop(taxi_sem_id, &rilascio, 1);
-
+    TEST_ERROR
     /* Verifico se la cella è 1 o 3 e prendo l'id della coda di messaggi. */
     if (pointer_at_map->mappa[x][y].cell_type == 1 || pointer_at_map->mappa[x][y].cell_type == 3) {
         msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;

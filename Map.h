@@ -1,5 +1,4 @@
 #define SO_HEIGHT 4
-/*Test commit */
 #define SO_WIDTH 5
 
 #define MAP_KEY 9876
