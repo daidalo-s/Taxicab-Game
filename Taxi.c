@@ -122,6 +122,8 @@ int main(int argc, char *argv[])
     attach(pointer_at_map);
     printf("Sono il processo taxi: mi sono attaccato alla cella %i %i \n", x, y);
     printf("Sono il processo taxi: il semaforo ha id %i ed e' il numero %i \n", taxi_sem_id, pointer_at_map->mappa[tmpx][tmpy].reference_sem_number);
+    
+
     printf("Sono un processo Taxi \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
 

@@ -14,9 +14,15 @@
 #include <sys/msg.h>
 #include "Map.h"
 
+/****************** INFORMAZIONI SUI FIGLI ******************/
+/* Struct con dei campi per memorizzare informazioni
+   sui figli che creiamo. */
+
 /****************** Prototipi ******************/
 void kill_all();
-void reading_input_values (); 
+void reading_input_values ();
+int  max_hole_width();
+int  max_hole_height(); 
 void random_cell_type(map *pointer_at_map);
 void random_taxi_capacity(map *pointer_at_map);
 void random_travel_time(map *pointer_at_map);
@@ -69,83 +75,34 @@ void reading_input_values () {
 
             if (strcmp(tmpstr1,"SO_HOLES")==0) {
                 SO_HOLES = atoi(tmpstr2);
-                if (SO_HOLES < 1) {
-                    printf("Errore, parametro SO_HOLES non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
             }       
             else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
                 SO_TOP_CELLS = atoi(tmpstr2);
-                if (SO_TOP_CELLS < 1) {
-                    printf("Errore, parametro SO_TOP_CELLS non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
+                
             }
             else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
                 SO_SOURCES = atoi(tmpstr2);
-                if (SO_SOURCES < 1) {
-                    printf("Errore, parametro SO_SOURCES non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
             }
             else if (strcmp(tmpstr1,"SO_CAP_MIN")==0) {
                 SO_CAP_MIN = atoi(tmpstr2);
-                if (SO_CAP_MIN < 0) {
-                    printf("Errore, parametro SO_CAP_MIN non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
             }  
             else if (strcmp(tmpstr1,"SO_CAP_MAX")==0) {
                 SO_CAP_MAX = atoi(tmpstr2);
-                if (SO_CAP_MAX < SO_CAP_MIN){
-                    printf("Errore, parametro SO_CAP_MAX non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
             }
             else if (strcmp(tmpstr1,"SO_TAXI")==0) {
                 SO_TAXI = atoi(tmpstr2);
-                if (SO_TAXI < 0){
-                    printf("Errore, parametro SO_TAXI non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
             }
             else if (strcmp(tmpstr1,"SO_TIMENSEC_MIN")==0) {
                 SO_TIMENSEC_MIN = atoi(tmpstr2);
-                if (SO_TIMENSEC_MIN < 0) {
-                    printf("Errore, parametro SO_TIMENSEC_MIN non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
             }
             else if (strcmp(tmpstr1,"SO_TIMENSEC_MAX")==0) {
                 SO_TIMENSEC_MAX = atoi(tmpstr2);
-                if (SO_TIMENSEC_MAX < SO_TIMENSEC_MIN){
-                    printf("Errore, parametro SO_TIMENSEC_MAX non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
             }
             else if (strcmp(tmpstr1,"SO_TIMEOUT")==0) {
                 SO_TIMEOUT = atoi(tmpstr2);
-                if (SO_TIMEOUT < 0) {
-                    printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
             }
             else if (strcmp(tmpstr1,"SO_DURATION")==0) {
                 SO_DURATION = atoi(tmpstr2);
-                if (SO_DURATION < SO_TIMEOUT) {
-                    printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
-                    fclose(input);
-                    exit(EXIT_FAILURE);
-                }
             }
             else {
                 printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
@@ -153,6 +110,53 @@ void reading_input_values () {
         }
     }
     fclose(input);
+    /* Controlli sui parametri */
+    if (SO_HOLES < 1 || SO_HOLES > (max_hole_width() * max_hole_height())) {
+        printf("Errore, parametro SO_HOLES non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (SO_TOP_CELLS < 1 || SO_TOP_CELLS > (SO_WIDTH*SO_HEIGHT)-SO_HOLES) {
+        printf("Errore, parametro SO_TOP_CELLS non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (SO_SOURCES < 1 || SO_SOURCES > (SO_WIDTH*SO_HEIGHT)-SO_HOLES) {
+        printf("Errore, parametro SO_SOURCES non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (SO_CAP_MIN < 0) {
+        printf("Errore, parametro SO_CAP_MIN non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (SO_CAP_MAX <= SO_CAP_MIN) {
+        printf("Errore, parametro SO_CAP_MAX non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (SO_TAXI < 0 || SO_TAXI > (SO_CAP_MAX * ((SO_WIDTH*SO_HEIGHT)-SO_HOLES))) {
+        printf("Errore, parametro SO_TAXI non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (SO_TIMENSEC_MIN < 0) {
+        printf("Errore, parametro SO_TIMENSEC_MIN non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+     if (SO_TIMENSEC_MAX <= SO_TIMENSEC_MIN) {
+        printf("Errore, parametro SO_TIMENSEC_MAX non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (SO_TIMEOUT < 0) {
+        printf("Errore, parametro SO_TIMEOUT non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (SO_DURATION < SO_TIMEOUT) {
+        printf("Errore, parametro SO_DURATION non valido. Esco.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Evito mappe di una sola cella */
+    if (SO_WIDTH == SO_HEIGHT == 1){
+        printf("Errore, non posso avere mappe di una sola cella. Esco. \n");
+        exit(EXIT_FAILURE);
+    }
 
 #ifdef STAMPA_PARAMETRI
     printf("SO_HOLES : %i\n", SO_HOLES);
@@ -166,6 +170,24 @@ void reading_input_values () {
     printf("SO_DURATION : %i\n", SO_DURATION);
     printf("SO_HOLES : %i\n", SO_HOLES);
 #endif
+}
+
+int max_hole_width() {
+    int max_so_width = SO_WIDTH;
+    if (SO_WIDTH % 2 != 0){
+        max_so_width ++;
+        max_so_width = max_so_width / 2;
+        return max_so_width;
+    } else return max_so_width / 2;
+}
+
+int max_hole_height() {
+    int max_so_height = SO_HEIGHT;
+    if (SO_HEIGHT % 2 != 0){
+        max_so_height ++;
+        max_so_height = max_so_height / 2;
+        return max_so_height;
+    } else return max_so_height / 2;
 }
 
 /* ---------------- Metodi mappa ----------------- */
@@ -327,7 +349,7 @@ void random_travel_time(map *pointer_at_map) {
  * documento condiviso
  */
 void map_setup(map *pointer_at_map) {
-    int i, j;
+    int i, j, max_taxi_map = 0, condizione_ok = 0;
     srand(getpid());
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
@@ -336,12 +358,44 @@ void map_setup(map *pointer_at_map) {
             pointer_at_map->mappa[i][j].active_taxis = 0;
         }
     }
-    random_taxi_capacity(pointer_at_map);
+    do {
+        random_taxi_capacity(pointer_at_map);
+        for (i = 0; i < SO_HEIGHT; i++) {
+            for (j = 0; j < SO_WIDTH; j++) {
+                /* Calcolo il numero massimo di taxi sulla mappa con le capienze assegnate */
+                max_taxi_map = max_taxi_map + pointer_at_map->mappa[i][j].taxi_capacity;
+            }
+        }
+        /* Controllo che SO TAXI non sia > capacità di taxi massima della mappa */
+        if (SO_TAXI > max_taxi_map) {
+            printf("Errore: dovrei mettere %i taxi, ma la capeinza massima della mappa e' %i \n", SO_TAXI, max_taxi_map);
+            printf("Assegno nuove capienze massime. \n");
+        } else condizione_ok = 1;
+    } while (condizione_ok == 0); /* Potenziale loop infinito se i parametri sono volutamente sbagliati */
     random_travel_time(pointer_at_map);
     /* Li porto fuori dall'ifdef perché voglio avere */
     /* Per il momento la teniamo ma se ci fa impazzire torna nell'ifdef */
 #ifdef MAPPA_VALORI_CASUALI
     random_cell_type(pointer_at_map);
+    /* Controlli su mappe particolari */
+    /* Mappe di una sola riga */
+    if (SO_HEIGHT == 1 && SO_WIDTH > 1) {
+        for(j = 1; j < SO_WIDTH - 1; j++){
+            if (pointer_at_map->mappa[0][j].cell_type == 0) {
+                printf("Errore: non posso avere celle holes in mezzo. Termino.\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }   
+    /* Mappe di una sola colonna */
+    if (SO_WIDTH == 1 && SO_HEIGHT > 1) {
+        for(i = 1; i < SO_HEIGHT - 1; i++){
+            if (pointer_at_map->mappa[i][0].cell_type == 0) {
+                printf("Errore: non posso avere celle holes in mezzo. Termino.\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
 #endif
 #ifndef MAPPA_VALORI_CASUALI
     pointer_at_map->mappa[0][0].cell_type = 0;
@@ -434,7 +488,11 @@ void createIPC(map *pointer_at_map) {
     pointer_at_msgq = malloc(SO_SOURCES*sizeof(int));
     for (i = 0; i < SO_SOURCES; i ++) {
         pointer_at_msgq[i] = ftok(path, i);
-        msgget(pointer_at_msgq[i], 0666 | IPC_CREAT | IPC_EXCL);
+        if(msgget(pointer_at_msgq[i], 0666 | IPC_CREAT | IPC_EXCL) == 1) {
+            perror("Non riesco a creare la coda di messaggi");
+            kill_all();
+            exit(EXIT_FAILURE);
+        }
     }
     /* Assegna al campo della cella il valore della sua coda di messaggi*/
     counter = 0;
@@ -462,6 +520,7 @@ void kill_all() {
         /* Dealloco quella coda di messaggi */
         msgctl(msqid , IPC_RMID , NULL);
     }
+    free(pointer_at_msgq);
 }
 
 /* Main */
@@ -493,6 +552,8 @@ int main () {
                 break;
             default:
                 /* Codice che voglio esegua il Master */
+                /* Magari salviamo le informazioni dei figli dentro 
+                   la struct che creiamo all'inizio? */
                 break;
         }
     }
