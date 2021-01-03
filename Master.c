@@ -78,7 +78,7 @@ void reading_input_values () {
             }       
             else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
                 SO_TOP_CELLS = atoi(tmpstr2);
-                
+
             }
             else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
                 SO_SOURCES = atoi(tmpstr2);
@@ -127,7 +127,7 @@ void reading_input_values () {
         printf("Errore, parametro SO_CAP_MIN non valido. Esco.\n");
         exit(EXIT_FAILURE);
     }
-    if (SO_CAP_MAX <= SO_CAP_MIN) {
+    if (SO_CAP_MAX < SO_CAP_MIN) {
         printf("Errore, parametro SO_CAP_MAX non valido. Esco.\n");
         exit(EXIT_FAILURE);
     }
@@ -139,7 +139,7 @@ void reading_input_values () {
         printf("Errore, parametro SO_TIMENSEC_MIN non valido. Esco.\n");
         exit(EXIT_FAILURE);
     }
-     if (SO_TIMENSEC_MAX <= SO_TIMENSEC_MIN) {
+    if (SO_TIMENSEC_MAX < SO_TIMENSEC_MIN) {
         printf("Errore, parametro SO_TIMENSEC_MAX non valido. Esco.\n");
         exit(EXIT_FAILURE);
     }
@@ -153,7 +153,7 @@ void reading_input_values () {
     }
 
     /* Evito mappe di una sola cella */
-    if (SO_WIDTH == SO_HEIGHT == 1){
+    if ((SO_WIDTH == SO_HEIGHT) == 1){
         printf("Errore, non posso avere mappe di una sola cella. Esco. \n");
         exit(EXIT_FAILURE);
     }

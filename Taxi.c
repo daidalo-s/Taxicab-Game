@@ -30,7 +30,7 @@ map *pointer_at_map;
 
 
 void random_cell() {
-	srand(getpid());
+    srand(getpid());
     /* Possibile loop infinito, dipende dai controlli */
     do {
         random_coordinates[0] = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; /* x */
@@ -40,12 +40,12 @@ void random_cell() {
     tmpy = random_coordinates[1];
     /* Impostazione di accesso */
     accesso.sem_num = pointer_at_map->mappa[tmpx][tmpy].reference_sem_number; 
-	accesso.sem_op = -1;
-	accesso.sem_flg = IPC_NOWAIT;
-	/* Impostazione di rilascio */
-	rilascio.sem_num = pointer_at_map->mappa[tmpx][tmpy].reference_sem_number;
-	rilascio.sem_op = +1;
-	rilascio.sem_flg = 0;
+    accesso.sem_op = -1;
+    accesso.sem_flg = IPC_NOWAIT;
+    /* Impostazione di rilascio */
+    rilascio.sem_num = pointer_at_map->mappa[tmpx][tmpy].reference_sem_number;
+    rilascio.sem_op = +1;
+    rilascio.sem_flg = 0;
 }
 
 /********** ATTACH ALLA CELLA **********/
@@ -60,34 +60,34 @@ void attach(map *pointer_at_map) {
 
     /* Entro in sezione critica */
     while (semop(taxi_sem_id, &accesso, 1) == -1) { /* Possibile loop infinito. Dipende dai controlli. */
-    	random_cell();
+        random_cell();
     }
     /* Ci parcheggiamo */
     if (pointer_at_map->mappa[tmpx][tmpy].active_taxis <= pointer_at_map->mappa[tmpx][tmpy].taxi_capacity) {
-    	x = tmpx;
-    	y = tmpy;
+        x = tmpx;
+        y = tmpy;
     }
     semop(taxi_sem_id, &rilascio, 1);
-    
+
     /* Verifico se la cella è 1 o 3 e prendo l'id della coda di messaggi. */
     if (pointer_at_map->mappa[x][y].cell_type == 1 || pointer_at_map->mappa[x][y].cell_type == 3) {
-		msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;
-	}
-	/* Ci attacchiamo alla coda di messaggi */
-	msg_queue_of_cell = msgget(msg_queue_of_cell_key, 0);
-	if (msg_queue_of_cell == -1){
-		perror("Sono un processo Taxi: non riesco ad attaccarmi alla coda di messaggi della mia cella.");
-	}
+        msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;
+    }
+    /* Ci attacchiamo alla coda di messaggi */
+    msg_queue_of_cell = msgget(msg_queue_of_cell_key, 0);
+    if (msg_queue_of_cell == -1){
+        perror("Sono un processo Taxi: non riesco ad attaccarmi alla coda di messaggi della mia cella.");
+    }
 #endif
 #ifndef MAPPA_VALORI_CASUALI	
-		
-	x = 2;
-	y = 2;
-	msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;
-	msg_queue_of_cell = msgget(msg_queue_of_cell_key, 0);
-	if (msg_queue_of_cell == -1){
-		perror("Sono un processo Taxi: non riesco ad attaccarmi alla coda di messaggi della mia cella.");
-	}
+
+    x = 2;
+    y = 2;
+    msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;
+    msg_queue_of_cell = msgget(msg_queue_of_cell_key, 0);
+    if (msg_queue_of_cell == -1){
+        perror("Sono un processo Taxi: non riesco ad attaccarmi alla coda di messaggi della mia cella.");
+    }
 #endif
 }  
 /********** MAIN **********/
@@ -116,13 +116,13 @@ int main(int argc, char *argv[])
     if (taxi_sem_id == -1){
         perror("Processo Taxi: non riesco ad accedere al mio semaforo. Termino.");
         TEST_ERROR 
-        exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
     }
     /* Chiamo il metodo attach */
     attach(pointer_at_map);
     printf("Sono il processo taxi: mi sono attaccato alla cella %i %i \n", x, y);
     printf("Sono il processo taxi: il semaforo ha id %i ed e' il numero %i \n", taxi_sem_id, pointer_at_map->mappa[tmpx][tmpy].reference_sem_number);
-    
+
 
     printf("Sono un processo Taxi \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);

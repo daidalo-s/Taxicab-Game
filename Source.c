@@ -57,15 +57,15 @@ void attach(map *pointer_at_map) {
 
 /********** GENERAZIONE DI DESTINAZIONE CASUALE E MESSAGGI **********/
 /*	
-	Chiamando questo metodo il processo SO_SOURCE genera due coordinate di destinazione
-	che salva dentro destination_x e destination_y. Con la funzione rand estrae dei valori
-	casuali per destination_x e destination_y verificando che il risultato non porti o a una cella
-	hole o alla cella in cui il processo già si trova. A quel punto "confeziona" il messaggio 
-	destination_string -che ha grandezza massima prevista di aaa,bbb- aggiungendo una virgola a 
-	separazione di x e y. Imposta a questo punto il campo long del messaggio a 1 (che dovrà essere 
-	lo stesso nei processi riceventi) e lo invia. 
-	L'INVIO DOVRÀ ESSERE PERIODICO.
- */
+        Chiamando questo metodo il processo SO_SOURCE genera due coordinate di destinazione
+        che salva dentro destination_x e destination_y. Con la funzione rand estrae dei valori
+        casuali per destination_x e destination_y verificando che il risultato non porti o a una cella
+        hole o alla cella in cui il processo già si trova. A quel punto "confeziona" il messaggio 
+        destination_string -che ha grandezza massima prevista di aaa,bbb- aggiungendo una virgola a 
+        separazione di x e y. Imposta a questo punto il campo long del messaggio a 1 (che dovrà essere 
+        lo stesso nei processi riceventi) e lo invia. 
+        L'INVIO DOVRÀ ESSERE PERIODICO.
+        */
 void destination_and_call(map *pointer_at_map) {
 
     int destination_x, destination_y, message_queue_id;
@@ -96,8 +96,8 @@ void destination_and_call(map *pointer_at_map) {
     /* Prendo l'id della coda di messaggi e mando */
     message_queue_id = msgget(msg_queue_of_cell_key, 0);
     if (message_queue_id == -1){
-    	perror("Processo Source: non riesco a collegarmi alla coda di messaggi della mia cella. Termino.");
-    	exit(EXIT_FAILURE);
+        perror("Processo Source: non riesco a collegarmi alla coda di messaggi della mia cella. Termino.");
+        exit(EXIT_FAILURE);
     }
     printf("L'id della coda di messaggi in cui proverò a scrivere è %i \n", msg_queue_of_cell_key);
     /* DA FARE IN MODO PERIODICO */
@@ -110,27 +110,27 @@ void destination_and_call(map *pointer_at_map) {
 
 /********** MAIN **********/
 /*
-	All'interno della funzione main il processo SO_SOURCE come prima cosa imposta il puntatore
-	alla mappa in memoria convidisa con l'id gli viene passato da Master.c come argomento alla
-	execve. A questo punto si "collega" anche al semaforo per l'assegnamento delle celle SOURCE
-	con la chiamata ad attach(). 
-	Quando arriva il segnale del master di "go" chiama destination_and_call per cominciare a 
-	generare richieste. 
- */
+   All'interno della funzione main il processo SO_SOURCE come prima cosa imposta il puntatore
+   alla mappa in memoria convidisa con l'id gli viene passato da Master.c come argomento alla
+   execve. A questo punto si "collega" anche al semaforo per l'assegnamento delle celle SOURCE
+   con la chiamata ad attach(). 
+   Quando arriva il segnale del master di "go" chiama destination_and_call per cominciare a 
+   generare richieste. 
+   */
 int main(int argc, char *argv[])
 {
     /* Mi collego alla mappa */ 
     map_shm_id = atoi(argv[1]);
     pointer_at_map = shmat(map_shm_id, NULL, 0);
     if (pointer_at_map == NULL) {
-    	perror("Processo Source: non riesco ad attaccarmi alla mappa. Termino. ");
-    	exit(EXIT_FAILURE);
+        perror("Processo Source: non riesco ad attaccarmi alla mappa. Termino. ");
+        exit(EXIT_FAILURE);
     }
     /* Ottengo visibilità del semaforo a cui devo fare riferimento */
     source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600);
     if (source_sem_id == -1){
-    	perror("Processo Source: non riesco a prendere il semaforo. Termino.");
-    	exit(EXIT_FAILURE);
+        perror("Processo Source: non riesco a prendere il semaforo. Termino.");
+        exit(EXIT_FAILURE);
     }
     /* Cerco una cella SO_SOURCE e mi attacco */
     attach(pointer_at_map);
