@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     }
     /* Chiamo il metodo attach */
     attach(pointer_at_map);
-
+    printf("Sono il processo taxi: mi sono attaccato alla cella %i %i \n", x, y);
     printf("Sono un processo Taxi \n");
     printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
 
