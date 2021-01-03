@@ -25,7 +25,8 @@ int random_coordinates[2];
 int tmpx, tmpy;
 int msg_queue_of_cell_key, msg_queue_of_cell, map_shm_id, taxi_sem_id;
 struct sembuf accesso;
-struct sembuf rilascio;    
+struct sembuf rilascio;
+message_queue cell_message_queue;    
 map *pointer_at_map;
 
 
@@ -90,6 +91,18 @@ void attach(map *pointer_at_map) {
     }
 #endif
 }  
+
+void receive_and_go() {
+	printf("Sono il processo Taxi che proverà a ricevere il messaggio \n");
+	printf("L'id della coda di messaggi da cui proverò a leggere è %i \n", msg_queue_of_cell_key);
+    /* msg_queue_of_cell_key = pointer_at_map->mappa[2][2].message_queue_key; */
+    if (msgrcv(msg_queue_of_cell, &cell_message_queue, MESSAGE_WIDTH, 0, 0) < 0) {
+        perror("Errore non riesco a ricevere il messaggio\n ");
+    };
+    printf("Ho ricevuto il messaggio %s \n", cell_message_queue.message);
+}
+
+
 /********** MAIN **********/
 /*
  *	All'interno della funzione main il processo deve prendere controllo del segmento di memoria
@@ -120,6 +133,7 @@ int main(int argc, char *argv[])
     }
     /* Chiamo il metodo attach */
     attach(pointer_at_map);
+    receive_and_go();
     printf("Sono il processo taxi: mi sono attaccato alla cella %i %i \n", x, y);
     printf("Sono il processo taxi: il semaforo ha id %i ed e' il numero %i \n", taxi_sem_id, pointer_at_map->mappa[tmpx][tmpy].reference_sem_number);
 
