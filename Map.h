@@ -36,6 +36,8 @@ typedef struct
 
 typedef struct 
 {
+	int i;
+	int j;
 	int value;
 } adjacency_matrix;
 

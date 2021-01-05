@@ -494,26 +494,30 @@ void createAdjacencyMatrix(){
     int i;
     int dimensione_puntatore;
     int dimensione_matrice;
-    /*int j; */
+    int j; 
     /*int v; */
     /*struct node* temp;*/
-    /* int dimension = (number_of_vertices*number_of_vertices)*sizeof(int); */
+    int dimension = (number_of_vertices*number_of_vertices)*sizeof(int); 
+    /*
     matrice_adiacente = malloc(number_of_vertices*sizeof(adjacency_matrix));
     for (i = 0; i < number_of_vertices; i++){
         matrice_adiacente[i] = calloc(number_of_vertices, sizeof(adjacency_matrix));
     }
+    */
     /* Creo il segmento di memoria condivisa */
     /*int adjaceny_matrix[number_of_vertices][number_of_vertices];*/
-    adjacency_matrix_shm_id = shmget(IPC_PRIVATE, sizeof(matrice_adiacente), SHM_FLG);
+    adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, SHM_FLG);
     if (adjacency_matrix_shm_id == -1){
         perror("Non riesco a creare la memoria condivisa. Termino.");
         kill_all();
         exit(EXIT_FAILURE);
     }
+
     dimensione_puntatore = sizeof(matrice_adiacente);
     dimensione_matrice = sizeof(adjacency_matrix);
     printf("La dimensione del puntatore e' %i \n", dimensione_puntatore);
     printf("La dimensione della matrice creata e' %i \n", dimensione_matrice);
+    
     /* Mi attacco come master alla matrice per inizializzarla */
     matrice_adiacente = shmat(adjacency_matrix_shm_id, NULL, SHM_FLG);
     if (matrice_adiacente == NULL){
@@ -521,7 +525,7 @@ void createAdjacencyMatrix(){
         kill_all();
         exit(EXIT_FAILURE);
     }
-#if 0
+
     /* Creo indice ?*/
     /* La inizializzo a zero */
     for (i = 0; i < number_of_vertices; i ++){
@@ -529,7 +533,8 @@ void createAdjacencyMatrix(){
             matrice_adiacente[i][j].value = 0;
         }
     }
-    
+
+#if 0    
 #ifdef PRINT_ADJACENCY_MATRIX   
     /* stampo la matrice */
     printf("Il valore di matrix dim è %i \n", number_of_vertices); 
