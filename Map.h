@@ -37,7 +37,7 @@ typedef struct
 typedef struct 
 {
 	int value;
-}adjacency_matrix;
+} adjacency_matrix;
 
 typedef struct 
 {

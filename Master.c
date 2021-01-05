@@ -51,7 +51,6 @@ int SO_DURATION = 0;
 int number_of_vertices = 0;
 struct Graph* graph;
 int adjacency_matrix_shm_id;
-int *pointer_at_adjacency_matrix;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
 char * args_source[] = {"Source", NULL, NULL, NULL};
@@ -479,6 +478,7 @@ void map_print(map *pointer_at_map) {
         printf("\n");
     }
 }
+/*
 void allocMatrix (int N, int M, adjacency_matrix*** a){
     int i;
     a = malloc(N*sizeof(adjacency_matrix));
@@ -486,24 +486,28 @@ void allocMatrix (int N, int M, adjacency_matrix*** a){
         a[i] = calloc(M, sizeof(adjacency_matrix));
     }
 }
+*/
 void createAdjacencyMatrix(){
     /* Creo la matrice con una malloc */
-    adjacency_matrix*** adjacency_matrix_pointer = NULL;
+    adjacency_matrix** matrice_adiacente = NULL;
     int i,j,v;
     struct node* temp;
-    int dimension = (number_of_vertices*number_of_vertices)*sizeof(int);
-    allocMatrix(number_of_vertices, number_of_vertices, adjacency_matrix_pointer);
+    /* int dimension = (number_of_vertices*number_of_vertices)*sizeof(int); */
+    matrice_adiacente = malloc(number_of_vertices*sizeof(adjacency_matrix));
+    for (i = 0; i < number_of_vertices; i++){
+        matrice_adiacente[i] = calloc(number_of_vertices, sizeof(adjacency_matrix));
+    }
     /* Creo il segmento di memoria condivisa */
     /*int adjaceny_matrix[number_of_vertices][number_of_vertices];*/
-    adjacency_matrix_shm_id = shmget(IPC_PRIVATE, sizeof(dimension), SHM_FLG);
+    adjacency_matrix_shm_id = shmget(IPC_PRIVATE, sizeof(matrice_adiacente), SHM_FLG);
     if (adjacency_matrix_shm_id == -1){
         perror("Non riesco a creare la memoria condivisa. Termino.");
         kill_all();
         exit(EXIT_FAILURE);
     }
     /* Mi attacco come master alla matrice per inizializzarla */
-    adjacency_matrix_pointer = shmat(adjacency_matrix_shm_id, NULL, SHM_FLG);
-    if (adjacency_matrix_pointer == NULL){
+    matrice_adiacente = shmat(adjacency_matrix_shm_id, NULL, SHM_FLG);
+    if (matrice_adiacente == NULL){
         perror("Non riesco ad attaccarmi alla memoria condivisa con la matrice adiacente. Termino.");
         kill_all();
         exit(EXIT_FAILURE);
@@ -512,16 +516,16 @@ void createAdjacencyMatrix(){
     /* La inizializzo a zero */
     for (i = 0; i < number_of_vertices; i ++){
         for (j = 0; j < number_of_vertices; j ++){
-            adjacency_matrix_pointer[i][j]->value = 0;
+            matrice_adiacente[i][j].value = 0;
         }
     }
 #ifdef PRINT_ADJACENCY_MATRIX   
     /* stampo la matrice */
-    printf("Il valore di adjacency_matrix dim è %i \n", number_of_vertices); 
+    printf("Il valore di matrix dim è %i \n", number_of_vertices); 
     printf("La matrica adiacente prima della chiamata è \n");
     for(i = 0; i < number_of_vertices; i++){
         for (j = 0; j < number_of_vertices; j++){
-            printf("%i ", adjacency_matrix_pointer[i][i]->value);    
+            printf("%i ", matrice_adiacente[i][i].value);    
         }       
         printf("\n");
     }
@@ -530,8 +534,8 @@ void createAdjacencyMatrix(){
     for (v = 1; v < graph->numVertices; v++){
         temp = graph->adjacency_lists[v];
         while (temp) {
-            adjacency_matrix_pointer[v-1][temp->vertex-1]->value = 1;
-            adjacency_matrix_pointer[temp->vertex-1][v-1]->value = 1;
+            matrice_adiacente[v-1][temp->vertex-1].value = 1;
+            matrice_adiacente[temp->vertex-1][v-1].value = 1;
             temp = temp->next;
         }
     }
@@ -540,7 +544,7 @@ void createAdjacencyMatrix(){
     printf("La matrica adiacente dopo la chiamata è \n");
     for(i = 0; i < number_of_vertices; i++){ 
         for (j = 0; j < number_of_vertices; j++){
-            printf("%i ", adjacency_matrix_pointer[i][j]->value);
+            printf("%i ", matrice_adiacente[i][j].value);
         }   
         printf("\n");
     }
