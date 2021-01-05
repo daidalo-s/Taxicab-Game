@@ -36,6 +36,11 @@ typedef struct
 
 typedef struct 
 {
+	int value;
+}adjacency_matrix;
+
+typedef struct 
+{
     cell mappa[SO_HEIGHT][SO_WIDTH];
 } map;
 
