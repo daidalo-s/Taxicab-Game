@@ -482,7 +482,7 @@ void map_print(map *pointer_at_map) {
 
 void createAdjacencyMatrix(){
     /* Creo la matrice con una malloc */
-    int i,j,v;
+    int i,j,v, size_of_row;
     struct node* temp;
     int ** adjacency_matrix;
     /*
@@ -491,7 +491,7 @@ void createAdjacencyMatrix(){
         adjacency_matrix[i] = (int *)malloc(number_of_vertices*sizeof(int));
     }
     */
-    int dimension = number_of_vertices*number_of_vertices*sizeof(int);
+    int dimension = (number_of_vertices*number_of_vertices)*sizeof(int);
     /* Creo il segmento di memoria condivisa */
     /*int adjaceny_matrix[number_of_vertices][number_of_vertices];*/
     adjacency_matrix_shm_id = shmget(IPC_PRIVATE, sizeof(dimension), SHM_FLG);
@@ -506,6 +506,12 @@ void createAdjacencyMatrix(){
         perror("Non riesco ad attaccarmi alla memoria condivisa con la matrice adiacente. Termino.");
         kill_all();
         exit(EXIT_FAILURE);
+    }
+    /* Creo indice ?*/
+    size_of_row = number_of_vertices*sizeof(int);
+    adjacency_matrix[0] = *(adjacency_matrix+number_of_vertices);
+    for (i = 1; i < number_of_vertices; i++){
+        adjacency_matrix[i] = (adjacency_matrix[i-1]+size_of_row);
     }
     /* La inizializzo a zero */
     for (i = 0; i < number_of_vertices; i ++){
