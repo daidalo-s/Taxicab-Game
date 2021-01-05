@@ -29,6 +29,7 @@ typedef struct
     int crossings;
     int message_queue_key;
     int reference_sem_number;
+    int vertex_number;
 } cell;
 
 /* http://users.cs.cf.ac.uk/Dave.Marshall/C/node27.html */
@@ -37,6 +38,17 @@ typedef struct
 {
     cell mappa[SO_HEIGHT][SO_WIDTH];
 } map;
+
+/* Struct per il grafo*/
+struct node {
+  int vertex;
+  struct node* next;
+};
+
+struct Graph {
+  int numVertices;
+  struct node** adjacency_lists;
+};
 
 /* Struct per la coda di messaggi */
 typedef struct message_queue 

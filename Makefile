@@ -2,7 +2,7 @@ CFLAGS=-Wall -Werror -std=c89 -pedantic -D_GNU_SOURCE
 
 OPTIONS =
 
-all: Master Source Taxi
+all: Master Source Taxi 
 
 Master: 
 	gcc $(CFLAGS) Master.c -o Master

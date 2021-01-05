@@ -19,6 +19,9 @@
    sui figli che creiamo. */
 
 /****************** Prototipi ******************/
+struct node* createNode(int v);
+struct Graph* createAGraph(int vertices);
+void createAdjacencyMatrix();
 void kill_all();
 void reading_input_values ();
 int  max_hole_width();
@@ -45,6 +48,9 @@ int SO_TIMENSEC_MIN = 0;
 int SO_TIMENSEC_MAX = 0;
 int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
+int number_of_vertices = 0;
+struct Graph* graph;
+int adjacency_matrix_shm_id;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
 char * args_source[] = {"Source", NULL, NULL, NULL};
@@ -54,6 +60,39 @@ int map_shm_id; /* valore ritornato da shmget() */
 int source_sem_id; /* valore ritornato da semget() per i SOURCE */
 int taxi_sem_id;
 int * pointer_at_msgq; 
+
+/* ----------------- Creazione nodo ----------------- */
+struct node* createNode(int v) {
+    struct node* newNode = malloc(sizeof(struct node));
+    newNode->vertex = v;
+    newNode->next = NULL;
+    return newNode;
+}
+
+/* ----------------- Creazione grafo ----------------- */
+struct Graph* createAGraph(int vertices) {
+    int i;
+    struct Graph* graph = malloc(sizeof(struct Graph));
+    graph->numVertices = vertices;
+
+    graph->adjacency_lists = malloc(vertices * sizeof(struct node*));
+
+    for (i = 0; i < vertices; i++) graph->adjacency_lists[i] = NULL;
+    return graph;
+}
+
+/* ---------------- Aggiunta archi -----------------*/
+void addEdge(struct Graph* graph, int s, int d) {
+    /* Aggiunge l'arco da stard a destination */
+    struct node* newNode = createNode(d);
+    newNode->next = graph->adjacency_lists[s];
+    graph->adjacency_lists[s] = newNode;
+
+    /* Aggiunge l'arco da destination a start */
+    newNode = createNode(s);
+    newNode->next = graph->adjacency_lists[d];
+    graph->adjacency_lists[d] = newNode;
+}
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -170,6 +209,7 @@ void reading_input_values () {
     printf("SO_DURATION : %i\n", SO_DURATION);
     printf("SO_HOLES : %i\n", SO_HOLES);
 #endif
+    number_of_vertices = (SO_HEIGHT*SO_WIDTH) - SO_HOLES;
 }
 
 int max_hole_width() {
@@ -349,12 +389,16 @@ void random_travel_time(map *pointer_at_map) {
  * documento condiviso
  */
 void map_setup(map *pointer_at_map) {
-    int i, j, max_taxi_map = 0, condizione_ok = 0;
+    int i, j, max_taxi_map = 0, condizione_ok = 0, counter = 1; /* Counter mi serve per i vertici */
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
             /* Imposto ogni cella con cell_type=2, active_taxis=0 */
             pointer_at_map->mappa[i][j].cell_type = 2;
             pointer_at_map->mappa[i][j].active_taxis = 0;
+            if (pointer_at_map->mappa[i][j].cell_type != 0) {
+                pointer_at_map->mappa[i][j].vertex_number = counter;
+                counter++;
+            }
         }
     }
     do {
@@ -408,6 +452,9 @@ void map_setup(map *pointer_at_map) {
 /* Dovrebbe andare */
 void map_print(map *pointer_at_map) {
     int i, j;
+#ifdef PRINT_MAP_VERTEX_NUMBER    
+    int k, l;
+#endif    
     pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
@@ -419,10 +466,80 @@ void map_print(map *pointer_at_map) {
             printf ("%i", pointer_at_map->mappa[i][j].travel_time);
             printf ("%i", pointer_at_map->mappa[i][j].crossings);
 #endif
-
+#ifdef PRINT_MAP_VERTEX_NUMBER
+    for (k = 0; k < SO_HEIGHT; i++){
+        for (int l = 0; l < SO_WIDTH; l++){
+            printf("%i \t", pointer_at_map->mappa[k][l].vertex_number);
+        }   
+        printf("\n");
+    }
+#endif  
         }
         printf("\n");
     }
+}
+
+void createAdjacencyMatrix(){
+    /* Creo la matrice con una malloc */
+    int i,j,v;
+    struct node* temp;
+    int ** adjacency_matrix = (int **)malloc(number_of_vertices*sizeof(int));
+    for (i=0; i < number_of_vertices; i++){
+        adjacency_matrix[i] = (int *)malloc(number_of_vertices*sizeof(int));
+    }
+    /* Creo il segmento di memoria condivisa */
+    /*int adjaceny_matrix[number_of_vertices][number_of_vertices];*/
+    adjacency_matrix_shm_id = shmget(IPC_PRIVATE, sizeof(adjacency_matrix), SHM_FLG);
+    if (adjacency_matrix_shm_id == -1){
+        perror("Non riesco a creare la memoria condivisa. Termino.");
+        kill_all();
+        exit(EXIT_FAILURE);
+    }
+    /* Mi attacco come master alla matrice per inizializzarla */
+    adjacency_matrix = shmat(adjacency_matrix_shm_id, NULL, SHM_FLG);
+    if (adjacency_matrix == NULL){
+        perror("Non riesco ad attaccarmi alla memoria condivisa con la matrice adiacente. Termino.");
+        kill_all();
+        exit(EXIT_FAILURE);
+    }
+    /* La inizializzo a zero */
+    for (i = 0; i < number_of_vertices; i ++){
+        for (j = 0; j < number_of_vertices; j ++){
+            adjacency_matrix[i][j] = 0;
+        }
+    }
+#ifdef PRINT_ADJACENCY_MATRIX   
+    //stampo la matrice
+    printf("Il valore di adjacency_matrix dim è %i \n", number_of_vertices); 
+    printf("La matrica adiacente prima della chiamata è \n");
+    for(int i = 0; i < number_of_vertices; i++){
+        for (int j = 0; j < number_of_vertices; j++){
+            printf("%i ", adjacency_matrix[i][i]);    
+        }       
+        printf("\n");
+    }
+#endif
+    /* Assegno a ogni cella il suo peso (di default 1) */
+    for (v = 1; v < graph->numVertices; v++){
+        temp = graph->adjacency_lists[v];
+        while (temp) {
+            adjacency_matrix[v-1][temp->vertex-1] = 1;
+            adjacency_matrix[temp->vertex-1][v-1] = 1;
+            temp = temp->next;
+        }
+    }
+#ifdef PRINT_ADJACENCY_MATRIX   
+    printf("\n");
+    printf("La matrica adiacente dopo la chiamata è \n");
+    for(int i = 0; i < numeroVertici; i++){ 
+        for (int j = 0; j < numeroVertici; j++){
+            printf("%i ", matrix[i][j]);
+        }   
+        printf("\n");
+    }
+#endif
+    /* Distruggo la matrice iniziale che ho creato */
+    free(adjacency_matrix);
 }
 
 void createIPC(map *pointer_at_map) {
@@ -520,6 +637,7 @@ void kill_all() {
         msgctl(msqid , IPC_RMID , NULL);
     }
     free(pointer_at_msgq);
+    free(graph);
 }
 
 /* Main */
@@ -529,6 +647,33 @@ int main () {
     srand(time(NULL)); 
     /* Lettura degli altri parametri specificati da file */
     reading_input_values();
+    /* Creo il grafo partendo dalla mappa */
+    graph = createAGraph(number_of_vertices);
+    /* Aggiungo tutti gli archi al grafo */
+    for (i = 0; i < SO_HEIGHT; i++){
+        for (j = 0; j < SO_WIDTH; j++){
+            /* devo controllare che destra e sotto non siano hole
+               se sono in un bordo aggiungo solo il valore corretto */
+            if (pointer_at_map->mappa[i][j].vertex_number != 0) { 
+                if (j == SO_WIDTH - 1) {
+                    if (pointer_at_map->mappa[i+1][j].vertex_number != 0) { 
+                        addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i+1][j].vertex_number); /*sotto*/
+                    }
+                } else if (i == SO_HEIGHT - 1) {
+                    if (pointer_at_map->mappa[i][j+1].vertex_number != 0) { 
+                        addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j+1].vertex_number); /*solo la destra*/
+                    }
+                } else if (pointer_at_map->mappa[i][j+1].vertex_number != 0 && pointer_at_map->mappa[i+1][j].vertex_number != 0) {
+                    addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j+1].vertex_number); /*destro*/
+                    addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i+1][j].vertex_number); /*sotto*/
+                } else if (pointer_at_map->mappa[i][j+1].vertex_number != 0 && pointer_at_map->mappa[i+1][j].vertex_number == 0) {
+                    addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j+1].vertex_number); /*solo la destra*/
+                } else {
+                    addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i+1][j].vertex_number); /*solo sotto*/
+                }
+            }    
+        }
+    } 
 #if 0
     printf("Stampo prima di inizializzare la mappa \n");
     map_print(pointer_at_map);
@@ -537,6 +682,7 @@ int main () {
 #endif 
     /* Creo gli oggetti ipc */
     createIPC(pointer_at_map);
+    createAdjacencyMatrix();
     printf("Sono il master: l'array di semafori ha id %i e la cella 2.2 ha numero %i \n", taxi_sem_id, pointer_at_map->mappa[2][2].reference_sem_number);
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
     for (i = 0; i < SO_SOURCES; i++) {
