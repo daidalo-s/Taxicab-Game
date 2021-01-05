@@ -514,11 +514,11 @@ void createAdjacencyMatrix(){
         }
     }
 #ifdef PRINT_ADJACENCY_MATRIX   
-    //stampo la matrice
+    /* stampo la matrice */
     printf("Il valore di adjacency_matrix dim è %i \n", number_of_vertices); 
     printf("La matrica adiacente prima della chiamata è \n");
-    for(int i = 0; i < number_of_vertices; i++){
-        for (int j = 0; j < number_of_vertices; j++){
+    for(i = 0; i < number_of_vertices; i++){
+        for (j = 0; j < number_of_vertices; j++){
             printf("%i ", adjacency_matrix[i][i]);    
         }       
         printf("\n");
@@ -536,9 +536,9 @@ void createAdjacencyMatrix(){
 #ifdef PRINT_ADJACENCY_MATRIX   
     printf("\n");
     printf("La matrica adiacente dopo la chiamata è \n");
-    for(int i = 0; i < numeroVertici; i++){ 
-        for (int j = 0; j < numeroVertici; j++){
-            printf("%i ", matrix[i][j]);
+    for(i = 0; i < number_of_vertices; i++){ 
+        for (j = 0; j < number_of_vertices; j++){
+            printf("%i ", adjacency_matrix[i][j]);
         }   
         printf("\n");
     }
