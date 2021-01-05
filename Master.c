@@ -13,7 +13,7 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include "Map.h"
-
+#define PRINT_ADJACENCY_MATRIX
 /****************** INFORMAZIONI SUI FIGLI ******************/
 /* Struct con dei campi per memorizzare informazioni
    sui figli che creiamo. */
@@ -51,6 +51,7 @@ int SO_DURATION = 0;
 int number_of_vertices = 0;
 struct Graph* graph;
 int adjacency_matrix_shm_id;
+int *pointer_at_adjacency_matrix;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
 char * args_source[] = {"Source", NULL, NULL, NULL};
@@ -483,13 +484,17 @@ void createAdjacencyMatrix(){
     /* Creo la matrice con una malloc */
     int i,j,v;
     struct node* temp;
+    int ** adjacency_matrix;
+    /*
     int ** adjacency_matrix = (int **)malloc(number_of_vertices*sizeof(int));
     for (i=0; i < number_of_vertices; i++){
         adjacency_matrix[i] = (int *)malloc(number_of_vertices*sizeof(int));
     }
+    */
+    int dimension = number_of_vertices*number_of_vertices*sizeof(int);
     /* Creo il segmento di memoria condivisa */
     /*int adjaceny_matrix[number_of_vertices][number_of_vertices];*/
-    adjacency_matrix_shm_id = shmget(IPC_PRIVATE, sizeof(adjacency_matrix), SHM_FLG);
+    adjacency_matrix_shm_id = shmget(IPC_PRIVATE, sizeof(dimension), SHM_FLG);
     if (adjacency_matrix_shm_id == -1){
         perror("Non riesco a creare la memoria condivisa. Termino.");
         kill_all();
