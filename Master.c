@@ -519,6 +519,7 @@ void createAdjacencyMatrix(){
             matrice_adiacente[i][j].value = 0;
         }
     }
+#if 0    
 #ifdef PRINT_ADJACENCY_MATRIX   
     /* stampo la matrice */
     printf("Il valore di matrix dim è %i \n", number_of_vertices); 
@@ -551,6 +552,7 @@ void createAdjacencyMatrix(){
 #endif
     /* Distruggo la matrice iniziale che ho creato */
     /* free(adjacency_matrix); */
+#endif
 }
 
 void createIPC(map *pointer_at_map) {
