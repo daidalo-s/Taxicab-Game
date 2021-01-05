@@ -490,8 +490,12 @@ void allocMatrix (int N, int M, adjacency_matrix*** a){
 void createAdjacencyMatrix(){
     /* Creo la matrice con una malloc */
     adjacency_matrix** matrice_adiacente = NULL;
-    int i,j,v;
-    struct node* temp;
+    int i;
+    int dimensione_puntatore = sizeof(matrice_adiacente);
+    int dimensione_matrice = sizeof(adjacency_matrix);
+    /*int j; */
+    /*int v; */
+    /*struct node* temp;*/
     /* int dimension = (number_of_vertices*number_of_vertices)*sizeof(int); */
     matrice_adiacente = malloc(number_of_vertices*sizeof(adjacency_matrix));
     for (i = 0; i < number_of_vertices; i++){
@@ -505,6 +509,8 @@ void createAdjacencyMatrix(){
         kill_all();
         exit(EXIT_FAILURE);
     }
+    printf("La dimensione del puntatore e' %i \n", dimensione_puntatore);
+    printf("La dimensione della matrice creata e' %i \n", dimensione_matrice);
     /* Mi attacco come master alla matrice per inizializzarla */
     matrice_adiacente = shmat(adjacency_matrix_shm_id, NULL, SHM_FLG);
     if (matrice_adiacente == NULL){
@@ -512,6 +518,7 @@ void createAdjacencyMatrix(){
         kill_all();
         exit(EXIT_FAILURE);
     }
+#if 0
     /* Creo indice ?*/
     /* La inizializzo a zero */
     for (i = 0; i < number_of_vertices; i ++){
@@ -519,7 +526,7 @@ void createAdjacencyMatrix(){
             matrice_adiacente[i][j].value = 0;
         }
     }
-#if 0    
+    
 #ifdef PRINT_ADJACENCY_MATRIX   
     /* stampo la matrice */
     printf("Il valore di matrix dim è %i \n", number_of_vertices); 
@@ -744,4 +751,5 @@ int main () {
     /* Dealloca la memoria condivisa dove ho la mappa */
     kill_all();
     return 0;
+    printf("La dimensione dell'array calcolata e' %i \n", TAXI_SEM_ARRAY_DIM);
 }
