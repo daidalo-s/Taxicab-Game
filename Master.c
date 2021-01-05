@@ -489,12 +489,8 @@ void allocMatrix (int N, int M, adjacency_matrix*** a){
 */
 void createAdjacencyMatrix(){
     /* Creo la matrice con una malloc */
-    /* adjacency_matrix** matrice_adiacente = NULL; */
+    adjacency_matrix** matrice_adiacente = NULL; 
     int dimension = number_of_vertices;
-    struct 
-    {
-        adjacency_matrix matrice_adiacente[dimension][dimension];
-    }dasda;
     int i;
     int dimensione_puntatore;
     int dimensione_matrice;
