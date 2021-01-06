@@ -501,35 +501,34 @@ void allocMatrix (int N, int M, adjacency_matrix*** a){
     }
 }
 */
-void createAdjacencyMatrix(map *pointer_at_map){
+void createAdjacencyMatrix(map *pointer_at_map, Graph* graph){
     
     int i, j, v;
     int adjacency_matrix_shm_id;
     int ** pointer;
     int dimension = (number_of_vertices*number_of_vertices)*sizeof(int);
     struct node* temp;
-    map * puntatore = pointer_at_map;
     /* Aggiungo tutti gli archi al grafo */
     for (i = 0; i < SO_HEIGHT; i++){
         for (j = 0; j < SO_WIDTH; j++){
             /* devo controllare che destra e sotto non siano hole
                se sono in un bordo aggiungo solo il valore corretto */
-            if (puntatore->mappa[i][j].vertex_number != 0) { 
+            if (pointer_at_map->mappa[i][j].vertex_number != 0) { 
                 if (j == SO_WIDTH - 1) {
-                    if (puntatore->mappa[i+1][j].vertex_number != 0) { 
-                        addEdge(graph, puntatore->mappa[i][j].vertex_number, puntatore->mappa[i+1][j].vertex_number); /*sotto*/
+                    if (pointer_at_map->mappa[i+1][j].vertex_number != 0) { 
+                        addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i+1][j].vertex_number); /*sotto*/
                     }
                 } else if (i == SO_HEIGHT - 1) {
-                    if (puntatore->mappa[i][j+1].vertex_number != 0) { 
-                        addEdge(graph, puntatore->mappa[i][j].vertex_number, puntatore->mappa[i][j+1].vertex_number); /*solo la destra*/
+                    if (pointer_at_map->mappa[i][j+1].vertex_number != 0) { 
+                        addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j+1].vertex_number); /*solo la destra*/
                     }
-                } else if (puntatore->mappa[i][j+1].vertex_number != 0 && puntatore->mappa[i+1][j].vertex_number != 0) {
-                    addEdge(graph, puntatore->mappa[i][j].vertex_number, puntatore->mappa[i][j+1].vertex_number); /*destro*/
-                    addEdge(graph, puntatore->mappa[i][j].vertex_number, puntatore->mappa[i+1][j].vertex_number); /*sotto*/
-                } else if (puntatore->mappa[i][j+1].vertex_number != 0 && puntatore->mappa[i+1][j].vertex_number == 0) {
-                    addEdge(graph, puntatore->mappa[i][j].vertex_number, puntatore->mappa[i][j+1].vertex_number); /*solo la destra*/
+                } else if (pointer_at_map->mappa[i][j+1].vertex_number != 0 && pointer_at_map->mappa[i+1][j].vertex_number != 0) {
+                    addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j+1].vertex_number); /*destro*/
+                    addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i+1][j].vertex_number); /*sotto*/
+                } else if (pointer_at_map->mappa[i][j+1].vertex_number != 0 && pointer_at_map->mappa[i+1][j].vertex_number == 0) {
+                    addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j+1].vertex_number); /*solo la destra*/
                 } else {
-                    addEdge(graph, puntatore->mappa[i][j].vertex_number, puntatore->mappa[i+1][j].vertex_number); /*solo sotto*/
+                    addEdge(graph, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i+1][j].vertex_number); /*solo sotto*/
                 }
             }    
         }
