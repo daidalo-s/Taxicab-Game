@@ -28,7 +28,6 @@ struct sembuf accesso;
 struct sembuf rilascio;
 message_queue cell_message_queue;    
 map *pointer_at_map;
-int ** pointer_at_adjacency_matrix;
 
 void random_cell() {
     /* Possibile loop infinito, dipende dai controlli */
@@ -116,6 +115,7 @@ int main(int argc, char *argv[])
 {	
     int i,j,SO_HOLES=0;
     int dimension_of_adjacency_matrix;
+    int ** pointer_at_adjacency_matrix;
     srand(time(NULL));
     /* Prendo l'id e mi attacco al segmento */ 
     map_shm_id = atoi(argv[1]);
@@ -148,13 +148,13 @@ int main(int argc, char *argv[])
     attach(pointer_at_map);
 
     dimension_of_adjacency_matrix = (SO_WIDTH*SO_HEIGHT)-SO_HOLES;
-    printf("Dimensione calcoalta %i \n", dimension_of_adjacency_matrix);
-    
+    printf("Dimensione calcolata %i \n", dimension_of_adjacency_matrix);
+    /* printf("Provo a stampare il campo 00 %d \n", pointer_at_adjacency_matrix[0][0]); */
     printf("SONO UN PROCESSO TAXI: STAMPO LA MATRICE ADIACENTE \n");
     for (i = 0; i < dimension_of_adjacency_matrix; i++){
     	for (j = 0; j < dimension_of_adjacency_matrix; j++){
-    		printf("Eseguo? \n");
-    		printf("%i ", pointer_at_adjacency_matrix[i][j]);
+    		/* printf("Eseguo? "); */
+    		printf("%i ", pointer_at_adjacency_matrix[i][j]); 
     	}
     	printf("\n");
     }

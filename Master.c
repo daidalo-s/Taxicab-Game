@@ -607,7 +607,7 @@ void createAdjacencyMatrix(map *pointer_at_map){
     /* Distruggo la matrice iniziale che ho creato */
     /* free(adjacency_matrix); */
     free(graph);
-    free(pointer);
+    /* free(pointer);*/
     /* Salvo l'id della matrice adiacente per i taxi */
     
     sprintf(adjacency_matrix_shm_id_execve, "%d", adjacency_matrix_shm_id);
