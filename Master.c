@@ -49,7 +49,6 @@ int SO_TIMENSEC_MAX = 0;
 int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
 int number_of_vertices = 0;
-struct Graph* graph;
 int adjacency_matrix_shm_id;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
@@ -501,13 +500,15 @@ void allocMatrix (int N, int M, adjacency_matrix*** a){
     }
 }
 */
-void createAdjacencyMatrix(map *pointer_at_map, Graph* graph){
+void createAdjacencyMatrix(map *pointer_at_map){
     
     int i, j, v;
     int adjacency_matrix_shm_id;
     int ** pointer;
     int dimension = (number_of_vertices*number_of_vertices)*sizeof(int);
     struct node* temp;
+    /* Creo il grafo partendo dalla mappa */
+    struct Graph* graph = createAGraph(number_of_vertices);
     /* Aggiungo tutti gli archi al grafo */
     for (i = 0; i < SO_HEIGHT; i++){
         for (j = 0; j < SO_WIDTH; j++){
@@ -597,6 +598,7 @@ void createAdjacencyMatrix(map *pointer_at_map, Graph* graph){
 #endif
     /* Distruggo la matrice iniziale che ho creato */
     /* free(adjacency_matrix); */
+        free(graph);
 }
 
 void createIPC(map *pointer_at_map) {
@@ -694,7 +696,6 @@ void kill_all() {
         msgctl(msqid , IPC_RMID , NULL);
     }
     free(pointer_at_msgq);
-    free(graph);
 }
 
 /* Main */
@@ -704,8 +705,6 @@ int main () {
     srand(time(NULL)); 
     /* Lettura degli altri parametri specificati da file */
     reading_input_values();
-    /* Creo il grafo partendo dalla mappa */
-    graph = createAGraph(number_of_vertices);
     /* Creo gli oggetti ipc */
     createIPC(pointer_at_map);
 #if 0
