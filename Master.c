@@ -81,6 +81,20 @@ struct Graph* createAGraph(int vertices) {
     return graph;
 }
 
+/* -------------------- Stampa grafo ----------------------*/
+void printgraph(struct Graph* graph) {
+    int v;
+    struct node* temp;
+    for (v = 1; v < graph->numVertices; v++) {
+        temp = graph->adjacency_lists[v];
+        printf("\n Vertex %d: ", v);
+        while (temp) {
+            printf("%d -> ", temp->vertex);
+            temp = temp->next;
+        }
+    }
+}
+
 /* ---------------- Aggiunta archi -----------------*/
 void addEdge(struct Graph* graph, int s, int d) {
     /* Aggiunge l'arco da stard a destination */
@@ -487,7 +501,7 @@ void allocMatrix (int N, int M, adjacency_matrix*** a){
     }
 }
 */
-void createAdjacencyMatrix(){
+void createAdjacencyMatrix(map *pointer_at_map){
     
     int i, j, v;
     int adjacency_matrix_shm_id;
@@ -535,6 +549,8 @@ void createAdjacencyMatrix(){
         printf("\n");
     }
 #endif
+    printf("Stampo il grafo \n");
+    printgraph(graph);
     /* Assegno a ogni cella il suo peso (di default 1) */
     for (v = 1; v < graph->numVertices; v++){
         temp = graph->adjacency_lists[v];
@@ -698,7 +714,7 @@ int main () {
     printf("Stampo dopo l'inizializzazione della mappa \n");
     map_print(pointer_at_map);
 #endif 
-    createAdjacencyMatrix();
+    createAdjacencyMatrix(pointer_at_map);
     printf("Sono il master: l'array di semafori ha id %i e la cella 2.2 ha numero %i \n", taxi_sem_id, pointer_at_map->mappa[2][2].reference_sem_number);
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
     for (i = 0; i < SO_SOURCES; i++) {
