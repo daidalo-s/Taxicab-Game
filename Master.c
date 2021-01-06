@@ -408,10 +408,6 @@ void map_setup(map *pointer_at_map) {
             /* Imposto ogni cella con cell_type=2, active_taxis=0 */
             pointer_at_map->mappa[i][j].cell_type = 2;
             pointer_at_map->mappa[i][j].active_taxis = 0;
-            if (pointer_at_map->mappa[i][j].cell_type != 0) {
-                pointer_at_map->mappa[i][j].vertex_number = counter;
-                counter++;
-            }
         }
     }
     do {
@@ -459,6 +455,15 @@ void map_setup(map *pointer_at_map) {
     pointer_at_map->mappa[3][2].cell_type = 0;
     pointer_at_map->mappa[2][2].cell_type = 1;
 #endif
+    for (i = 0; i < SO_HEIGHT; i++){
+    	for(j = 0; j < SO_WIDTH; j++){
+    		if (pointer_at_map->mappa[i][j].cell_type != 0) {
+            	printf("Almeno una volta lo faccio\n");
+                pointer_at_map->mappa[i][j].vertex_number = counter;
+                counter++;
+            }
+    	}
+    }
     /* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand */
 }
 
@@ -468,7 +473,7 @@ void map_print(map *pointer_at_map) {
 #ifdef PRINT_MAP_VERTEX_NUMBER    
     int k, l;
 #endif    
-    pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
+    pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG); 
     for (i = 0; i < SO_HEIGHT; i++) {
         for (j = 0; j < SO_WIDTH; j++) {
             printf ("%i ", pointer_at_map->mappa[i][j].cell_type);
@@ -479,9 +484,9 @@ void map_print(map *pointer_at_map) {
             printf ("%i", pointer_at_map->mappa[i][j].travel_time);
             printf ("%i", pointer_at_map->mappa[i][j].crossings);
 #endif
-#ifdef PRINT_MAP_VERTEX_NUMBER
+#ifdef PRINT_MAP_VERTEX_NUMBER /* Loop infinito da sistemare */
     for (k = 0; k < SO_HEIGHT; i++){
-        for (int l = 0; l < SO_WIDTH; l++){
+        for (l = 0; l < SO_WIDTH; l++){
             printf("%i \t", pointer_at_map->mappa[k][l].vertex_number);
         }   
         printf("\n");
@@ -490,16 +495,15 @@ void map_print(map *pointer_at_map) {
         }
         printf("\n");
     }
-}
-/*
-void allocMatrix (int N, int M, adjacency_matrix*** a){
-    int i;
-    a = malloc(N*sizeof(adjacency_matrix));
-    for (i = 0; i < N; i++){
-        a[i] = calloc(M, sizeof(adjacency_matrix));
+    printf("Stampo la matrice di vertici \n");
+    for (i = 0; i < SO_HEIGHT; i++){
+    	for (j = 0; j < SO_WIDTH; j++){
+    		printf("%i ", pointer_at_map->mappa[i][j].vertex_number);
+    	}
+    	printf("\n");
     }
 }
-*/
+
 void createAdjacencyMatrix(map *pointer_at_map){
     
     int i, j, v;
@@ -507,8 +511,11 @@ void createAdjacencyMatrix(map *pointer_at_map){
     int ** pointer;
     int dimension = (number_of_vertices*number_of_vertices)*sizeof(int);
     struct node* temp;
+    /*map * puntatore_che_uso = pointer_at_map;*/
     /* Creo il grafo partendo dalla mappa */
-    struct Graph* graph = createAGraph(number_of_vertices);
+    struct Graph* graph = createAGraph(number_of_vertices);    
+
+    pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG); 
     /* Aggiungo tutti gli archi al grafo */
     for (i = 0; i < SO_HEIGHT; i++){
         for (j = 0; j < SO_WIDTH; j++){
@@ -534,7 +541,7 @@ void createAdjacencyMatrix(map *pointer_at_map){
             }    
         }
     } 
-
+    printf("Provo a stampare il vertice della cella 02 %i \n", pointer_at_map->mappa[0][2].vertex_number);
     /* Creo il segmento di memoria condivisa */
     adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, SHM_FLG);
     if (adjacency_matrix_shm_id < 0){
@@ -598,7 +605,7 @@ void createAdjacencyMatrix(map *pointer_at_map){
 #endif
     /* Distruggo la matrice iniziale che ho creato */
     /* free(adjacency_matrix); */
-        free(graph);
+    free(graph);
 }
 
 void createIPC(map *pointer_at_map) {
