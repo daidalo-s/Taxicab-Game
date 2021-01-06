@@ -53,7 +53,7 @@ int adjacency_matrix_shm_id;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
 char * args_source[] = {"Source", NULL, NULL, NULL};
-char * args_taxi[] = {"Taxi", NULL, NULL};
+char * args_taxi[] = {"Taxi", NULL, NULL, NULL};
 char map_shm_id_execve[4];
 int map_shm_id; /* valore ritornato da shmget() */
 int source_sem_id; /* valore ritornato da semget() per i SOURCE */
@@ -458,7 +458,7 @@ void map_setup(map *pointer_at_map) {
     for (i = 0; i < SO_HEIGHT; i++){
     	for(j = 0; j < SO_WIDTH; j++){
     		if (pointer_at_map->mappa[i][j].cell_type != 0) {
-            	printf("Almeno una volta lo faccio\n");
+            	/* printf("Almeno una volta lo faccio\n"); */
                 pointer_at_map->mappa[i][j].vertex_number = counter;
                 counter++;
             }
@@ -513,7 +513,8 @@ void createAdjacencyMatrix(map *pointer_at_map){
     struct node* temp;
     /*map * puntatore_che_uso = pointer_at_map;*/
     /* Creo il grafo partendo dalla mappa */
-    struct Graph* graph = createAGraph(number_of_vertices);    
+    struct Graph* graph = createAGraph(number_of_vertices);
+    /* char adjacency_matrix_shm_id_execve[4];  */  
 
     pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG); 
     /* Aggiungo tutti gli archi al grafo */
@@ -606,6 +607,11 @@ void createAdjacencyMatrix(map *pointer_at_map){
     /* Distruggo la matrice iniziale che ho creato */
     /* free(adjacency_matrix); */
     free(graph);
+    /* Salvo l'id della matrice adiacente per i taxi */
+    /*
+    sprintf(adjacency_matrix_shm_id_execve, "%d", adjacency_matrix_shm_id);
+    args_taxi[2] = adjacency_matrix_shm_id_execve;
+	*/
 }
 
 void createIPC(map *pointer_at_map) {
@@ -703,6 +709,7 @@ void kill_all() {
         msgctl(msqid , IPC_RMID , NULL);
     }
     free(pointer_at_msgq);
+    shmctl(adjacency_matrix_shm_id, IPC_RMID, NULL);
 }
 
 /* Main */
