@@ -524,7 +524,6 @@ void createAdjacencyMatrix(){
         }
     }
 
-#if 1 
 #ifdef PRINT_ADJACENCY_MATRIX   
     /* stampo la matrice */
     printf("Il valore di matrix dim è %i \n", number_of_vertices); 
@@ -557,7 +556,6 @@ void createAdjacencyMatrix(){
 #endif
     /* Distruggo la matrice iniziale che ho creato */
     /* free(adjacency_matrix); */
-#endif
 }
 
 void createIPC(map *pointer_at_map) {
@@ -667,6 +665,8 @@ int main () {
     reading_input_values();
     /* Creo il grafo partendo dalla mappa */
     graph = createAGraph(number_of_vertices);
+    /* Creo gli oggetti ipc */
+    createIPC(pointer_at_map);
     /* Aggiungo tutti gli archi al grafo */
     for (i = 0; i < SO_HEIGHT; i++){
         for (j = 0; j < SO_WIDTH; j++){
@@ -698,8 +698,6 @@ int main () {
     printf("Stampo dopo l'inizializzazione della mappa \n");
     map_print(pointer_at_map);
 #endif 
-    /* Creo gli oggetti ipc */
-    createIPC(pointer_at_map);
     createAdjacencyMatrix();
     printf("Sono il master: l'array di semafori ha id %i e la cella 2.2 ha numero %i \n", taxi_sem_id, pointer_at_map->mappa[2][2].reference_sem_number);
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
