@@ -105,6 +105,14 @@ void receive_and_go() {
     printf("Ho ricevuto il messaggio %s \n", cell_message_queue.message);
 }
 
+void create_index(void **m, int rows, int cols, size_t sizeElement){
+    int i;  
+    size_t sizeRow = cols * sizeElement;
+    m[0] = m+rows;
+    for(i=1; i<rows; i++){      
+        m[i] = ((u_int8_t*)m[i-1]+sizeRow);
+    }
+}
 
 /********** MAIN **********/
 /*
@@ -126,7 +134,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     
-    pointer_at_adjacency_matrix = shmat(adjacency_matrix_shm_id, NULL, 0);
+    pointer_at_adjacency_matrix = (int **)shmat(adjacency_matrix_shm_id, NULL, 0);
     if (pointer_at_adjacency_matrix == NULL){
     	perror("Processo Taxi: non riesco ad accedere alla matrice adiacente. Termino.");
     	exit(EXIT_FAILURE);
@@ -146,15 +154,14 @@ int main(int argc, char *argv[])
     }
     /* Chiamo il metodo attach */
     attach(pointer_at_map);
-
     dimension_of_adjacency_matrix = (SO_WIDTH*SO_HEIGHT)-SO_HOLES;
+    create_index((void*)pointer_at_adjacency_matrix, dimension_of_adjacency_matrix, dimension_of_adjacency_matrix, sizeof(int));
     printf("Dimensione calcolata %i \n", dimension_of_adjacency_matrix);
     /* printf("Provo a stampare il campo 00 %d \n", pointer_at_adjacency_matrix[0][0]); */
     printf("SONO UN PROCESSO TAXI: STAMPO LA MATRICE ADIACENTE \n");
     for (i = 0; i < dimension_of_adjacency_matrix; i++){
     	for (j = 0; j < dimension_of_adjacency_matrix; j++){
-    		/* printf("Eseguo? "); */
-    		printf("%i ", pointer_at_adjacency_matrix[i][j]); 
+    		printf("%d ", pointer_at_adjacency_matrix[i][j]); 
     	}
     	printf("\n");
     }
