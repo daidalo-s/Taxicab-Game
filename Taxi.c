@@ -125,13 +125,13 @@ int main(int argc, char *argv[])
         perror("Processo Taxi: non riesco ad accedere alla mappa. Termino.");
         exit(EXIT_FAILURE);
     }
-    /*
+    
     pointer_at_adjacency_matrix = shmat(adjacency_matrix_shm_id, NULL, 0);
     if (pointer_at_adjacency_matrix == NULL){
     	perror("Processo Taxi: non riesco ad accedere alla matrice adiacente. Termino.");
     	exit(EXIT_FAILURE);
     }
-    */
+    
     /* Prendo visibilità dell'array di semafori Taxi*/
     for (i = 0; i < SO_HEIGHT; i ++) {
         for (j = 0; j < SO_WIDTH; j++){
@@ -146,17 +146,19 @@ int main(int argc, char *argv[])
     }
     /* Chiamo il metodo attach */
     attach(pointer_at_map);
+
     dimension_of_adjacency_matrix = (SO_WIDTH*SO_HEIGHT)-SO_HOLES;
     printf("Dimensione calcoalta %i \n", dimension_of_adjacency_matrix);
-    /*
+    
     printf("SONO UN PROCESSO TAXI: STAMPO LA MATRICE ADIACENTE \n");
     for (i = 0; i < dimension_of_adjacency_matrix; i++){
     	for (j = 0; j < dimension_of_adjacency_matrix; j++){
+    		printf("Eseguo? \n");
     		printf("%i ", pointer_at_adjacency_matrix[i][j]);
     	}
     	printf("\n");
     }
-	*/
+	
     receive_and_go();
     printf("Sono il processo taxi: mi sono attaccato alla cella %i %i \n", x, y);
     printf("Sono il processo taxi: il semaforo ha id %i ed e' il numero %i \n", taxi_sem_id, pointer_at_map->mappa[tmpx][tmpy].reference_sem_number);
