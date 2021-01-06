@@ -33,14 +33,6 @@ typedef struct
 } cell;
 
 /* http://users.cs.cf.ac.uk/Dave.Marshall/C/node27.html */
-
-typedef struct 
-{
-	int i;
-	int j;
-	int value;
-} adjacency_matrix;
-
 typedef struct 
 {
     cell mappa[SO_HEIGHT][SO_WIDTH];
