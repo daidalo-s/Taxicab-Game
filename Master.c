@@ -13,6 +13,7 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include "Map.h"
+
 #define PRINT_ADJACENCY_MATRIX
 /****************** INFORMAZIONI SUI FIGLI ******************/
 /* Struct con dei campi per memorizzare informazioni
@@ -575,7 +576,8 @@ void createAdjacencyMatrix(map *pointer_at_map){
     }
 	*/
 	create_index((void*)pointer, number_of_vertices, number_of_vertices, sizeof(int));
-    /* La inizializzo a zero */
+    
+    /* La inizializzo a infinity */
     for (i = 0; i < number_of_vertices; i ++){
         for (j = 0; j < number_of_vertices; j ++){
             pointer[i][j] = 0;
