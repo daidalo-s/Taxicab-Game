@@ -13,7 +13,6 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include "Map.h"
-
 /********** VARIABILI GLOBALI **********/
 /*  
  *	Deve accedere a: mappa in memoria condivisa, coda di messaggi della cella
@@ -34,7 +33,7 @@ int ** pointer_at_adjacency_matrix;
 struct sembuf accesso;
 struct sembuf rilascio;
 message_queue cell_message_queue;    
-map *pointer_at_map;
+map *pointer_at_map; 
 
 /********** PROTOTIPI **********/
 void random_cell();
@@ -122,11 +121,9 @@ void receive_and_go() {
     /* Devo chiamare dijkstra: ho bisogno di passare il vertice in cui mi trovo e il vertice in cui voglio andare */
     start_vertex = pointer_at_map->mappa[x][y].vertex_number; /* La cella in cui sono */
     destination_vertex = pointer_at_map->mappa[x_destination][y_destination].vertex_number; /* La cella in cui voglio andare*/
-    /* printf("IL VERTICE DA CUI PARTO E %i \n", start_vertex); */
-    printf("Fin qui arrivo \n");
-#if 1
     find_path(start_vertex, destination_vertex);
-#endif
+    /* Accedendo a path to follow il primo elemento e la prossima cella in cui andare */
+
 }
 
 
@@ -136,7 +133,6 @@ void find_path(int start_vertex, int destination_vertex) {
 	int count, min_distance, next_node, i, j;
 	int element_counter, tmp_int;
 
-	printf("FIND_PATH 1\n");
 	printf("La grandezza e %i \n", dimension_of_adjacency_matrix);
 	printf("Parto dal vertice numero %i \n", start_vertex);
 	printf("Arrivo al vertice numero %i \n", destination_vertex);
@@ -158,8 +154,6 @@ void find_path(int start_vertex, int destination_vertex) {
 		visited = malloc(dimension_of_adjacency_matrix * sizeof(int));
 	}
 
-	printf("FIND_PATH 2\n");
-
 	/* Inizializzo la matrice dei costi */
 	for (i = 0; i < dimension_of_adjacency_matrix; i ++){
 		for (j = 0; j < dimension_of_adjacency_matrix; j++){
@@ -177,8 +171,6 @@ void find_path(int start_vertex, int destination_vertex) {
 	}
 	*/
 
-	printf("FIND_PATH 3\n");
-	cost[0][0] = 3;
 	/* Inizializzo i tre array */
 	for (i = 0; i < dimension_of_adjacency_matrix; i++){
 		distance[i] = cost[start_vertex][i];
@@ -190,12 +182,8 @@ void find_path(int start_vertex, int destination_vertex) {
 	visited[start_vertex] = 1;
 	count = 1;
 	
-	printf("FIND_PATH 4\n");
-	
 	while(count < dimension_of_adjacency_matrix-1){
 		min_distance = INFINITY;
-		
-		/* printf("FIND_PATH 5\n"); */
 		
 		/* Trovo il nodo alla distanza minima */
 		for (i = 0; i < dimension_of_adjacency_matrix; i++) { 
@@ -203,31 +191,22 @@ void find_path(int start_vertex, int destination_vertex) {
 				min_distance = distance[i];
 				next_node = i;
 			}
-		}	
-			/* printf("FIND_PATH 6\n"); */
+		}
 			
 		/* Continuo l'esplorazione alla ricerca di un path migliore */
 		visited[next_node] = 1;
-
-		/* printf("FIND_PATH 7\n"); */
 			
 		for (i = 0; i < dimension_of_adjacency_matrix; i++) {  
 			if (!visited[i]) 
 					
-				/* printf("FIND_PATH 8\n"); */
-					
 				if (min_distance + cost[next_node][i] < distance[i]){
-					/* printf("FIND_PATH 9\n"); */
 					distance[i] = min_distance + pointer_at_adjacency_matrix[next_node][i];
 					predecessor[i] = next_node;
-					
 				}	
 		}			
-			/* printf("FIND_PATH 9\n"); */
 		count++;
 	} 
 
-	/* printf("FIND_PATH 5\n");	*/
 	/* Creo l'array dove salvo il percorso che devo seguire */
 	tmp_int = distance[destination_vertex] - 1;
 	path_to_follow = malloc(tmp_int * sizeof(int));
@@ -239,14 +218,12 @@ void find_path(int start_vertex, int destination_vertex) {
 		element_counter++;
 		printf("Eseguo una volta\n");
 	} while (destination_vertex != start_vertex && tmp_int >= 0);
-	printf("FIND_PATH 6\n");
 	printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE \n");
-	printf("la dimensione e %i \n", tmp_int); 
 	for (j = 0; j < element_counter; j++){
 		printf("%i \t", path_to_follow[j]);
 	}
 	printf("\n");
-	
+	/* Devo spostare l'array path, non devo pulirlo fino a quando non sono arrivato a destinazione */
 	free(distance);
 	free(predecessor);
 	free(visited);
