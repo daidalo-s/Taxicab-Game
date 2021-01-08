@@ -13,18 +13,16 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include "Map.h"
-
-#define PRINT_ADJACENCY_MATRIX
 /****************** INFORMAZIONI SUI FIGLI ******************/
 /* Struct con dei campi per memorizzare informazioni
    sui figli che creiamo. */
-
+/*
 typedef struct 
 {
     int child_pid;
     char type[7];
 }info;
-
+*/
 /****************** Prototipi ******************/
 struct node* createNode(int v);
 struct Graph* createAGraph(int vertices);
@@ -68,7 +66,7 @@ int source_sem_id; /* valore ritornato da semget() per i SOURCE */
 int taxi_sem_id;
 int * pointer_at_msgq;
 int adjacency_matrix_shm_id; 
-info * info_process; 
+/* info * info_process; */
 
 /* ----------------- Creazione nodo ----------------- */
 struct node* createNode(int v) {
@@ -729,7 +727,7 @@ void kill_all() {
     }
     free(pointer_at_msgq);
     shmctl(adjacency_matrix_shm_id, IPC_RMID, NULL);
-    free(info_process); 
+    /* free(info_process); */
 }
 
 /* Main */
@@ -750,13 +748,13 @@ int main () {
     createAdjacencyMatrix(pointer_at_map);
     printf("Sono il master: l'array di semafori ha id %i e la cella 2.2 ha numero %i \n", taxi_sem_id, pointer_at_map->mappa[2][2].reference_sem_number);
     /* Creo l'array dove salvo le dimensione dei figli */
-  
+    /*
     info_process = malloc((SO_SOURCES + SO_TAXI)*sizeof(info));
     if (info_process == NULL){
         perror("Sbagliamo qua");
         kill_all();
     }
-    
+    */
     /* Creo processi SO_SOURCES. Sistema gli argomenti */
     for (i = 0; i < SO_SOURCES; i++) {
         switch(valore_fork_sources = fork()) {
@@ -773,9 +771,10 @@ int main () {
                 /* Codice che voglio esegua il Master */
                 /* Magari salviamo le informazioni dei figli dentro 
                    la struct che creiamo all'inizio? */
+                /*
                 info_process[i].child_pid = valore_fork_sources;
                 strcpy(info_process[i].type, "Source");
-                printf("Stampo pid %i e tipo %s \n", info_process[i].child_pid, info_process[i].type); 
+                printf("Stampo pid %i e tipo %s \n", info_process[i].child_pid, info_process[i].type); */
                 break;
         }
     }
@@ -794,9 +793,10 @@ int main () {
                 break;
             default:
                 /* Codice che voglio esegua il Master */
+                /*
                 info_process[j+SO_SOURCES].child_pid = valore_fork_taxi;
                 strcpy(info_process[j+SO_SOURCES].type, "Taxi");
-                printf("Stampo pid %i e tipo %s \n", info_process[j+SO_SOURCES].child_pid, info_process[j+SO_SOURCES].type); 
+                printf("Stampo pid %i e tipo %s \n", info_process[j+SO_SOURCES].child_pid, info_process[j+SO_SOURCES].type); */
                 break;
         }
     }
