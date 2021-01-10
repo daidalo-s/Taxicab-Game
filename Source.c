@@ -135,8 +135,6 @@ int main(int argc, char *argv[])
 	}
 	/* Cerco una cella SO_SOURCE e mi attacco */
 	attach(pointer_at_map);
-	/* DA PROVARE */
-	printf("La cella in cui mi trovo ha coordinate x: %i y: %i \n", x, y);
 
 	/* DOBBIAMO CHIAMARLA DOPO UNA RICEZIONE DI UN SEGNALE DAL MASTER */
 	destination_and_call(pointer_at_map);

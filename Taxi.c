@@ -26,12 +26,13 @@ int msg_queue_of_cell_key, msg_queue_of_cell, map_shm_id, taxi_sem_id, adjacency
 int dimension_of_adjacency_matrix;
 int start_vertex, destination_vertex;
 int element_counter;
+int source = 0;
+int length_of_path;
 int * distance;
 int * predecessor;
 int * visited;
 int * path_to_follow;
 int ** pointer_at_adjacency_matrix;
-int ** cost;
 struct sembuf accesso;
 struct sembuf rilascio;
 message_queue cell_message_queue;    
@@ -78,25 +79,29 @@ void attach(map *pointer_at_map) {
 	while (semop(taxi_sem_id, &accesso, 1) == -1) { /* Possibile loop infinito. Dipende dai controlli. */
 		random_cell();
 	}
-	/* Ci parcheggiamo */
+	/* Ci parcheggiamo. Quindi siamo sicuri di poterlo fare? */
 	if (pointer_at_map->mappa[tmpx][tmpy].active_taxis <= pointer_at_map->mappa[tmpx][tmpy].taxi_capacity) {
 		x = tmpx;
 		y = tmpy;
+	} else {
+		perror("Errore nella logica, non potrei stare in questa cella. ");
 	}
 	semop(taxi_sem_id, &rilascio, 1);
 	TEST_ERROR
 		/* Verifico se la cella è 1 o 3 e prendo l'id della coda di messaggi. */
 		if (pointer_at_map->mappa[x][y].cell_type == 1 || pointer_at_map->mappa[x][y].cell_type == 3) {
-			msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;
+			msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;		
+			/* Ci attacchiamo alla coda di messaggi */
+			msg_queue_of_cell = msgget(msg_queue_of_cell_key, 0);
+			if (msg_queue_of_cell == -1){
+				perror("Sono un processo Taxi: non riesco ad attaccarmi alla coda di messaggi della mia cella.");
+			}
+			/* Condizione true/false per fare il receive_and_find_path nel main */
+			source = 1;
 		}
-	/* Ci attacchiamo alla coda di messaggi */
-	msg_queue_of_cell = msgget(msg_queue_of_cell_key, 0);
-	if (msg_queue_of_cell == -1){
-		perror("Sono un processo Taxi: non riesco ad attaccarmi alla coda di messaggi della mia cella.");
-	}
 #endif
-#ifndef MAPPA_VALORI_CASUALI	
 
+#ifndef MAPPA_VALORI_CASUALI	
 	x = 2;
 	y = 2;
 	msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;
@@ -107,7 +112,7 @@ void attach(map *pointer_at_map) {
 #endif
 }  
 
-void receive_and_go() {
+void receive_and_find_path() {
 	int x_destination, y_destination;
 	printf("Sono il processo Taxi che proverà a ricevere il messaggio \n");
 	printf("L'id della coda di messaggi da cui proverò a leggere è %i \n", msg_queue_of_cell_key);
@@ -137,15 +142,7 @@ void find_path(int start_vertex, int destination_vertex) {
 	printf("La grandezza e %i \n", dimension_of_adjacency_matrix);
 	printf("Parto dal vertice numero %i \n", start_vertex);
 	printf("Arrivo al vertice numero %i \n", destination_vertex);
-#if 1	
-	/* Creo la matrice dei costi solo la prima volta*/
-	if (cost == NULL){ 
-		cost = (int **)malloc(dimension_of_adjacency_matrix * sizeof(int*));
-		for (i = 0; i < dimension_of_adjacency_matrix; i++){
-			cost[i] = (int *)malloc(dimension_of_adjacency_matrix * sizeof(int));
-		}
-	}	
-#endif
+
 	/* Creo l'array per contenere la distanza, lo faccio ad ogni nuovo viaggio */
 	distance = malloc(dimension_of_adjacency_matrix * sizeof(int));
 	/* Creo l'array per salvare la provenienza, lo faccio ad ogni nuovo viaggio */
@@ -153,15 +150,6 @@ void find_path(int start_vertex, int destination_vertex) {
 	/* Creo l'array per salvare i vertici visitati, lo faccio ad ogni nuovo viaggio */
 	visited = malloc(dimension_of_adjacency_matrix * sizeof(int));
 
-#if 1
-	/* Inizializzo la matrice dei costi */
-	for (i = 0; i < dimension_of_adjacency_matrix; i ++){
-		for (j = 0; j < dimension_of_adjacency_matrix; j++){
-			if (pointer_at_adjacency_matrix[i][j] == 0) cost[i][j] = INFINITY;
-			else cost[i][j] = pointer_at_adjacency_matrix[i][j];
-		}
-	}
-#endif    
 	/*
 	   printf("STAMPO LA MATRICE DEI COSTI CREATA \n");
 	   for (i = 0; i < dimension_of_adjacency_matrix; i++){
@@ -174,7 +162,7 @@ void find_path(int start_vertex, int destination_vertex) {
 
 	/* Inizializzo i tre array */
 	for (i = 0; i < dimension_of_adjacency_matrix; i++){
-		distance[i] = cost[start_vertex][i];
+		distance[i] = pointer_at_adjacency_matrix[start_vertex][i];
 		predecessor[i] = start_vertex;
 		visited[i] = 0;
 	}
@@ -200,8 +188,8 @@ void find_path(int start_vertex, int destination_vertex) {
 		for (i = 0; i < dimension_of_adjacency_matrix; i++) {  
 			if (!visited[i]) 
 
-				if (min_distance + cost[next_node][i] < distance[i]){
-					distance[i] = min_distance + cost[next_node][i];
+				if (min_distance + pointer_at_adjacency_matrix[next_node][i] < distance[i]){
+					distance[i] = min_distance + pointer_at_adjacency_matrix[next_node][i];
 					predecessor[i] = next_node;
 				}	
 		}			
@@ -210,6 +198,7 @@ void find_path(int start_vertex, int destination_vertex) {
 
 	/* Creo l'array dove salvo il percorso che devo seguire */
 	tmp_int = distance[destination_vertex] - 1;
+	length_of_path = tmp_int;
 	path_to_follow = malloc(tmp_int * sizeof(int));
 	element_counter = 0;
 	do {
@@ -217,7 +206,6 @@ void find_path(int start_vertex, int destination_vertex) {
 		destination_vertex = predecessor[destination_vertex];
 		tmp_int --;
 		element_counter++;
-		printf("Eseguo una volta\n");
 	} while (destination_vertex != start_vertex && tmp_int >= 0);
 	printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE \n");
 	for (j = 0; j < element_counter; j++){
@@ -228,6 +216,49 @@ void find_path(int start_vertex, int destination_vertex) {
 	free(distance);
 	free(predecessor);
 	free(visited);
+}
+
+
+void move() {
+	int i, j, k = 0;
+	int next_vertex;
+	/* La struct dove salvo il tempo */
+	struct timespec ts;
+	/* Finche' sono all'interno dell'array del percorso */
+	printf("MOVE 1\n");
+	while (k < length_of_path) {
+		/* Prendo il tempo della cella in cui mi trovo */
+		ts.tv_sec = 0;
+		ts.tv_nsec = pointer_at_map->mappa[x][y].travel_time;
+		/* Dormo il tempo giusto */
+		printf("MOVE 2\n");
+		if (nanosleep(&ts, NULL) == -1){
+			perror("Non riesco a dormire");
+		}
+		printf("MOVE 3\n");
+		pointer_at_map->mappa[x][y].crossings++;
+		/* Prendo il prossimo vertice */
+		next_vertex = path_to_follow[k];
+		/* Aggiorno i valori di x e y: MIGLIORABILE DIVIDENDO LA MAPPA IN QUADRANTI */
+		printf("MOVE 4\n");
+		for (i = 0; i < SO_HEIGHT; i++){
+			for (j = 0; j < SO_WIDTH; j++){
+				if (pointer_at_map->mappa[i][j].vertex_number == next_vertex) {
+					x = i;
+					y = j;
+				}
+			}
+		}
+		k++;
+	}
+	printf("MOVE 5\n");
+	/* Verifico di essere arrivato a destinazione */
+	if (pointer_at_map->mappa[x][y].vertex_number == path_to_follow[length_of_path-1]) {
+		printf("Sono giunto a destinazione \n");
+	}
+	/* Libero l'array contente il path */
+	free(path_to_follow);
+	/* */
 }
 
 void create_index(void **m, int rows, int cols, size_t sizeElement){
@@ -247,10 +278,13 @@ void create_index(void **m, int rows, int cols, size_t sizeElement){
 int main(int argc, char *argv[])
 {	
 	int i,j,SO_HOLES=0;
+	int first_free_source;
 	srand(time(NULL));
+
 	/* Prendo l'id e mi attacco al segmento */ 
 	map_shm_id = atoi(argv[1]);
 	adjacency_matrix_shm_id = atoi(argv[2]);
+
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
 	if (pointer_at_map == NULL){
 		perror("Processo Taxi: non riesco ad accedere alla mappa. Termino.");
@@ -263,12 +297,14 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	/* Prendo visibilità dell'array di semafori Taxi*/
+	/* Calcolo il numero di holes per calcolare la dimensione della matrice adiacente */
 	for (i = 0; i < SO_HEIGHT; i ++) {
 		for (j = 0; j < SO_WIDTH; j++){
 			if (pointer_at_map->mappa[i][j].cell_type == 0) SO_HOLES++;
 		}
 	}
+
+	/* Prendo visibilita dell'array di semafori */
 	taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, SEM_FLG);
 	if (taxi_sem_id == -1){
 		perror("Processo Taxi: non riesco ad accedere al mio semaforo. Termino.");
@@ -278,31 +314,56 @@ int main(int argc, char *argv[])
 
 	/* Chiamo il metodo attach */
 	attach(pointer_at_map);
+	printf("TAXI: La cella in cui sono ha coordinate x: %i y: %i e numero vertice %i \n", x, y, pointer_at_map->mappa[x][y].vertex_number);
+
+	/* E' una variabile globale*/
 	dimension_of_adjacency_matrix = (SO_WIDTH*SO_HEIGHT)-SO_HOLES;
 	create_index((void*)pointer_at_adjacency_matrix, dimension_of_adjacency_matrix, dimension_of_adjacency_matrix, sizeof(int));
-	printf("Dimensione calcolata %i \n", dimension_of_adjacency_matrix);
-	/* printf("Provo a stampare il campo 00 %d \n", pointer_at_adjacency_matrix[0][0]); */
-	printf("SONO UN PROCESSO TAXI: STAMPO LA MATRICE ADIACENTE \n");
-	for (i = 0; i < dimension_of_adjacency_matrix; i++){
-		for (j = 0; j < dimension_of_adjacency_matrix; j++){
-			printf("%d ", pointer_at_adjacency_matrix[i][j]); 
+
+	/* 
+	   printf("SONO UN PROCESSO TAXI: STAMPO LA MATRICE ADIACENTE \n");
+	   for (i = 0; i < dimension_of_adjacency_matrix; i++){
+	   for (j = 0; j < dimension_of_adjacency_matrix; j++){
+	   printf("%d ", pointer_at_adjacency_matrix[i][j]); 
+	   }
+	   printf("\n");
+	   }
+	   */
+
+	/* ------------ TAXI INIZIALIZZATO --------------- */
+
+	/* Chiamo receive_and_find_path solo se sono in una cella SOURCE*/
+	if (source) {
+		/* Chiamo il metodo per la ricezione dei messaggi e la ricerca del percorso*/
+		receive_and_find_path();
+		/*A questo punto dopo la ricezione di un segnale mi posso muovere */
+		move(); 
+	} else {
+		/* Devo trovare una cella source libera ed andarci */
+		printf("Sto cercando una cella SOURCE in cui andare \n");
+		for(i = 0; i < SO_HEIGHT; i++){
+			for(j = 0; j < SO_WIDTH; j++){
+				if ((pointer_at_map->mappa[i][j].cell_type == 1 || pointer_at_map->mappa[i][j].cell_type == 3) 
+						&& (pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
+					first_free_source = pointer_at_map->mappa[i][j].vertex_number;
+					printf("L'ho trovata. \n");
+				}
+			}
+		}
+		/* Cerco un percorso da dove sono alla prima source libera */
+		printf("Cerco un percorso alla cella SOURCE\n");
+		find_path(pointer_at_map->mappa[x][y].vertex_number, first_free_source);
+		printf("Ora provo a muovermi \n");
+		move(); 
+	}
+	/* Per debug */
+	if (source) { 
+		printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE DAL MAIN\n");
+		for (j = 0; j < element_counter; j++){
+			printf("%i \t", path_to_follow[j]);
 		}
 		printf("\n");
 	}
-
-	receive_and_go();
-
-	printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE DAL MAIN\n");
-	for (j = 0; j < element_counter; j++){
-		printf("%i \t", path_to_follow[j]);
-	}
-	printf("\n");
-	printf("Sono il processo taxi: mi sono attaccato alla cella %i %i \n", x, y);
-	printf("Sono il processo taxi: il semaforo ha id %i ed e' il numero %i \n", taxi_sem_id, pointer_at_map->mappa[tmpx][tmpy].reference_sem_number);
-
-
-	printf("Sono un processo Taxi \n");
-	printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);
 
 
 #ifdef DEBUG_STAMPA_MAPPA    
@@ -317,10 +378,6 @@ int main(int argc, char *argv[])
 
 	/* ----------------------- OLTRE QUESTA LINEA SOLO COSE DA CACELLARE --------------------------- */
 	/*Libero la matrice dei costi solo alla fine di tutti i viaggi */
-	for (i = 0; i < dimension_of_adjacency_matrix; i++){
-		free(cost[i]);
-	}
-	free(cost);
 
 	return 0;
 }
