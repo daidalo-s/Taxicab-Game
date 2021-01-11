@@ -14,6 +14,8 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include "Map.h"
+
+
 /********** VARIABILI GLOBALI **********/
 /*  
  *	Deve accedere a: mappa, semaforo per assegnazione cella, coda di messaggi della cella.
@@ -42,7 +44,7 @@ void attach(map *pointer_at_map) {
 				/* Sezione critica */
 				semop(source_sem_id, &accesso, 1);
 				TEST_ERROR
-					pointer_at_map->mappa[i][j].cell_type = 3;
+				pointer_at_map->mappa[i][j].cell_type = 3;
 				msg_queue_of_cell_key = pointer_at_map->mappa[i][j].message_queue_key;
 
 				x = i;
@@ -78,16 +80,13 @@ void destination_and_call(map *pointer_at_map) {
 		destination_x = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; 
 		destination_y = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
 	} while (pointer_at_map->mappa[destination_x][destination_y].cell_type == 0 || (destination_x == x && destination_y == y));
-	printf("Il valore di i e' %i \n", destination_x);
-	printf("Il valore di j e' %i \n", destination_y);
 
 	/* Preparo il messaggio */
 	sprintf(destination_string, "%d", destination_x);
 	strcat(destination_string, comma);
 	sprintf(str1, "%d", destination_y);
 	strcat(destination_string, str1);
-	printf("Stampo destination: %s \n", destination_string);
-
+	
 	/* Imposto i campi della struct message_queue */
 	cell_message_queue.mtype = 1; /* Le richieste hanno long 1 */
 	strcpy(cell_message_queue.message, destination_string);
@@ -99,7 +98,6 @@ void destination_and_call(map *pointer_at_map) {
 		perror("Processo Source: non riesco a collegarmi alla coda di messaggi della mia cella. Termino.");
 		exit(EXIT_FAILURE);
 	}
-	printf("L'id della coda di messaggi in cui proverò a scrivere è %i \n", msg_queue_of_cell_key);
 	/* DA FARE IN MODO PERIODICO */
 	if (msgsnd(message_queue_id, &cell_message_queue, MESSAGE_WIDTH, 0) < 0) {
 		perror("Processo Source: errore, non riesco a mandare il messaggio");
@@ -160,9 +158,6 @@ int main(int argc, char *argv[])
 	printf("Ho ricevuto il messaggio %s \n", cell_message_queue.message);
 #endif 
 
-	printf("Ora perdo un po' di tempo e poi esco \n");
-	sleep(2);
-	printf("Ho finito di dormire sono un processo Source \n");
 	return 0;
 }
 

@@ -13,19 +13,8 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include "Map.h"
-/****************** INFORMAZIONI SUI FIGLI ******************/
-/* Struct con dei campi per memorizzare informazioni
-   sui figli che creiamo. */
-/*
-   typedef struct 
-   {
-   int child_pid;
-   char type[7];
-   }info;
-   */
+
 /****************** Prototipi ******************/
-struct node* createNode(int v);
-struct Graph* createAGraph(int vertices);
 void createAdjacencyMatrix();
 void kill_all();
 void reading_input_values ();
@@ -58,16 +47,21 @@ int adjacency_matrix_shm_id;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
 char * args_source[] = {"Source", NULL, NULL, NULL};
-char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL, NULL};
+char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL, NULL, NULL};
 char map_shm_id_execve[4];
 char adjacency_matrix_shm_id_execve[4];
 int map_shm_id; /* valore ritornato da shmget() */
 int source_sem_id; /* valore ritornato da semget() per i SOURCE */
 int taxi_sem_id;
 int * pointer_at_msgq;
-int adjacency_matrix_shm_id; 
-/* info * info_process; */
-
+int adjacency_matrix_shm_id;
+pid_t * child_source;
+pid_t * child_taxi;
+struct sigaction sa; 
+#if 0
+info * info_process_source;
+info * info_process_taxi; 
+#endif
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -167,7 +161,7 @@ void reading_input_values () {
 	}
 
 	/* Evito mappe di una sola cella */
-	if ((SO_WIDTH == SO_HEIGHT) == 1){
+	if ((SO_WIDTH == 1) && (SO_HEIGHT == 1)){
 		printf("Errore, non posso avere mappe di una sola cella. Esco. \n");
 		exit(EXIT_FAILURE);
 	}
@@ -646,6 +640,7 @@ void createIPC(map *pointer_at_map) {
 			}
 		}
 	} 
+
 }
 
 void kill_all() {
@@ -669,34 +664,68 @@ void kill_all() {
 	}
 	free(pointer_at_msgq);
 	shmctl(adjacency_matrix_shm_id, IPC_RMID, NULL);
-	/* free(info_process); */
+#if 0	
+	free(info_process_taxi);
+	free(info_process_source); 
+#endif
 }
+
+void taxi_handler(int signum) {
+	static int j, taxi_ready = 0;
+	taxi_ready++;
+	printf("Mi e' arrivato il segnale numero %i \n", taxi_ready);
+	if (taxi_ready == SO_TAXI) {
+		for (j = 0; j < SO_TAXI; j++){
+			kill(child_taxi[j], SIGCONT);
+		}
+	}
+}
+
 
 /* Main */
 int main () {
 
 	int i, j, valore_fork_sources, valore_fork_taxi;
+	
+	int created_at_start = 0;
+	char creation_moment[4];
+	
+	
+	bzero(&sa, sizeof(sa));
+	sa.sa_handler = taxi_handler;
+	sa.sa_flags = 0;
+	sigaction(SIGUSR1, &sa, NULL);
+	
 	srand(time(NULL)); 
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creo gli oggetti ipc */
 	createIPC(pointer_at_map);
-#if 0
-	printf("Stampo prima di inizializzare la mappa \n");
-	map_print(pointer_at_map);
-	printf("Stampo dopo l'inizializzazione della mappa \n");
-	map_print(pointer_at_map);
-#endif 
+
 	createAdjacencyMatrix(pointer_at_map);
-	printf("Sono il master: l'array di semafori ha id %i e la cella 2.2 ha numero %i \n", taxi_sem_id, pointer_at_map->mappa[2][2].reference_sem_number);
+	
 	/* Creo l'array dove salvo le dimensione dei figli */
-	/*
-	   info_process = malloc((SO_SOURCES + SO_TAXI)*sizeof(info));
-	   if (info_process == NULL){
-	   perror("Sbagliamo qua");
-	   kill_all();
-	   }
-	   */
+	child_source = calloc(SO_SOURCES, sizeof(pid_t));	
+	child_taxi = calloc(SO_TAXI, sizeof(pid_t));
+
+	#if 0
+	info_process_source = calloc(SO_SOURCES, sizeof(info));
+	if (info_process_source == NULL){
+		perror("Sbagliamo qua");
+	 	kill_all();
+	}
+	info_process_taxi = calloc(SO_TAXI, sizeof(info));
+	if (info_process_taxi == NULL){
+		perror("Sbagliamo qua parte 2");
+		kill_all();
+	}
+	#endif  
+
+	/* Informo il taxi su quando e' stato creato */
+	
+	sprintf(creation_moment, "%d", created_at_start); 
+	args_taxi[3] = creation_moment;
+	
 	/* Creo processi SO_SOURCES. Sistema gli argomenti */
 	for (i = 0; i < SO_SOURCES; i++) {
 		switch(valore_fork_sources = fork()) {
@@ -713,10 +742,13 @@ int main () {
 				/* Codice che voglio esegua il Master */
 				/* Magari salviamo le informazioni dei figli dentro 
 				   la struct che creiamo all'inizio? */
-				/*
-				   info_process[i].child_pid = valore_fork_sources;
-				   strcpy(info_process[i].type, "Source");
-				   printf("Stampo pid %i e tipo %s \n", info_process[i].child_pid, info_process[i].type); */
+				child_source[i] = valore_fork_sources;
+				#if 0
+				info_process_source[i].child_pid = valore_fork_sources;
+				info_process_source[i].type = 'S';
+				/* strcpy(info_process[i].type, "Source"); */
+				/*printf("Stampo pid %i e tipo %d \n", info_process_source[i].child_pid, info_process_source[i].type);*/ 
+				#endif
 				break;
 		}
 	}
@@ -735,22 +767,49 @@ int main () {
 				break;
 			default:
 				/* Codice che voglio esegua il Master */
-				/*
-				   info_process[j+SO_SOURCES].child_pid = valore_fork_taxi;
-				   strcpy(info_process[j+SO_SOURCES].type, "Taxi");
-				   printf("Stampo pid %i e tipo %s \n", info_process[j+SO_SOURCES].child_pid, info_process[j+SO_SOURCES].type); */
+				child_taxi[j] = valore_fork_taxi;
+				#if 0
+				info_process_taxi[j].child_pid = valore_fork_taxi;
+				info_process_taxi[j].type = 'T'; 
+				/* strcpy(info_process[j+SO_SOURCES].type, "Taxi"); */
+				/* printf("Stampo pid %i e tipo %d \n", info_process_taxi[j].child_pid, info_process_taxi[j].type); */
+				#endif
 				break;
 		}
 	}
 
 	/* Aspetto la terminazione dei figli */
 	while(wait(NULL) != -1) {
-		printf ("Ora tutti i figli sono terminati\n");
 	}
+	printf("Stampo tutte le informazioni dei figli e se crasha mi ammazzo \n");
+	for (i = 0; i < SO_SOURCES; i++){
+		printf("%i  ", child_source[i]);	
+	}
+	printf("\n");
+	for (i = 0; i < SO_TAXI; i++){
+		printf("%i  ", child_taxi[i]);
+	}
+	printf("\n");
+#if 0
+	printf("Stampo tutte le informazioni dei figli \n");
+	for (i = 0; i < SO_SOURCES; i++){
+		printf("Stampo pid %i e tipo %d \n", info_process_source[i].child_pid, info_process_source[i].type); 
+	}
+	for (i = 0; i < SO_SOURCES; i++){
+		printf("Stampo pid %i e tipo %d \n", info_process_source[i].child_pid, info_process_source[i].type); 
+	}
+#endif
+
 	map_print(pointer_at_map);
+	printf("IL NUMERO DI TAXI ATTIVI \n");
+	for (i = 0; i < SO_HEIGHT; i++){
+		for (j = 0; j < SO_WIDTH; j++){
+			printf("%i   ", pointer_at_map->mappa[i][j].active_taxis);
+		}
+		printf("\n");
+	}
 	/* Stampo la coda di messaggi della cella 2.2 */
 	/* Dealloca la memoria condivisa dove ho la mappa */
 	kill_all();
 	return 0;
-	printf("La dimensione dell'array calcolata e' %i \n", TAXI_SEM_ARRAY_DIM);
 }

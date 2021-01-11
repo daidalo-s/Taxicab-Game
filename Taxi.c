@@ -52,7 +52,8 @@ void random_cell() {
 	do {
 		random_coordinates[0] = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; /* x */
 		random_coordinates[1] = rand() % ((SO_WIDTH-1) - 0 + 1) + 0; /* y */
-	} while (pointer_at_map->mappa[random_coordinates[0]][random_coordinates[1]].cell_type == 0);
+	} while (pointer_at_map->mappa[random_coordinates[0]][random_coordinates[1]].cell_type == 0 ||
+		pointer_at_map->mappa[random_coordinates[0]][random_coordinates[1]].vertex_number == -1);
 	tmpx = random_coordinates[0];
 	tmpy = random_coordinates[1];
 	/* Impostazione di accesso */
@@ -74,7 +75,6 @@ void attach(map *pointer_at_map) {
 #ifdef MAPPA_VALORI_CASUALI
 
 	random_cell();
-
 	/* Entro in sezione critica */
 	while (semop(taxi_sem_id, &accesso, 1) == -1) { /* Possibile loop infinito. Dipende dai controlli. */
 		random_cell();
@@ -83,8 +83,10 @@ void attach(map *pointer_at_map) {
 	if (pointer_at_map->mappa[tmpx][tmpy].active_taxis <= pointer_at_map->mappa[tmpx][tmpy].taxi_capacity) {
 		x = tmpx;
 		y = tmpy;
+		pointer_at_map->mappa[x][y].active_taxis++;
 	} else {
 		perror("Errore nella logica, non potrei stare in questa cella. ");
+		printf("SONO UN TAXI CHE HA SBAGLIATO TUTTO NELLA VITA \n");
 	}
 	semop(taxi_sem_id, &rilascio, 1);
 	TEST_ERROR
@@ -235,23 +237,21 @@ void move() {
 		if (nanosleep(&ts, NULL) == -1){
 			perror("Non riesco a dormire");
 		}
-		printf("MOVE 3\n");
 		pointer_at_map->mappa[x][y].crossings++;
 		/* Prendo il prossimo vertice */
 		next_vertex = path_to_follow[k];
 		/* Aggiorno i valori di x e y: MIGLIORABILE DIVIDENDO LA MAPPA IN QUADRANTI */
-		printf("MOVE 4\n");
 		for (i = 0; i < SO_HEIGHT; i++){
 			for (j = 0; j < SO_WIDTH; j++){
 				if (pointer_at_map->mappa[i][j].vertex_number == next_vertex) {
 					x = i;
 					y = j;
 				}
+				pointer_at_map->mappa[i][j].active_taxis = pointer_at_map->mappa[i][j].active_taxis + 1;
 			}
 		}
 		k++;
 	}
-	printf("MOVE 5\n");
 	/* Verifico di essere arrivato a destinazione */
 	if (pointer_at_map->mappa[x][y].vertex_number == path_to_follow[length_of_path-1]) {
 		printf("Sono giunto a destinazione \n");
@@ -329,7 +329,10 @@ int main(int argc, char *argv[])
 	   printf("\n");
 	   }
 	   */
-
+	
+	kill(getppid(), SIGUSR1);
+	kill(getpid(), SIGSTOP);
+	
 	/* ------------ TAXI INIZIALIZZATO --------------- */
 
 	/* Chiamo receive_and_find_path solo se sono in una cella SOURCE*/
@@ -365,16 +368,18 @@ int main(int argc, char *argv[])
 		printf("\n");
 	}
 
+	printf("TAXI DEBUG PT2\n");
+	for (i = 0; i < SO_HEIGHT; i++){
+		for (j = 0; j < SO_WIDTH; j++){
+			printf("%i  ", pointer_at_map->mappa[i][j].active_taxis);
+		}
+		printf("\n");
+	}
 
 #ifdef DEBUG_STAMPA_MAPPA    
 	printf("Uso il metodo di stampa tradizionale \n");
 	map_print(pointer_at_map);
 #endif
-
-	printf("Ora perdo un po' di tempo e poi esco \n");
-	sleep(3);
-	printf("ho finito di dormire, sono un processo Taxi\n");
-
 
 	/* ----------------------- OLTRE QUESTA LINEA SOLO COSE DA CACELLARE --------------------------- */
 	/*Libero la matrice dei costi solo alla fine di tutti i viaggi */
