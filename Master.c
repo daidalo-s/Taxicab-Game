@@ -13,9 +13,11 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include <sys/time.h>
+#include <signal.h>
 #include "Map.h"
 
 /****************** Prototipi ******************/
+int addEdge(int ** pointer, int i, int j);
 void createAdjacencyMatrix();
 void kill_all();
 void reading_input_values ();
@@ -47,10 +49,10 @@ int number_of_vertices = 0;
 int adjacency_matrix_shm_id;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
-char * args_source[] = {"Source", NULL, NULL, NULL};
+char * args_source[] = {"Source", NULL, NULL, NULL, NULL, NULL};
 char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL, NULL, NULL};
-char map_shm_id_execve[4];
-char adjacency_matrix_shm_id_execve[4];
+char * map_shm_id_execve;
+char * adjacency_matrix_shm_id_execve;
 int map_shm_id; /* valore ritornato da shmget() */
 int source_sem_id; /* valore ritornato da semget() per i SOURCE */
 int taxi_sem_id;
@@ -59,10 +61,7 @@ int adjacency_matrix_shm_id;
 pid_t * child_source;
 pid_t * child_taxi;
 struct sigaction sa; 
-#if 0
-info * info_process_source;
-info * info_process_taxi; 
-#endif
+
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -559,8 +558,9 @@ void createAdjacencyMatrix(map *pointer_at_map){
 	}
 
 	/* Salvo l'id della matrice adiacente per i taxi */
-	sprintf(adjacency_matrix_shm_id_execve, "%d", adjacency_matrix_shm_id);
-	args_taxi[2] = adjacency_matrix_shm_id_execve;
+	adjacency_matrix_shm_id_execve = malloc(sizeof(int));
+    args_taxi[2] = adjacency_matrix_shm_id_execve;
+    sprintf(adjacency_matrix_shm_id_execve, "%d", adjacency_matrix_shm_id);
 }
 
 void createIPC(map *pointer_at_map) {
@@ -584,9 +584,10 @@ void createIPC(map *pointer_at_map) {
 	/* Inizializziamo la mappa */
 	map_setup(pointer_at_map);
 	/* Preparo gli argomenti per la execve */
-	sprintf(map_shm_id_execve, "%d", map_shm_id); 
+    map_shm_id_execve = malloc(sizeof(int));
 	args_source[1] = args_taxi[1] = map_shm_id_execve;
-	/* Creo il semaforo mutex per l'assegnazione delle celle di SOURCE */
+    printf(map_shm_id_execve, "%d", map_shm_id);
+    /* Creo il semaforo mutex per l'assegnazione delle celle di SOURCE */
 	source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600 | IPC_CREAT);
 	if (source_sem_id == -1){
 		perror("Non riesco a generare il semaforo per Source. Termino");
