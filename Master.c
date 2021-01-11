@@ -687,16 +687,19 @@ int main () {
 
 	int i, j, valore_fork_sources, valore_fork_taxi;
 	
-	int created_at_start = 0;
+    struct timeval time;
+	
+    int created_at_start = 0;
 	char creation_moment[4];
 	
+    gettimeofday(&time, NULL);
+    srand((time.tv_sec * 1000) + (time.tv_usec / 1000)); 
 	
 	bzero(&sa, sizeof(sa));
 	sa.sa_handler = taxi_handler;
 	sa.sa_flags = 0;
 	sigaction(SIGUSR1, &sa, NULL);
 	
-	srand(time(NULL)); 
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creo gli oggetti ipc */
