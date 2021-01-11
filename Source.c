@@ -28,6 +28,9 @@ int x, y;
 struct sembuf accesso = { 0, -1, 0}; 
 struct sembuf rilascio = { 0, +1, 0}; 
 
+
+void map_print(map *pointer_at_map);
+
 /********** ATTACH ALLA CELLA **********/
 /*
  *	Chiamando questo metodo il processo SO_SOURCE scorre la mappa alla ricerca di una cella
@@ -41,6 +44,7 @@ void attach(map *pointer_at_map) {
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
 			if (pointer_at_map->mappa[i][j].cell_type == 1){
+				TEST_ERROR
 				/* Sezione critica */
 				semop(source_sem_id, &accesso, 1);
 				TEST_ERROR
@@ -49,7 +53,6 @@ void attach(map *pointer_at_map) {
 
 				x = i;
 				y = j;
-
 				/* Rilascio la risorsa */
 				semop(source_sem_id, &rilascio, 1);
 				TEST_ERROR
@@ -131,12 +134,11 @@ int main(int argc, char *argv[])
 		perror("Processo Source: non riesco a prendere il semaforo. Termino.");
 		exit(EXIT_FAILURE);
 	}
+	printf("%i \n", map_shm_id);
 	/* Cerco una cella SO_SOURCE e mi attacco */
 	attach(pointer_at_map);
-
 	/* DOBBIAMO CHIAMARLA DOPO UNA RICEZIONE DI UN SEGNALE DAL MASTER */
 	destination_and_call(pointer_at_map);
-
 #ifdef DEBUG
 	printf("Sono un processo SO_SOURCE \n");
 	printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);

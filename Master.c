@@ -17,7 +17,7 @@
 #include "Map.h"
 
 /****************** Prototipi ******************/
-int addEdge(int ** pointer, int i, int j);
+void addEdge(int ** pointer, int i, int j);
 void createAdjacencyMatrix();
 void kill_all();
 void reading_input_values ();
@@ -49,8 +49,8 @@ int number_of_vertices = 0;
 int adjacency_matrix_shm_id;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
-char * args_source[] = {"Source", NULL, NULL, NULL, NULL, NULL};
-char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL, NULL, NULL};
+char * args_source[] = {"Source", NULL, NULL};
+char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL};
 char * map_shm_id_execve;
 char * adjacency_matrix_shm_id_execve;
 int map_shm_id; /* valore ritornato da shmget() */
@@ -61,7 +61,7 @@ int adjacency_matrix_shm_id;
 pid_t * child_source;
 pid_t * child_taxi;
 struct sigaction sa; 
-
+static int taxi_ready = 0;
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -586,7 +586,7 @@ void createIPC(map *pointer_at_map) {
 	/* Preparo gli argomenti per la execve */
     map_shm_id_execve = malloc(sizeof(int));
 	args_source[1] = args_taxi[1] = map_shm_id_execve;
-    printf(map_shm_id_execve, "%d", map_shm_id);
+    sprintf(map_shm_id_execve, "%d", map_shm_id);
     /* Creo il semaforo mutex per l'assegnazione delle celle di SOURCE */
 	source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600 | IPC_CREAT);
 	if (source_sem_id == -1){
@@ -672,8 +672,9 @@ void kill_all() {
 #endif
 }
 
+
 void taxi_handler(int signum) {
-	static int j, taxi_ready = 0;
+	int j;
 	taxi_ready++;
 	printf("Mi e' arrivato il segnale numero %i \n", taxi_ready);
 	if (taxi_ready == SO_TAXI) {
@@ -692,16 +693,18 @@ int main () {
     struct timeval time;
 	
     int created_at_start = 0;
-	char creation_moment[4];
+	char * creation_moment;
 	
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec / 1000)); 
+	
 	
 	bzero(&sa, sizeof(sa));
 	sa.sa_handler = taxi_handler;
 	sa.sa_flags = 0;
 	sigaction(SIGUSR1, &sa, NULL);
 	
+
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 	/* Creo gli oggetti ipc */
@@ -713,23 +716,10 @@ int main () {
 	child_source = calloc(SO_SOURCES, sizeof(pid_t));	
 	child_taxi = calloc(SO_TAXI, sizeof(pid_t));
 
-	#if 0
-	info_process_source = calloc(SO_SOURCES, sizeof(info));
-	if (info_process_source == NULL){
-		perror("Sbagliamo qua");
-	 	kill_all();
-	}
-	info_process_taxi = calloc(SO_TAXI, sizeof(info));
-	if (info_process_taxi == NULL){
-		perror("Sbagliamo qua parte 2");
-		kill_all();
-	}
-	#endif  
-
-	/* Informo il taxi su quando e' stato creato */
-	
-	sprintf(creation_moment, "%d", created_at_start); 
+	/* Creo la stringa per informare il taxi su quando e' stato creato */
+	creation_moment = malloc(sizeof(int));
 	args_taxi[3] = creation_moment;
+	sprintf(creation_moment, "%d", created_at_start); 
 	
 	/* Creo processi SO_SOURCES. Sistema gli argomenti */
 	for (i = 0; i < SO_SOURCES; i++) {
@@ -748,12 +738,6 @@ int main () {
 				/* Magari salviamo le informazioni dei figli dentro 
 				   la struct che creiamo all'inizio? */
 				child_source[i] = valore_fork_sources;
-				#if 0
-				info_process_source[i].child_pid = valore_fork_sources;
-				info_process_source[i].type = 'S';
-				/* strcpy(info_process[i].type, "Source"); */
-				/*printf("Stampo pid %i e tipo %d \n", info_process_source[i].child_pid, info_process_source[i].type);*/ 
-				#endif
 				break;
 		}
 	}
@@ -773,12 +757,6 @@ int main () {
 			default:
 				/* Codice che voglio esegua il Master */
 				child_taxi[j] = valore_fork_taxi;
-				#if 0
-				info_process_taxi[j].child_pid = valore_fork_taxi;
-				info_process_taxi[j].type = 'T'; 
-				/* strcpy(info_process[j+SO_SOURCES].type, "Taxi"); */
-				/* printf("Stampo pid %i e tipo %d \n", info_process_taxi[j].child_pid, info_process_taxi[j].type); */
-				#endif
 				break;
 		}
 	}

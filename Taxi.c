@@ -152,16 +152,6 @@ void find_path(int start_vertex, int destination_vertex) {
 	/* Creo l'array per salvare i vertici visitati, lo faccio ad ogni nuovo viaggio */
 	visited = malloc(dimension_of_adjacency_matrix * sizeof(int));
 
-	/*
-	   printf("STAMPO LA MATRICE DEI COSTI CREATA \n");
-	   for (i = 0; i < dimension_of_adjacency_matrix; i++){
-	   for (j = 0; j < dimension_of_adjacency_matrix; j++){
-	   printf("%i ", cost[i][j]);
-	   }
-	   printf("\n");
-	   }
-	   */
-
 	/* Inizializzo i tre array */
 	for (i = 0; i < dimension_of_adjacency_matrix; i++){
 		distance[i] = pointer_at_adjacency_matrix[start_vertex][i];
