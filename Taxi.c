@@ -319,10 +319,10 @@ int main(int argc, char *argv[])
 	   printf("\n");
 	   }
 	   */
-	
+	#if 0
 	kill(getppid(), SIGUSR1);
 	kill(getpid(), SIGSTOP);
-	
+	#endif
 	/* ------------ TAXI INIZIALIZZATO --------------- */
 
 	/* Chiamo receive_and_find_path solo se sono in una cella SOURCE*/

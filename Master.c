@@ -55,13 +55,16 @@ int taxi_sem_id;   /* valore ritornato da semget() per i TAXI, id dell'array*/
 int * pointer_at_msgq; /* Malloc di interi dove salviamo le key delle code di messaggi che poi inseriamo nelle celle */
 char * map_shm_id_execve; /* Puntatore a char dove salvo l'id della mappa per passarlo ai figli*/
 char * adjacency_matrix_shm_id_execve; /* Puntatore a char dove salvo l'id della matrice adiacente per passarlo ai figli*/
+char * creation_moment; /* Puntatore a char dove salvo il momento di creazione del taxi, 0 in inizializzazione, 1 dopo timeout*/
 char * args_source[] = {"Source", NULL, NULL}; /* Array di argomenti da passare a Source, [1]=id_mappa*/
 /* Array di argomenti da passare a Taxi [1]=id_mappa,[2]=matrice_adiacente,[3]=momento creazione*/ 
 char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL}; 
 pid_t * child_source; /* Malloc dove salviamo pid dei figli Source */
 pid_t * child_taxi; /* Malloc dove salviamo pid dei figli Taxi */
 struct sigaction sa; /* Struct per l'handler dei segnali mandati dai Taxi */
-static int taxi_ready = 0; /* Intero utilizzato per l'handler dei segnali mandati dai Taxi*/
+#if 0
+static int taxi_ready = 0; /* Intero utilizzato per l'handler dei segnali mandati dai Taxi*/ 
+#endif
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -487,14 +490,14 @@ void createAdjacencyMatrix(map *pointer_at_map){
 
 	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
 	if (pointer_at_map == NULL){
-		perror("Funzione createAdjacencyMatrix: non riesco ad attaccarmi alla mappa. Termino \n");
+		perror("Master createAdjacencyMatrix: non riesco ad attaccarmi alla mappa. Termino \n");
 		exit(EXIT_FAILURE);
 	}
 
 	/* Creo il segmento di memoria condivisa per la matrice adiacente */
 	adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, SHM_FLG);
 	if (adjacency_matrix_shm_id < 0){
-		perror("Non riesco a creare la memoria condivisa. Termino.");
+		perror("Master createAdjacencyMatrix: non riesco a creare la memoria condivisa. Termino\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
@@ -502,7 +505,7 @@ void createAdjacencyMatrix(map *pointer_at_map){
 	/* Mi attacco come master alla matrice per inizializzarla */
 	pointer = shmat(adjacency_matrix_shm_id, NULL, SHM_FLG);
 	if (pointer == NULL){
-		perror("Non riesco ad attaccarmi alla memoria condivisa con la matrice adiacente. Termino.");
+		perror("Master createAdjacencyMatrix: non riesco ad attaccarmi alla memoria condivisa con la matrice adiacente. Termino\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
@@ -565,62 +568,82 @@ void createAdjacencyMatrix(map *pointer_at_map){
 
 	/* Salvo l'id della matrice adiacente per i taxi */
 	adjacency_matrix_shm_id_execve = malloc(sizeof(int));
+	if(adjacency_matrix_shm_id_execve == NULL){
+		perror("Master createAdjacencyMatrix: non riesco a creare l'array per l'id della matrice adiancente. Termino\n");
+		kill_all();
+		exit(EXIT_FAILURE);
+	}
     args_taxi[2] = adjacency_matrix_shm_id_execve;
     sprintf(adjacency_matrix_shm_id_execve, "%d", adjacency_matrix_shm_id);
 
 }
 
 void createIPC(map *pointer_at_map) {
-	int i, j, counter = 0;
+	
+	int i, j, counter;
+	
 	/* Path per la ftok */
 	char *path = "/tmp";
+	
 	/* Creo la memoria condivisa che contiene la mappa */
 	map_shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
 	if (map_shm_id == -1) {
-		perror("Non riesco a creare la memoria condivisa. Termino.");
+		perror("Master createIPC: non riesco a creare la memoria condivisa. Termino\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
+	
 	/* Mi attacco come master alla mappa */
 	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
 	if (pointer_at_map == NULL) {
-		perror("Non riesco ad attaccarmi alla memoria condivisa con la mappa. Termino.");
+		perror("Master createIPC: non riesco ad attaccarmi alla memoria condivisa con la mappa. Termino\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
+	
 	/* Inizializziamo la mappa */
 	map_setup(pointer_at_map);
+	
 	/* Preparo gli argomenti per la execve */
     map_shm_id_execve = malloc(sizeof(int));
+    if (map_shm_id_execve == NULL){
+    	perror("Master createIPC: non riesco a creare l'array per salvare l'id della mappa condivisa\n");
+    	kill_all();
+    	exit(EXIT_FAILURE);
+    }
 	args_source[1] = args_taxi[1] = map_shm_id_execve;
     sprintf(map_shm_id_execve, "%d", map_shm_id);
+
     /* Creo il semaforo mutex per l'assegnazione delle celle di SOURCE */
 	source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600 | IPC_CREAT);
 	if (source_sem_id == -1){
-		perror("Non riesco a generare il semaforo per Source. Termino");
+		perror("Master createIPC: non riesco a generare il semaforo per l'assegnazione delle Source. Termino\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	} 
+	
 	/* Imposto il semaforo con valore 1 -MUTEX */
 	if (semctl(source_sem_id, 0, SETVAL, 1) == -1) {
-		perror("Non riesco a impostare il semaforo per Source. Termino");
+		perror("Master createIPC: non riesco a impostare il semaforo per Source. Termino\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
-	/* Creo l'array di semafori per i TAXI*/
+	
+	/* Creo l'array di semafori per i TAXI, uno per ogni cella */
 	taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, 0600 | IPC_CREAT);
 	if (taxi_sem_id == -1){
-		perror("Non riesco a generare il semaforo per Taxi. Termino");
+		perror("Master createIPC: non riesco a generare il semaforo per Taxi. Termino\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
+
 	/* Assegno il numero del semaforo Taxi di riferimento ad ogni cella */
 	counter = 0;
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
 			if (pointer_at_map->mappa[i][j].cell_type != 0) {
 				if(semctl(taxi_sem_id, counter, SETVAL, pointer_at_map->mappa[i][j].taxi_capacity) == -1 ){
-					perror("Non riesco a impostare il semaforo per Taxi. Termino");
+					perror("Master createIPC: non riesco a impostare il semaforo per Taxi. Termino\n");
 					kill_all();
 					exit(EXIT_FAILURE);
 				}
@@ -629,15 +652,25 @@ void createIPC(map *pointer_at_map) {
 			}
 		}
 	}
+	
 	/* Creiamo le code di messaggi per le celle source */
 	pointer_at_msgq = malloc(SO_SOURCES*sizeof(int));
+	if (pointer_at_msgq == NULL){
+		perror("Master createIPC: non riesco a creare l'array per salvare le key delle code di messaggi. Termino\n");
+		kill_all();
+		exit(EXIT_FAILURE);
+	}
 	for (i = 0; i < SO_SOURCES; i ++) {
 		pointer_at_msgq[i] = ftok(path, i);
-		if(msgget(pointer_at_msgq[i], 0600 | IPC_CREAT | IPC_EXCL) == 1) {
-			perror("Non riesco a creare la coda di messaggi");
+		if(msgget(pointer_at_msgq[i], 0600 | IPC_CREAT | IPC_EXCL) == -1) {
+			perror("Master createIPC: non riesco a creare la coda di messaggi. Termino\n");
 			kill_all();
 			exit(EXIT_FAILURE);
 		}
+	}
+	printf("STAMPA DI TEST DEL MASTER : STAMPO LE KEY CHE HO CREATO \n");
+	for (i = 0; i < SO_SOURCES; i++){
+		printf("%i \n", pointer_at_msgq[i]);
 	}
 	/* Assegna al campo della cella il valore della sua coda di messaggi*/
 	counter = 0;
@@ -655,31 +688,41 @@ void createIPC(map *pointer_at_map) {
 void kill_all() {
 	/* Completare. Dovrà terminare le risorse IPC che allocheremo. */
 	int msqid, i;
-	/* Marco per la deallocazione la memoria condivisa */
+	
+	/* Marco per la deallocazione la memoria condivisa con la mappa */
 	shmctl(map_shm_id, IPC_RMID, NULL);
+
+	/* Marco per la deallocazione la memoria condivisa con la matrice adiacente */
+	shmctl(adjacency_matrix_shm_id, IPC_RMID, NULL);
+
 	/* Dealloco il semaforo per Source */
 	semctl(source_sem_id, 0, IPC_RMID);
+	
 	/* Dealloco l'array di semafori per Taxi */
 	semctl(taxi_sem_id, 0, IPC_RMID);
+	
 	for (i = 0; i < SO_SOURCES; i++) {
 		msqid = msgget(pointer_at_msgq[i], 0600);
 		if (msqid < 0) {
-			perror("Errore nella deallocazione ");
+			perror("Errore nella deallocazione \n");
 		}
-		/* printf("Sto deallocando la coda di messaggi. Ha id %i \n", msqid); */
-		/* Dealloco quella coda di messaggi */
 		msgctl(msqid , IPC_RMID , NULL);
-		/* msgctl(msqid+1, IPC_RMID, NULL); */
 	}
+	
 	free(pointer_at_msgq);
-	shmctl(adjacency_matrix_shm_id, IPC_RMID, NULL);
-#if 0	
-	free(info_process_taxi);
-	free(info_process_source); 
-#endif
+
+	free(adjacency_matrix_shm_id_execve);
+
+	free(map_shm_id_execve);
+
+	free(creation_moment);
+	
+	free(child_source);
+
+	free(child_taxi);
 }
 
-
+#if 0
 void taxi_handler(int signum) {
 	int j;
 	taxi_ready++;
@@ -690,9 +733,8 @@ void taxi_handler(int signum) {
 		}
 	}
 }
+#endif
 
-
-/* Main */
 int main () {
 
 	int i, j, valore_fork_sources, valore_fork_taxi;
@@ -700,31 +742,45 @@ int main () {
     struct timeval time;
 	
     int created_at_start = 0;
-	char * creation_moment;
 	
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec / 1000)); 
-	
-	
+#if 0	
 	bzero(&sa, sizeof(sa));
 	sa.sa_handler = taxi_handler;
 	sa.sa_flags = 0;
 	sigaction(SIGUSR1, &sa, NULL);
-	
-
+#endif	
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
+	
 	/* Creo gli oggetti ipc */
 	createIPC(pointer_at_map);
 
+	/* Creo la matrice adiacente */
 	createAdjacencyMatrix(pointer_at_map);
 	
 	/* Creo l'array dove salvo le dimensione dei figli */
-	child_source = calloc(SO_SOURCES, sizeof(pid_t));	
+	child_source = calloc(SO_SOURCES, sizeof(pid_t));
+	if (child_source == NULL){
+		perror("Master main: non riesco a crare l'array dove salvare le informazioni sui processi Source. Termino \n");
+		kill_all();
+		exit(EXIT_FAILURE);
+	}	
 	child_taxi = calloc(SO_TAXI, sizeof(pid_t));
-
+	if (child_taxi == NULL){
+		perror("Master main: non riesco a crere l'array dove salvare le informazioni sui processi Taxi. Termino \n");
+		kill_all();
+		exit(EXIT_FAILURE);
+	}
+	
 	/* Creo la stringa per informare il taxi su quando e' stato creato */
 	creation_moment = malloc(sizeof(int));
+	if (creation_moment == NULL){
+		perror("Master main: non riesco a creare l'array dove salvare il momento di creazione del processo Taxi. Termino \n");
+		kill_all();
+		exit(EXIT_FAILURE);
+	}
 	args_taxi[3] = creation_moment;
 	sprintf(creation_moment, "%d", created_at_start); 
 	
@@ -742,8 +798,6 @@ int main () {
 				break;
 			default:
 				/* Codice che voglio esegua il Master */
-				/* Magari salviamo le informazioni dei figli dentro 
-				   la struct che creiamo all'inizio? */
 				child_source[i] = valore_fork_sources;
 				break;
 		}
@@ -771,26 +825,20 @@ int main () {
 	/* Aspetto la terminazione dei figli */
 	while(wait(NULL) != -1) {
 	}
+	
 	printf("Stampo tutte le informazioni dei figli e se crasha mi ammazzo \n");
 	for (i = 0; i < SO_SOURCES; i++){
 		printf("%i  ", child_source[i]);	
 	}
 	printf("\n");
+	
 	for (i = 0; i < SO_TAXI; i++){
 		printf("%i  ", child_taxi[i]);
 	}
 	printf("\n");
-#if 0
-	printf("Stampo tutte le informazioni dei figli \n");
-	for (i = 0; i < SO_SOURCES; i++){
-		printf("Stampo pid %i e tipo %d \n", info_process_source[i].child_pid, info_process_source[i].type); 
-	}
-	for (i = 0; i < SO_SOURCES; i++){
-		printf("Stampo pid %i e tipo %d \n", info_process_source[i].child_pid, info_process_source[i].type); 
-	}
-#endif
 
 	map_print(pointer_at_map);
+
 	printf("IL NUMERO DI TAXI ATTIVI \n");
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
@@ -798,8 +846,7 @@ int main () {
 		}
 		printf("\n");
 	}
-	/* Stampo la coda di messaggi della cella 2.2 */
-	/* Dealloca la memoria condivisa dove ho la mappa */
+	
 	kill_all();
 	return 0;
 }

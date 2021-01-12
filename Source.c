@@ -96,7 +96,7 @@ void destination_and_call(map *pointer_at_map) {
 	printf("Il messaggio che manderò è %s \n", cell_message_queue.message);
 
 	/* Prendo l'id della coda di messaggi e mando */
-	message_queue_id = msgget(msg_queue_of_cell_key, 0);
+	message_queue_id = msgget(msg_queue_of_cell_key, 0600);
 	if (message_queue_id == -1){
 		perror("Processo Source: non riesco a collegarmi alla coda di messaggi della mia cella. Termino.");
 		exit(EXIT_FAILURE);
