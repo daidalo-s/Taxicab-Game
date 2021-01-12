@@ -17,19 +17,19 @@
 #include "Map.h"
 
 /****************** Prototipi ******************/
-void addEdge(int ** pointer, int i, int j);
-void createAdjacencyMatrix();
-void kill_all();
 void reading_input_values ();
 int  max_hole_width();
-int  max_hole_height(); 
+int  max_hole_height();
 void random_cell_type(map *pointer_at_map);
 void random_taxi_capacity(map *pointer_at_map);
-void random_travel_time(map *pointer_at_map);
-void map_creation(map *pointer_at_map);
-void map_print(map *pointer_at_map);
+void random_travel_time(map *pointer_at_map); 
 void map_setup(map *pointer_at_map);
-void free_map(map *pointer_at_map);
+void map_print(map *pointer_at_map);
+void addEdge(int ** pointer, int i, int j);
+void createAdjacencyMatrix();
+void createIPC(map *pointer_at_map);
+void kill_all();
+void taxi_handler(int signum);
 
 /* ---------------- Variabili globali ----------------- */
 /* SO_WIDTH e SO_HEIGHT sono delle define im map.h */
@@ -46,22 +46,22 @@ int SO_TIMENSEC_MAX = 0;
 int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
 int number_of_vertices = 0;
-int adjacency_matrix_shm_id;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
-char * args_source[] = {"Source", NULL, NULL};
-char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL};
-char * map_shm_id_execve;
-char * adjacency_matrix_shm_id_execve;
-int map_shm_id; /* valore ritornato da shmget() */
-int source_sem_id; /* valore ritornato da semget() per i SOURCE */
-int taxi_sem_id;
-int * pointer_at_msgq;
-int adjacency_matrix_shm_id;
-pid_t * child_source;
-pid_t * child_taxi;
-struct sigaction sa; 
-static int taxi_ready = 0;
+int map_shm_id;    /* valore ritornato da shmget(), id del segmento */
+int adjacency_matrix_shm_id; /* valore ritornato da shmget, id del segmento */
+int source_sem_id; /* valore ritornato da semget() per i SOURCE, id dell'array */
+int taxi_sem_id;   /* valore ritornato da semget() per i TAXI, id dell'array*/
+int * pointer_at_msgq; /* Malloc di interi dove salviamo le key delle code di messaggi che poi inseriamo nelle celle */
+char * map_shm_id_execve; /* Puntatore a char dove salvo l'id della mappa per passarlo ai figli*/
+char * adjacency_matrix_shm_id_execve; /* Puntatore a char dove salvo l'id della matrice adiacente per passarlo ai figli*/
+char * args_source[] = {"Source", NULL, NULL}; /* Array di argomenti da passare a Source, [1]=id_mappa*/
+/* Array di argomenti da passare a Taxi [1]=id_mappa,[2]=matrice_adiacente,[3]=momento creazione*/ 
+char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL}; 
+pid_t * child_source; /* Malloc dove salviamo pid dei figli Source */
+pid_t * child_taxi; /* Malloc dove salviamo pid dei figli Taxi */
+struct sigaction sa; /* Struct per l'handler dei segnali mandati dai Taxi */
+static int taxi_ready = 0; /* Intero utilizzato per l'handler dei segnali mandati dai Taxi*/
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -73,7 +73,7 @@ void reading_input_values () {
 
 	if (input == NULL) {
 		printf ("Errore, non riesco ad aprire il file \n");
-		exit(EXIT_FAILURE); /* oppure return -1 */
+		exit(EXIT_FAILURE); 
 	}
 
 	while(!feof(input)) {
@@ -117,7 +117,10 @@ void reading_input_values () {
 			}
 		}
 	}
+
 	fclose(input);
+	TEST_ERROR;
+
 	/* Controlli sui parametri */
 	if (SO_HOLES < 1 || SO_HOLES > (max_hole_width() * max_hole_height())) {
 		printf("Errore, parametro SO_HOLES non valido. Esco.\n");
@@ -178,9 +181,11 @@ void reading_input_values () {
 	printf("SO_DURATION : %i\n", SO_DURATION);
 	printf("SO_HOLES : %i\n", SO_HOLES);
 #endif
+	/* Lo calcolo qua per poter creare la matrice adiancente della giusta dimensione */
 	number_of_vertices = (SO_HEIGHT*SO_WIDTH) - SO_HOLES;
 }
 
+/* Metodo utilizzato per capire il massimo numero di Hole*/
 int max_hole_width() {
 	int max_so_width = SO_WIDTH;
 	if (SO_WIDTH % 2 != 0){
@@ -190,6 +195,7 @@ int max_hole_width() {
 	} else return max_so_width / 2;
 }
 
+/* Metodo utilizzato per capire il massimo numero di Hole*/
 int max_hole_height() {
 	int max_so_height = SO_HEIGHT;
 	if (SO_HEIGHT % 2 != 0){
@@ -201,7 +207,6 @@ int max_hole_height() {
 
 /* ---------------- Metodi mappa ----------------- */
 #ifdef MAPPA_VALORI_CASUALI
-/* Inizializza cell_type in modo casuale */
 void random_cell_type(map *pointer_at_map) {
 	/* Variabili locali utilizzate:
 	 * - value assume il valore della codifica (0 hole, 1 no SO_SOURCES, 2 cella libera) 
@@ -217,6 +222,7 @@ void random_cell_type(map *pointer_at_map) {
 	int value, i, j, row_pos, col_pos, so_holes, so_sources;
 	so_holes = SO_HOLES;
 	so_sources = SO_SOURCES;
+	
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
 			if (i == 0) { row_pos = 0; } else row_pos = 1;
@@ -306,12 +312,12 @@ void random_cell_type(map *pointer_at_map) {
 								}
 								break;
 							default:
-								printf("Errore\n");
+								printf("Errore in random_cell_type \n");
 								exit(EXIT_FAILURE);
 						}
 						break;
 					default:
-						printf("Errore\n");
+						printf("Errore in random_cell_type \n");
 						exit(EXIT_FAILURE);
 				}   
 			}
@@ -319,13 +325,11 @@ void random_cell_type(map *pointer_at_map) {
 	}
 }
 #endif
-/* Nei casi in cui si odvesse verificare qualche anomalia viene restituito 1, 
- * ma per generare un errore cosa possiamo fare?
- */
 
-/* Assegna ad ogni cella taxi_capacity*/
 void random_taxi_capacity(map *pointer_at_map) {
+	
 	int i, j;
+	
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
 			if (pointer_at_map->mappa[i][j].cell_type != 0) { 
@@ -335,9 +339,10 @@ void random_taxi_capacity(map *pointer_at_map) {
 	}
 }
 
-/* Assegna ad ogni cella travel_time*/
 void random_travel_time(map *pointer_at_map) {
+	
 	int i, j;
+	
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
 			if (pointer_at_map->mappa[i][j].cell_type != 0) { 
@@ -348,42 +353,11 @@ void random_travel_time(map *pointer_at_map) {
 }
 
 
-/* Da modificare: dovrà leggere i parametri da file e con rand
- * impostare i vari campi della struct. 
- * Se la mappa generata non è corretta si termina con errore
- * La codifica è: 0 hole, 1 SO_SOURCES, 2 no SO_SOURCES
- * Al momento usiamo una mappa 5x4 (quindi non importa quello che date
- * al programma in input che larghezza e altezza, ne faccio override nel
- * main) se volete lo schema della mappa che sto usando lo trovate nel 
- * documento condiviso
- */
+/* La codifica è: 0 hole, 1 SO_SOURCES, 2 free */
 void map_setup(map *pointer_at_map) {
+	
 	int i, j, max_taxi_map = 0, condizione_ok = 0, counter = 0; /* Counter mi serve per i vertici */
-	for (i = 0; i < SO_HEIGHT; i++) {
-		for (j = 0; j < SO_WIDTH; j++) {
-			/* Imposto ogni cella con cell_type=2, active_taxis=0 */
-			pointer_at_map->mappa[i][j].cell_type = 2;
-			pointer_at_map->mappa[i][j].active_taxis = 0;
-			pointer_at_map->mappa[i][j].crossings = 0;
-		}
-	}
-	do {
-		random_taxi_capacity(pointer_at_map);
-		for (i = 0; i < SO_HEIGHT; i++) {
-			for (j = 0; j < SO_WIDTH; j++) {
-				/* Calcolo il numero massimo di taxi sulla mappa con le capienze assegnate */
-				max_taxi_map = max_taxi_map + pointer_at_map->mappa[i][j].taxi_capacity;
-			}
-		}
-		/* Controllo che SO TAXI non sia > capacità di taxi massima della mappa */
-		if (SO_TAXI > max_taxi_map) {
-			printf("Errore: dovrei mettere %i taxi, ma la capeinza massima della mappa e' %i \n", SO_TAXI, max_taxi_map);
-			printf("Assegno nuove capienze massime. \n");
-		} else condizione_ok = 1;
-	} while (condizione_ok == 0); /* Potenziale loop infinito se i parametri sono volutamente sbagliati */
-	random_travel_time(pointer_at_map);
-	/* Li porto fuori dall'ifdef perché voglio avere */
-	/* Per il momento la teniamo ma se ci fa impazzire torna nell'ifdef */
+	
 #ifdef MAPPA_VALORI_CASUALI
 	random_cell_type(pointer_at_map);
 	/* Controlli su mappe particolari */
@@ -406,12 +380,44 @@ void map_setup(map *pointer_at_map) {
 		}
 	}
 #endif
+
+	do {
+		random_taxi_capacity(pointer_at_map);
+		for (i = 0; i < SO_HEIGHT; i++) {
+			for (j = 0; j < SO_WIDTH; j++) {
+				/* Calcolo il numero massimo di taxi sulla mappa con le capienze assegnate */
+				max_taxi_map = max_taxi_map + pointer_at_map->mappa[i][j].taxi_capacity;
+			}
+		}
+		/* Controllo che SO TAXI non sia > capacità di taxi massima della mappa */
+		if (SO_TAXI > max_taxi_map) {
+			printf("Errore: dovrei mettere %i taxi, ma la capeinza massima della mappa e' %i \n", SO_TAXI, max_taxi_map);
+			printf("Assegno nuove capienze massime. Assicurarsi che il numero inserito non sia troppo alto per la mappa. [Possibile loop infinito]\n");
+		} else condizione_ok = 1;
+	} while (condizione_ok == 0); /* Potenziale loop infinito se i parametri sono volutamente sbagliati */
+	
+	random_travel_time(pointer_at_map);
+	
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			/* Imposto ogni cella con active_taxis = 0, crossings = 0, numero di vertice */
+			pointer_at_map->mappa[i][j].active_taxis = 0;
+			pointer_at_map->mappa[i][j].crossings = 0;
+			if (pointer_at_map->mappa[i][j].cell_type != 0) {
+				pointer_at_map->mappa[i][j].vertex_number = counter;
+				counter++;
+			} else {
+				pointer_at_map->mappa[i][j].vertex_number = -1;
+			}
+		}
+	}
+
+/* Se non e' definita random_taxi_capacity e random_travel_time assegnano valori anche a celle che non avrebbero bisogno */
 #ifndef MAPPA_VALORI_CASUALI
 	pointer_at_map->mappa[0][0].cell_type = 0;
 	pointer_at_map->mappa[1][3].cell_type = 0;
 	pointer_at_map->mappa[3][2].cell_type = 0;
 	pointer_at_map->mappa[2][2].cell_type = 1;
-#endif
 	for (i = 0; i < SO_HEIGHT; i++){
 		for(j = 0; j < SO_WIDTH; j++){
 			if (pointer_at_map->mappa[i][j].cell_type != 0) {
@@ -423,37 +429,33 @@ void map_setup(map *pointer_at_map) {
 			}
 		}
 	}
-	/* https://stackoverflow.com/questions/1202687/how-do-i-get-a-specific-range-of-numbers-from-rand */
+#endif
 }
 
-/* Dovrebbe andare */
 void map_print(map *pointer_at_map) {
+	
 	int i, j;
-#ifdef PRINT_MAP_VERTEX_NUMBER    
-	int k, l;
-#endif    
-	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG); 
+
+	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
+	if (pointer_at_map == NULL){
+		perror("Funzione map_print: non riesco ad accedere alla mappa. Termino.\n");
+		exit(EXIT_FAILURE);
+	} 
+
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
 			printf ("%i ", pointer_at_map->mappa[i][j].cell_type);
-
+	
 #ifdef STAMPA_VALORI_CELLA
 			printf ("%i", pointer_at_map->mappa[i][j].taxi_capacity);
 			printf ("%i", pointer_at_map->mappa[i][j].active_taxis);
 			printf ("%i", pointer_at_map->mappa[i][j].travel_time);
 			printf ("%i", pointer_at_map->mappa[i][j].crossings);
 #endif
-#ifdef PRINT_MAP_VERTEX_NUMBER /* Loop infinito da sistemare */
-			for (k = 0; k < SO_HEIGHT; i++){
-				for (l = 0; l < SO_WIDTH; l++){
-					printf("%i \t", pointer_at_map->mappa[k][l].vertex_number);
-				}   
-				printf("\n");
-			}
-#endif  
 		}
 		printf("\n");
 	}
+
 	printf("Stampo la matrice di vertici \n");
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
@@ -472,7 +474,6 @@ void create_index(void **m, int rows, int cols, size_t sizeElement){
 	}
 }
 
-
 /* Aggiunge gli archi */
 void addEdge(int ** pointer, int i, int j) {
 	pointer[i][j] = 1;
@@ -485,8 +486,12 @@ void createAdjacencyMatrix(map *pointer_at_map){
 	int dimension = (number_of_vertices*number_of_vertices)*sizeof(int);
 
 	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
+	if (pointer_at_map == NULL){
+		perror("Funzione createAdjacencyMatrix: non riesco ad attaccarmi alla mappa. Termino \n");
+		exit(EXIT_FAILURE);
+	}
 
-	/* Creo il segmento di memoria condivisa */
+	/* Creo il segmento di memoria condivisa per la matrice adiacente */
 	adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, SHM_FLG);
 	if (adjacency_matrix_shm_id < 0){
 		perror("Non riesco a creare la memoria condivisa. Termino.");
@@ -548,7 +553,8 @@ void createAdjacencyMatrix(map *pointer_at_map){
 		printf("\n");
 	}
 #endif
-	/* Imposto gli zeri ad INFINITY cosi non lo devo fare ogni volta */
+
+	/* Imposto gli zeri ad INFINITY cosi non lo devo fare ogni volta nei processi TAXI */
 	for (i = 0; i < number_of_vertices; i++){
 		for (j = 0; j < number_of_vertices; j++){
 			if (pointer[i][j] == 0){
@@ -561,6 +567,7 @@ void createAdjacencyMatrix(map *pointer_at_map){
 	adjacency_matrix_shm_id_execve = malloc(sizeof(int));
     args_taxi[2] = adjacency_matrix_shm_id_execve;
     sprintf(adjacency_matrix_shm_id_execve, "%d", adjacency_matrix_shm_id);
+
 }
 
 void createIPC(map *pointer_at_map) {
