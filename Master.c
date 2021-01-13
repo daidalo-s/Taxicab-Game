@@ -20,7 +20,7 @@
 void reading_input_values ();
 int  max_hole_width();
 int  max_hole_height();
-void random_cell_type(map *pointer_at_map);
+void random_cell_type(map * pointer_at_map);
 void random_taxi_capacity(map *pointer_at_map);
 void random_travel_time(map *pointer_at_map); 
 void map_setup(map *pointer_at_map);
@@ -210,122 +210,130 @@ int max_hole_height() {
 
 /* ---------------- Metodi mappa ----------------- */
 #ifdef MAPPA_VALORI_CASUALI
-void random_cell_type(map *pointer_at_map) {
-	/* Variabili locali utilizzate:
-	 * - value assume il valore della codifica (0 hole, 1 no SO_SOURCES, 2 cella libera) 
-	 *   da assegnare alla cella[i][j]; 
-	 * - i e j assumono il valore degli indici della cella di riferimento;
-	 * - row_pos (row position) e col_pot (column position) sono variabili utilizzate 
-	 *   per capire in seguito quale case eseguire all'interno degli switch;
-	 * - so_holes e so_sources assumono i valori delle variabili SO_HOLES ed SO_SOURCES,
-	 *   dato che quest'ultime sono variabili globali, una scelta implementativa migliore
-	 *   e' di non modificarne il valore ma bensi' utilizzarne una copia 
-	 *   all'interno della funzione in questione
-	 */
-	int value, i, j, row_pos, col_pos, so_holes, so_sources;
-	so_holes = SO_HOLES;
-	so_sources = SO_SOURCES;
-	
-	for (i = 0; i < SO_HEIGHT; i++) {
-		for (j = 0; j < SO_WIDTH; j++) {
-			if (i == 0) { row_pos = 0; } else row_pos = 1;
-			if (j == 0) { col_pos = 0; } else if (j > 0 && j < (SO_WIDTH-1)) { col_pos = 1; } else col_pos = 2;
-			if (row_pos == 0 && col_pos == 0) {
-				do {
-					value = rand() % (2-0+1) + 0;
-				} while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
-				if (value == 0) so_holes = so_holes-1;
-				if (value == 1) so_sources = so_sources-1;
-				pointer_at_map->mappa[i][j].cell_type = value;
-			} else {    
-				switch (row_pos) {
-					case 0:
-						if (pointer_at_map->mappa[i][j-1].cell_type == 0) { 
-							do {
-								value = rand() % (2-1+1) + 1;
-							} while (value == 1 && so_sources == 0);
-							if (value == 1) so_sources = so_sources-1;
-							pointer_at_map->mappa[i][j].cell_type = value;
-						} else {
-							do {
-								value = rand() % (2-0+1) + 0;
-							} while ((value == 0 && so_holes == 0) || (value == 1 && so_sources == 0));
-							if (value == 0) so_holes = so_holes-1;
-							if (value == 1) so_sources = so_sources-1;
-							pointer_at_map->mappa[i][j].cell_type = value;
-						}
-						break;
-					case 1:
-						switch (col_pos) {
-							case 0:
-								if ((pointer_at_map->mappa[i-1][j].cell_type != 0) && 
-										(pointer_at_map->mappa[i-1][j+1].cell_type != 0)) {
-									do {
-										value = rand() % (2-0+1) + 0;
-									} while ((value == 0 && so_holes == 0) || 
-											(value == 1 && so_sources == 0));
-									if (value == 0) so_holes = so_holes-1;
-									if (value == 1) so_sources = so_sources-1;
-									pointer_at_map->mappa[i][j].cell_type = value;
-								} else {
-									do {
-										value = rand() % (2-1+1) + 1;
-									} while (value == 1 && so_sources == 0);
-									if (value == 1) so_sources = so_sources-1;
-									pointer_at_map->mappa[i][j].cell_type = value;
-								}
-								break;
-							case 1:
-								if ((pointer_at_map->mappa[i][j-1].cell_type != 0) && 
-										(pointer_at_map->mappa[i-1][j-1].cell_type != 0) &&
-										(pointer_at_map->mappa[i-1][j].cell_type != 0) && 
-										(pointer_at_map->mappa[i-1][j+1].cell_type != 0)) {
-									do {
-										value = rand() % (2-0+1) + 0;
-									} while ((value == 0 && so_holes == 0) || 
-											(value == 1 && so_sources == 0));
-									if (value == 0) so_holes = so_holes-1;
-									if (value == 1) so_sources = so_sources-1;
-									pointer_at_map->mappa[i][j].cell_type = value;
-								} else {
-									do {
-										value = rand() % (2-1+1) + 1;
-									} while (value == 1 && so_sources == 0);
-									if (value == 1) so_sources = so_sources-1;
-									pointer_at_map->mappa[i][j].cell_type = value;
-								}
-								break;
-							case 2:
-								if ((pointer_at_map->mappa[i][j-1].cell_type != 0) && 
-										(pointer_at_map->mappa[i-1][j-1].cell_type != 0) &&
-										(pointer_at_map->mappa[i-1][j].cell_type != 0)) {
-									do {
-										value = rand() % (2-0+1) + 0;
-									} while ((value == 0 && so_holes == 0) || 
-											(value == 1 && so_sources == 0));
-									if (value == 0) so_holes = so_holes-1;
-									if (value == 1) so_sources = so_sources-1;
-									pointer_at_map->mappa[i][j].cell_type = value;
-								} else {
-									do {
-										value = rand() % (2-1+1) + 1;
-									} while (value == 1 && so_sources == 0);
-									if (value == 1) so_sources = so_sources-1;
-									pointer_at_map->mappa[i][j].cell_type = value;
-								}
-								break;
-							default:
-								printf("Errore in random_cell_type \n");
-								exit(EXIT_FAILURE);
-						}
-						break;
-					default:
-						printf("Errore in random_cell_type \n");
-						exit(EXIT_FAILURE);
-				}   
-			}
-		} 
-	}
+void random_cell_type(map * pointer_at_map) {
+
+    int num_hole_placed = 0;
+    int position;
+    int num_source_placed = 0;
+    int x, y;
+    /* prima posiziono gli hole */
+    while (num_hole_placed != SO_HOLES) {
+        
+        x = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0;
+        y = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
+
+        /* devo capire dove mi trovo */
+        if ((x == 0 && y == 0)||(x == 0 && y == SO_WIDTH-1)||(x == SO_HEIGHT-1 && y == 0)||(x == SO_HEIGHT-1 && y == SO_WIDTH -1)){
+            if ((x == 0 && y == 0)) {
+                position = 1; /* angolo in alto a sinistra */
+            } else if ((x == 0 && y == SO_WIDTH-1)){
+                position = 2; /* angolo in alto a destra */
+            } else if ((x == SO_HEIGHT-1 && y == 0)) {
+                position = 3; /* angolo in basso a sinistra */
+            } else {
+                position = 4; /* angolo in basso a destra */
+            }
+        } else if ((x == 0) || (y == 0) || (x == SO_HEIGHT -1) || (y == SO_WIDTH-1)){
+            if (x == 0){
+                position = 5; /* bordo in alto */
+            } else if (y == 0) {
+                position = 6; /* bordo a sinistra */
+            } else if (x == SO_HEIGHT - 1) {
+                position = 7; /* bordo sotto */
+            } else {
+                position = 8; /* bordo a destra */
+            }
+        } else {
+            position = 9; /* mezzo */
+        }
+        
+        /* devo controllare le celle adiacenti in base al valore di position */
+        switch (position)
+        {
+        case 1: /* angolo in alto a sinistra */
+            if (pointer_at_map->mappa[x][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0) {
+                pointer_at_map->mappa[x][y].cell_type = 0;
+                num_hole_placed++;
+            }
+            break;
+
+        case 2: /* angolo in alto a destra */
+            if (pointer_at_map->mappa[x][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0){
+                pointer_at_map->mappa[x][y].cell_type = 0;
+                num_hole_placed++;
+            }
+            break;
+
+        case 3: /* angolo in basso a sinistra */
+            if (pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0){
+                pointer_at_map->mappa[x][y].cell_type = 0;
+                num_hole_placed++;
+            }
+            break;
+        
+        case 4: /* angolo in basso a destra */
+            if (pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x][y-1].cell_type != 0) {
+                pointer_at_map->mappa[x][y].cell_type = 0;
+                num_hole_placed++;
+            }
+            break;
+
+        case 5: /* bordo in alto */
+            if (pointer_at_map->mappa[x][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0 
+                && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0) {
+                    pointer_at_map->mappa[x][y].cell_type = 0;
+                    num_hole_placed++;
+            }
+            break;
+        
+        case 6: /* bordo a sinistra */
+            if (pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0 
+                && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0) {
+                    pointer_at_map->mappa[x][y].cell_type = 0;
+                    num_hole_placed++;
+            }
+            break;
+        
+        case 7: /* bordo sotto */
+            if (pointer_at_map->mappa[x][y-1].cell_type != 0 && pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x-1][y].cell_type != 0 
+                && pointer_at_map->mappa[x-1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0) {
+                    pointer_at_map->mappa[x][y].cell_type = 0;
+                    num_hole_placed++;
+            }
+            break;
+        
+        case 8: /* bordo a destra */
+            if (pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x][y-1].cell_type != 0
+                && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0) { 
+                    pointer_at_map->mappa[x][y].cell_type = 0;
+                    num_hole_placed++;       
+                }
+            break;
+        
+        case 9: /* mezzo */
+            if (pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y+1].cell_type != 0
+                && pointer_at_map->mappa[x][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0 
+                && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x][y-1].cell_type != 0) {
+                    pointer_at_map->mappa[x][y].cell_type = 0;
+                    num_hole_placed++;
+                }
+            break;
+        
+        default:
+            break;
+        }
+    }
+
+    /* ora posiziono le source */
+    while (num_source_placed != SO_SOURCES)
+    {
+        x = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0;
+        y = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
+        if (pointer_at_map->mappa[x][y].cell_type != 0){
+            pointer_at_map->mappa[x][y].cell_type = 1;
+            num_source_placed++;
+        }
+    }
 }
 #endif
 
