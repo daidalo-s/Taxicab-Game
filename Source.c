@@ -134,7 +134,10 @@ int main(int argc, char *argv[])
 		perror("Processo Source: non riesco a prendere il semaforo. Termino.");
 		exit(EXIT_FAILURE);
 	}
-	printf("%i \n", map_shm_id);
+
+	/* printf("%i \n", map_shm_id); */
+
+#if 1	
 	/* Cerco una cella SO_SOURCE e mi attacco */
 	attach(pointer_at_map);
 	/* DOBBIAMO CHIAMARLA DOPO UNA RICEZIONE DI UN SEGNALE DAL MASTER */
@@ -160,6 +163,7 @@ int main(int argc, char *argv[])
 	printf("Ho ricevuto il messaggio %s \n", cell_message_queue.message);
 #endif 
 
+#endif
 	return 0;
 }
 

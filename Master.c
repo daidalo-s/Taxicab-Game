@@ -216,6 +216,15 @@ void random_cell_type(map * pointer_at_map) {
     int position;
     int num_source_placed = 0;
     int x, y;
+    int i, j;
+
+    /* Inizializzo tutta la mappa a 2 */
+    for (i = 0; i < SO_HEIGHT; i++){
+    	for (j = 0; j < SO_WIDTH; j++){
+    		pointer_at_map->mappa[i][j].cell_type = 2;
+    	}
+    }
+
     /* prima posiziono gli hole */
     while (num_hole_placed != SO_HOLES) {
         
@@ -246,41 +255,45 @@ void random_cell_type(map * pointer_at_map) {
         } else {
             position = 9; /* mezzo */
         }
-        
+
         /* devo controllare le celle adiacenti in base al valore di position */
         switch (position)
         {
         case 1: /* angolo in alto a sinistra */
-            if (pointer_at_map->mappa[x][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0) {
+             if ((pointer_at_map->mappa[x][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0) &&
+                (pointer_at_map->mappa[x][y].cell_type != 0)) {
                 pointer_at_map->mappa[x][y].cell_type = 0;
                 num_hole_placed++;
             }
             break;
 
         case 2: /* angolo in alto a destra */
-            if (pointer_at_map->mappa[x][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0){
+             if ((pointer_at_map->mappa[x][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0) &&
+                (pointer_at_map->mappa[x][y].cell_type != 0)){
                 pointer_at_map->mappa[x][y].cell_type = 0;
                 num_hole_placed++;
             }
             break;
 
         case 3: /* angolo in basso a sinistra */
-            if (pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0){
+            if ((pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0) &&
+                (pointer_at_map->mappa[x][y].cell_type != 0)){
                 pointer_at_map->mappa[x][y].cell_type = 0;
                 num_hole_placed++;
             }
             break;
         
         case 4: /* angolo in basso a destra */
-            if (pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x][y-1].cell_type != 0) {
+            if ((pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x][y-1].cell_type != 0) &&
+                (pointer_at_map->mappa[x][y].cell_type != 0)) {
                 pointer_at_map->mappa[x][y].cell_type = 0;
                 num_hole_placed++;
             }
             break;
 
         case 5: /* bordo in alto */
-            if (pointer_at_map->mappa[x][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0 
-                && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0) {
+             if ((pointer_at_map->mappa[x][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0 
+                && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0) && (pointer_at_map->mappa[x][y].cell_type != 0)) {
                     pointer_at_map->mappa[x][y].cell_type = 0;
                     num_hole_placed++;
             }
@@ -295,25 +308,25 @@ void random_cell_type(map * pointer_at_map) {
             break;
         
         case 7: /* bordo sotto */
-            if (pointer_at_map->mappa[x][y-1].cell_type != 0 && pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x-1][y].cell_type != 0 
-                && pointer_at_map->mappa[x-1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0) {
+           if ((pointer_at_map->mappa[x][y-1].cell_type != 0 && pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x-1][y].cell_type != 0 
+                && pointer_at_map->mappa[x-1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0) && (pointer_at_map->mappa[x][y].cell_type != 0)) {
                     pointer_at_map->mappa[x][y].cell_type = 0;
                     num_hole_placed++;
             }
             break;
         
         case 8: /* bordo a destra */
-            if (pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x][y-1].cell_type != 0
-                && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0) { 
+           if ((pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x][y-1].cell_type != 0
+                && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0) && (pointer_at_map->mappa[x][y].cell_type != 0)) { 
                     pointer_at_map->mappa[x][y].cell_type = 0;
                     num_hole_placed++;       
                 }
             break;
         
         case 9: /* mezzo */
-            if (pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y+1].cell_type != 0
+             if ((pointer_at_map->mappa[x-1][y-1].cell_type != 0 && pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y+1].cell_type != 0
                 && pointer_at_map->mappa[x][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0 
-                && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x][y-1].cell_type != 0) {
+                && pointer_at_map->mappa[x+1][y-1].cell_type != 0 && pointer_at_map->mappa[x][y-1].cell_type != 0) && (pointer_at_map->mappa[x][y].cell_type != 0)) {
                     pointer_at_map->mappa[x][y].cell_type = 0;
                     num_hole_placed++;
                 }
@@ -323,7 +336,6 @@ void random_cell_type(map * pointer_at_map) {
             break;
         }
     }
-
     /* ora posiziono le source */
     while (num_source_placed != SO_SOURCES)
     {
@@ -368,9 +380,11 @@ void random_travel_time(map *pointer_at_map) {
 void map_setup(map *pointer_at_map) {
 	
 	int i, j, max_taxi_map = 0, condizione_ok = 0, counter = 0; /* Counter mi serve per i vertici */
-	
+
 #ifdef MAPPA_VALORI_CASUALI
 	random_cell_type(pointer_at_map);
+	printf("Stampo la mappa da subito dopo random cell\n");
+	map_print(pointer_at_map);
 	/* Controlli su mappe particolari */
 	/* Mappe di una sola riga */
 	if (SO_HEIGHT == 1 && SO_WIDTH > 1) {
@@ -474,6 +488,7 @@ void map_print(map *pointer_at_map) {
 		}
 		printf("\n");
 	}
+	printf("\n");
 }
 
 void create_index(void **m, int rows, int cols, size_t sizeElement){
@@ -481,8 +496,13 @@ void create_index(void **m, int rows, int cols, size_t sizeElement){
 	size_t sizeRow = cols * sizeElement;
 	m[0] = m+rows;
 	for(i=1; i<rows; i++){      
-		m[i] = ((u_int8_t*)m[i-1]+sizeRow);
+		m[i] = ((char *)m[i-1]+sizeRow);
 	}
+}
+
+unsigned int sizeof_dm(int rows, int cols, size_t sizeElement){
+    size_t size = rows * (sizeof(void *) + (cols * sizeElement));
+    return size;
 }
 
 /* Aggiunge gli archi */
@@ -494,7 +514,7 @@ void createAdjacencyMatrix(map *pointer_at_map){
 
 	int i, j;
 	int ** pointer;
-	int dimension = (number_of_vertices*number_of_vertices)*sizeof(int);
+	size_t dimension = sizeof_dm(number_of_vertices, number_of_vertices, sizeof(int));
 
 	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
 	if (pointer_at_map == NULL){
@@ -502,8 +522,11 @@ void createAdjacencyMatrix(map *pointer_at_map){
 		exit(EXIT_FAILURE);
 	}
 
+	printf("Stampo la mappa da createAdjacencyMatrix\n");
+	map_print(pointer_at_map);
+
 	/* Creo il segmento di memoria condivisa per la matrice adiacente */
-	adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, SHM_FLG);
+	adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, IPC_CREAT|0600);
 	if (adjacency_matrix_shm_id < 0){
 		perror("Master createAdjacencyMatrix: non riesco a creare la memoria condivisa. Termino\n");
 		kill_all();
@@ -520,12 +543,26 @@ void createAdjacencyMatrix(map *pointer_at_map){
 
 	create_index((void*)pointer, number_of_vertices, number_of_vertices, sizeof(int));
 
+	printf("\n");
+	printf("Stampo la mappa dopo la create_index\n");
+	map_print(pointer_at_map);
+
 	/* La inizializzo a 0 */
 	for (i = 0; i < number_of_vertices; i ++){
 		for (j = 0; j < number_of_vertices; j ++){
 			pointer[i][j] = 0;
 		}
 	}
+
+	/*
+	printf("Stampo la matrice adiacente dopo l'inizializzazione \n");
+	for (i = 0; i < number_of_vertices; i ++){
+		for (j = 0; j < number_of_vertices; j ++){
+			printf("%i ", pointer[i][j]);
+		}
+		printf("\n");
+	}
+	*/
 
 	/* Aggiungo tutti gli archi alla matrice adiacente  */
 	for (i = 0; i < SO_HEIGHT; i++){
@@ -676,10 +713,12 @@ void createIPC(map *pointer_at_map) {
 			exit(EXIT_FAILURE);
 		}
 	}
+	/*
 	printf("STAMPA DI TEST DEL MASTER : STAMPO LE KEY CHE HO CREATO \n");
 	for (i = 0; i < SO_SOURCES; i++){
 		printf("%i \n", pointer_at_msgq[i]);
 	}
+	*/
 	/* Assegna al campo della cella il valore della sua coda di messaggi*/
 	counter = 0;
 	for (i = 0; i < SO_HEIGHT; i ++){
@@ -768,6 +807,9 @@ int main () {
 	/* Creo la matrice adiacente */
 	createAdjacencyMatrix(pointer_at_map);
 	
+	printf("Stampo la mappa dal main\n");
+	map_print(pointer_at_map);
+
 	/* Creo l'array dove salvo le dimensione dei figli */
 	child_source = calloc(SO_SOURCES, sizeof(pid_t));
 	if (child_source == NULL){
@@ -834,19 +876,21 @@ int main () {
 	while(wait(NULL) != -1) {
 	}
 	
+	printf("\n");
 	printf("Stampo tutte le informazioni dei figli e se crasha mi ammazzo \n");
 	for (i = 0; i < SO_SOURCES; i++){
 		printf("%i  ", child_source[i]);	
 	}
 	printf("\n");
 	
+
 	for (i = 0; i < SO_TAXI; i++){
 		printf("%i  ", child_taxi[i]);
 	}
 	printf("\n");
+	
 
-	map_print(pointer_at_map);
-
+	/*
 	printf("IL NUMERO DI TAXI ATTIVI \n");
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
@@ -854,7 +898,11 @@ int main () {
 		}
 		printf("\n");
 	}
-	
+	*/
+	printf("\n");
+	printf("Stampo la prima di finire \n");
+	map_print(pointer_at_map);
+	printf("\n");
 	kill_all();
 	return 0;
 }
