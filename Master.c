@@ -383,8 +383,6 @@ void map_setup(map *pointer_at_map) {
 
 #ifdef MAPPA_VALORI_CASUALI
 	random_cell_type(pointer_at_map);
-	printf("Stampo la mappa da subito dopo random cell\n");
-	map_print(pointer_at_map);
 	/* Controlli su mappe particolari */
 	/* Mappe di una sola riga */
 	if (SO_HEIGHT == 1 && SO_WIDTH > 1) {
@@ -481,6 +479,7 @@ void map_print(map *pointer_at_map) {
 		printf("\n");
 	}
 
+	/*
 	printf("Stampo la matrice di vertici \n");
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
@@ -488,6 +487,7 @@ void map_print(map *pointer_at_map) {
 		}
 		printf("\n");
 	}
+	*/
 	printf("\n");
 }
 
@@ -522,9 +522,6 @@ void createAdjacencyMatrix(map *pointer_at_map){
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Stampo la mappa da createAdjacencyMatrix\n");
-	map_print(pointer_at_map);
-
 	/* Creo il segmento di memoria condivisa per la matrice adiacente */
 	adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, IPC_CREAT|0600);
 	if (adjacency_matrix_shm_id < 0){
@@ -542,10 +539,6 @@ void createAdjacencyMatrix(map *pointer_at_map){
 	}
 
 	create_index((void*)pointer, number_of_vertices, number_of_vertices, sizeof(int));
-
-	printf("\n");
-	printf("Stampo la mappa dopo la create_index\n");
-	map_print(pointer_at_map);
 
 	/* La inizializzo a 0 */
 	for (i = 0; i < number_of_vertices; i ++){
@@ -713,12 +706,13 @@ void createIPC(map *pointer_at_map) {
 			exit(EXIT_FAILURE);
 		}
 	}
-	/*
+	
+	
 	printf("STAMPA DI TEST DEL MASTER : STAMPO LE KEY CHE HO CREATO \n");
 	for (i = 0; i < SO_SOURCES; i++){
-		printf("%i \n", pointer_at_msgq[i]);
+		printf("%x \n", pointer_at_msgq[i]);
 	}
-	*/
+	
 	/* Assegna al campo della cella il valore della sua coda di messaggi*/
 	counter = 0;
 	for (i = 0; i < SO_HEIGHT; i ++){
@@ -729,6 +723,20 @@ void createIPC(map *pointer_at_map) {
 			}
 		}
 	} 
+
+	printf("Stampo la mappa \n");
+	map_print(pointer_at_map);
+	printf("Stampo le celle dove ho la coda di messaggi \n");
+	for (i = 0; i < SO_HEIGHT; i++){
+		for (j = 0; j < SO_WIDTH; j++){
+			if (pointer_at_map->mappa[i][j].message_queue_key != 0){
+				printf("1 ");
+			} else {
+				printf("0 ");
+			}
+		}
+	printf("\n");
+	}
 
 }
 
@@ -800,15 +808,22 @@ int main () {
 #endif	
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
-	
+
+	printf("Valore delle variabili globali dopo la lettura da file \n");
+	printf("SO_HOLES %i \n", SO_HOLES);
+	printf("SO_TOP_CELLS %i \n", SO_TOP_CELLS);
+	printf("SO_SOURCES %i \n", SO_SOURCES);
+	printf("SO_CAP_MIN %i \n", SO_CAP_MIN);
+	printf("SO_TAXI %i \n", SO_TAXI);
+	printf("SO_TIMENSEC_MIN %i \n", SO_TIMENSEC_MIN);
+	printf("SO_TIMENSEC_MAX %i \n", SO_TIMENSEC_MAX);
+	printf("SO_TIMEOUT %i \n", SO_TIMEOUT);
+	printf("SO_DURATION %i \n", SO_DURATION);
 	/* Creo gli oggetti ipc */
 	createIPC(pointer_at_map);
 
 	/* Creo la matrice adiacente */
 	createAdjacencyMatrix(pointer_at_map);
-	
-	printf("Stampo la mappa dal main\n");
-	map_print(pointer_at_map);
 
 	/* Creo l'array dove salvo le dimensione dei figli */
 	child_source = calloc(SO_SOURCES, sizeof(pid_t));
@@ -871,7 +886,8 @@ int main () {
 				break;
 		}
 	}
-
+	printf("Ora dormo \n");
+	sleep(5);
 	/* Aspetto la terminazione dei figli */
 	while(wait(NULL) != -1) {
 	}
@@ -899,6 +915,7 @@ int main () {
 		printf("\n");
 	}
 	*/
+
 	printf("\n");
 	printf("Stampo la prima di finire \n");
 	map_print(pointer_at_map);

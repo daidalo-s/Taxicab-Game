@@ -23,13 +23,21 @@
  */	
 map *pointer_at_map;
 message_queue cell_message_queue;
-int map_shm_id, source_sem_id, msg_queue_of_cell_key, message_queue_id;
-int x, y;
+int map_shm_id = 0, source_sem_id = 0, msg_queue_of_cell_key = 0, message_queue_id = 0;
+int x = 0, y = 0;
 struct sembuf accesso = { 0, -1, 0}; 
 struct sembuf rilascio = { 0, +1, 0}; 
+/*
+int * puntatore_alla_mappa = &map_shm_id;
+int * puntatore_a_source_sem_id = &source_sem_id;
+int * puntatore_a_msg_queue_of_cell_key = &msg_queue_of_cell_key;
+int * puntatore_a_msg_queue_id = &message_queue_id;
+*/
+
 
 
 void map_print(map *pointer_at_map);
+
 
 /********** ATTACH ALLA CELLA **********/
 /*
@@ -39,24 +47,30 @@ void map_print(map *pointer_at_map);
  *	di messaggi assegnata a quella cella, salva le coordinate della cella che si è preso.
  *	Rilascia il semaforo alla fine. 
  */
+
 void attach(map *pointer_at_map) {
+	
 	int i,j;
+
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
+				
 			if (pointer_at_map->mappa[i][j].cell_type == 1){
 				TEST_ERROR
-				/* Sezione critica */
-				semop(source_sem_id, &accesso, 1);
-				TEST_ERROR
+				
 				pointer_at_map->mappa[i][j].cell_type = 3;
 				msg_queue_of_cell_key = pointer_at_map->mappa[i][j].message_queue_key;
-
+				
+				printf("Ho preso id %x \n", msg_queue_of_cell_key);
+				
 				x = i;
 				y = j;
-				/* Rilascio la risorsa */
-				semop(source_sem_id, &rilascio, 1);
-				TEST_ERROR
+				
 			}
+			/*
+			printf("Stampo la mappa da attach \n");
+			map_print(pointer_at_map);
+			*/
 		}
 	}
 } 
@@ -120,14 +134,16 @@ void destination_and_call(map *pointer_at_map) {
    */
 int main(int argc, char *argv[])
 {
-	/* Mi collego alla mappa */
-	srand(time(NULL)); 
+	srand(time(NULL)); /* Forse va bene forse no */
+
+	/* Mi collego alla mappa */	
 	map_shm_id = atoi(argv[1]);
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
 	if (pointer_at_map == NULL) {
 		perror("Processo Source: non riesco ad attaccarmi alla mappa. Termino. ");
 		exit(EXIT_FAILURE);
 	}
+	
 	/* Ottengo visibilità del semaforo a cui devo fare riferimento */
 	source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600);
 	if (source_sem_id == -1){
@@ -135,13 +151,33 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	/* printf("%i \n", map_shm_id); */
-
 #if 1	
 	/* Cerco una cella SO_SOURCE e mi attacco */
+	/* Sezione critica */
+	
+	semop(source_sem_id, &accesso, 1);
+	TEST_ERROR
+	
 	attach(pointer_at_map);
-	/* DOBBIAMO CHIAMARLA DOPO UNA RICEZIONE DI UN SEGNALE DAL MASTER */
-	destination_and_call(pointer_at_map);
+	/* printf("Sono la cella source in posizione x %i y %i \n", x, y); */
+	/* Rilascio la risorsa */
+	
+	semop(source_sem_id, &rilascio, 1);
+	TEST_ERROR
+	
+	printf("STAMPO LE MIE INFORMAZIONI: \n");
+	printf("Sono in posizione x %i y %i \n", x, y); 
+	printf("Id mappa %i , Id semaforo mutex %i , Key coda di messaggi della mia cella %x \n", map_shm_id, source_sem_id, msg_queue_of_cell_key);
+
+
+	/* DOBBIAMO CHIAMARLA DOPO UNA RICEZIONE DI UN SEGNALE DA TERMINALE */
+	destination_and_call(pointer_at_map); 
+
+	/* Uccido i semafori che creo per sbaglio DA RIMUOVERE QUANDO RISOLTO */
+	if (msgctl(message_queue_id , IPC_RMID , NULL) == -1){
+		perror("DIo cannone ");
+	} 
+
 #ifdef DEBUG
 	printf("Sono un processo SO_SOURCE \n");
 	printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);

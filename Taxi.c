@@ -268,7 +268,7 @@ void create_index(void **m, int rows, int cols, size_t sizeElement){
 int main(int argc, char *argv[])
 {	
 	int i,j,SO_HOLES=0;
-	int first_free_source; 
+	/* int first_free_source; */
 	srand(time(NULL));
 
 	/* Prendo l'id e mi attacco al segmento */ 
@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 	}
 
-#if 1
+#if 0
 	/* Chiamo il metodo attach */
 	attach(pointer_at_map);
 	printf("TAXI: La cella in cui sono ha coordinate x: %i y: %i e numero vertice %i \n", x, y, pointer_at_map->mappa[x][y].vertex_number);
