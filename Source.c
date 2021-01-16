@@ -50,14 +50,14 @@ void map_print(map *pointer_at_map);
 
 void attach(map *pointer_at_map) {
 	
-	int i,j;
+	int i,j, z = 0;
 
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
 				
 			if (pointer_at_map->mappa[i][j].cell_type == 1){
 				TEST_ERROR
-				
+				z = 1;
 				pointer_at_map->mappa[i][j].cell_type = 3;
 				msg_queue_of_cell_key = pointer_at_map->mappa[i][j].message_queue_key;
 				
@@ -65,12 +65,15 @@ void attach(map *pointer_at_map) {
 				
 				x = i;
 				y = j;
-				
+				break;
 			}
 			/*
 			printf("Stampo la mappa da attach \n");
 			map_print(pointer_at_map);
 			*/
+		}
+		if (z != 0){
+			break;
 		}
 	}
 } 
@@ -157,9 +160,9 @@ int main(int argc, char *argv[])
 	
 	semop(source_sem_id, &accesso, 1);
 	TEST_ERROR
-	
+	printf("Sono il processo %i che esegue \n", getpid());
 	attach(pointer_at_map);
-	/* printf("Sono la cella source in posizione x %i y %i \n", x, y); */
+	printf("Sono la cella source in posizione x %i y %i \n", x, y); 
 	/* Rilascio la risorsa */
 	
 	semop(source_sem_id, &rilascio, 1);
@@ -172,12 +175,8 @@ int main(int argc, char *argv[])
 
 	/* DOBBIAMO CHIAMARLA DOPO UNA RICEZIONE DI UN SEGNALE DA TERMINALE */
 	destination_and_call(pointer_at_map); 
-
-	/* Uccido i semafori che creo per sbaglio DA RIMUOVERE QUANDO RISOLTO */
-	if (msgctl(message_queue_id , IPC_RMID , NULL) == -1){
-		perror("DIo cannone ");
-	} 
-
+	printf("ID coda di messaggi %i \n", message_queue_id); 
+	
 #ifdef DEBUG
 	printf("Sono un processo SO_SOURCE \n");
 	printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);

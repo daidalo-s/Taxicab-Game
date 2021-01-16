@@ -24,6 +24,7 @@ void random_cell_type(map * pointer_at_map);
 void random_taxi_capacity(map *pointer_at_map);
 void random_travel_time(map *pointer_at_map); 
 void map_setup(map *pointer_at_map);
+void check_map(map *pointer_at_map);
 void map_print(map *pointer_at_map);
 void addEdge(int ** pointer, int i, int j);
 void createAdjacencyMatrix();
@@ -455,11 +456,69 @@ void map_setup(map *pointer_at_map) {
 #endif
 }
 
+void check_map(map *pointer_at_map){
+
+	int num_source = 0, num_holes = 0, num_msg_queues = 0;
+	int i, j;
+	
+	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
+	
+	for (i = 0; i < SO_HEIGHT; i++){
+		for (j = 0; j < SO_WIDTH; j++){
+			if (pointer_at_map->mappa[i][j].cell_type == 0){
+				num_holes++;
+			} else if (pointer_at_map->mappa[i][j].cell_type == 1 || pointer_at_map->mappa[i][j].cell_type == 2) {
+				if (pointer_at_map->mappa[i][j].cell_type == 1) { 
+					num_source++;
+				}	
+				if (pointer_at_map->mappa[i][j].message_queue_key != 0) {
+					num_msg_queues++;
+				} 
+				if (pointer_at_map->mappa[i][j].taxi_capacity <= 0){
+					perror("Ho una cella con capacità di taxi <= 0, termino. ");
+					exit(EXIT_FAILURE);
+				}
+				if (pointer_at_map->mappa[i][j].travel_time <= 0){
+					perror("Ho una cella con tempo di attraversamento <= 0, termino. ");
+					exit(EXIT_FAILURE);
+				}
+				if (pointer_at_map->mappa[i][j].message_queue_key < 0){
+					perror("Ho una cella con key per la coda di messaggi 0, termino. ");
+					exit(EXIT_FAILURE);
+				}
+				if (pointer_at_map->mappa[i][j].reference_sem_number < 0) {
+					perror("Ho una cella senza numero del semaforo di riferimento, termino. ");
+					exit(EXIT_FAILURE);
+				}
+				if (pointer_at_map->mappa[i][j].vertex_number == -1) {
+					perror("Ho una cella libera con numero vertice di una hole, termino. ");
+					exit(EXIT_FAILURE);
+				} 
+			} 
+		} 
+	}
+
+	if (num_holes != SO_HOLES) {
+		printf("%i \n", num_holes);
+		perror("Non ho abbastanza holes. Termino. ");
+		exit(EXIT_FAILURE);
+	}
+	if (num_source != SO_SOURCES) {
+		perror("Non ho abbastanza source. Termino. ");
+		exit(EXIT_FAILURE);
+	}
+	if (num_msg_queues != SO_SOURCES) {
+		perror("Non ho abbastanza code di messaggi. Termino. ");
+		exit(EXIT_FAILURE);
+	}
+}
+
+
 void map_print(map *pointer_at_map) {
 	
 	int i, j;
 
-	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
+	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG); 
 	if (pointer_at_map == NULL){
 		perror("Funzione map_print: non riesco ad accedere alla mappa. Termino.\n");
 		exit(EXIT_FAILURE);
@@ -641,7 +700,7 @@ void createIPC(map *pointer_at_map) {
 	
 	/* Inizializziamo la mappa */
 	map_setup(pointer_at_map);
-	
+
 	/* Preparo gli argomenti per la execve */
     map_shm_id_execve = malloc(sizeof(int));
     if (map_shm_id_execve == NULL){
@@ -824,6 +883,9 @@ int main () {
 
 	/* Creo la matrice adiacente */
 	createAdjacencyMatrix(pointer_at_map);
+
+	/* Controlliamo che la mappa rispetti i valori inseriti */
+	check_map(pointer_at_map);
 
 	/* Creo l'array dove salvo le dimensione dei figli */
 	child_source = calloc(SO_SOURCES, sizeof(pid_t));
