@@ -487,7 +487,7 @@ void check_map(map *pointer_at_map){
 					kill_all();
 					exit(EXIT_FAILURE);
 				}
-				if (pointer_at_map->mappa[i][j].message_queue_key < 0){
+				if (pointer_at_map->mappa[i][j].cell_type == 1 && pointer_at_map->mappa[i][j].message_queue_key == 0){
 					perror("Ho una cella con key per la coda di messaggi 0, termino. ");
 					kill_all();
 					exit(EXIT_FAILURE);
@@ -765,14 +765,15 @@ void createIPC(map *pointer_at_map) {
 	}
 	
 	/* Creiamo le code di messaggi per le celle source */
-	pointer_at_msgq = malloc(SO_SOURCES*sizeof(int));
+	pointer_at_msgq = malloc(SO_SOURCES*sizeof(key_t));
 	if (pointer_at_msgq == NULL){
 		perror("Master createIPC: non riesco a creare l'array per salvare le key delle code di messaggi. Termino\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
 	for (i = 0; i < SO_SOURCES; i ++) {
-		pointer_at_msgq[i] = ftok(path, i);
+		pointer_at_msgq[i] = ftok(path, i+1);
+		TEST_ERROR
 		if(msgget(pointer_at_msgq[i], 0600 | IPC_CREAT | IPC_EXCL) == -1) {
 			perror("Master createIPC: non riesco a creare la coda di messaggi. Termino\n");
 			TEST_ERROR
@@ -784,7 +785,7 @@ void createIPC(map *pointer_at_map) {
 	
 	printf("STAMPA DI TEST DEL MASTER : STAMPO LE KEY CHE HO CREATO \n");
 	for (i = 0; i < SO_SOURCES; i++){
-		printf("%x \n", pointer_at_msgq[i]);
+		printf("%i \n", pointer_at_msgq[i]);
 	}
 	
 	/* Assegna al campo della cella il valore della sua coda di messaggi*/

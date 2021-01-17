@@ -52,9 +52,14 @@ void attach(map *pointer_at_map) {
 	
 	int i,j, z = 0;
 
+	/* Sezione critica */
+	semop(source_sem_id, &accesso, 1);
+	TEST_ERROR
+
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
-				
+			
+			/* Cerco una cella SO_SOURCE e mi attacco */
 			if (pointer_at_map->mappa[i][j].cell_type == 1){
 				TEST_ERROR
 				z = 1;
@@ -76,6 +81,11 @@ void attach(map *pointer_at_map) {
 			break;
 		}
 	}
+
+	/* Rilascio la risorsa */	
+	semop(source_sem_id, &rilascio, 1);
+	TEST_ERROR
+
 } 
 
 /********** GENERAZIONE DI DESTINAZIONE CASUALE E MESSAGGI **********/
@@ -163,18 +173,10 @@ int main(int argc, char *argv[])
 	}
 
 #if 1	
-	/* Cerco una cella SO_SOURCE e mi attacco */
-	/* Sezione critica */
 	
-	semop(source_sem_id, &accesso, 1);
-	TEST_ERROR
 	printf("Sono il processo %i che esegue \n", getpid());
 	attach(pointer_at_map);
 	printf("Sono la cella source in posizione x %i y %i \n", x, y); 
-	/* Rilascio la risorsa */
-	
-	semop(source_sem_id, &rilascio, 1);
-	TEST_ERROR
 	
 	printf("STAMPO LE MIE INFORMAZIONI: \n");
 	printf("Sono in posizione x %i y %i \n", x, y); 
