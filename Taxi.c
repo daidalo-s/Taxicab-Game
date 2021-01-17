@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
 {	
 	int i,j,SO_HOLES=0;
 	/* int first_free_source; */
-	srand(time(NULL));
+	/* srand(time(NULL)); */
 
 	/* Prendo l'id e mi attacco al segmento */ 
 	map_shm_id = atoi(argv[1]);

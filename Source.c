@@ -13,6 +13,7 @@
 #include <sys/ipc.h> 
 #include <sys/sem.h>
 #include <sys/msg.h>
+#include <sys/time.h>
 #include "Map.h"
 
 
@@ -22,7 +23,6 @@
  *	Deve ricordarsi di: dove si trova
  */	
 map *pointer_at_map;
-message_queue cell_message_queue;
 int map_shm_id = 0, source_sem_id = 0, msg_queue_of_cell_key = 0, message_queue_id = 0;
 int x = 0, y = 0;
 struct sembuf accesso = { 0, -1, 0}; 
@@ -91,14 +91,17 @@ void attach(map *pointer_at_map) {
 	*/
 void destination_and_call(map *pointer_at_map) {
 
-	int destination_x, destination_y, message_queue_id;
+	int destination_x, destination_y;
 	char str1[5], comma[] = {","};
 	char destination_string[MESSAGE_WIDTH];
+	message_queue cell_message_queue;
 
 	/* Generare due coordinate tra le celle valide */
 	do { 
-		destination_x = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0; 
+		destination_x = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0;
+		printf("Ho il valore x %i \n", destination_x);
 		destination_y = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
+		printf("Ho il valore y %i \n", destination_y);
 	} while (pointer_at_map->mappa[destination_x][destination_y].cell_type == 0 || (destination_x == x && destination_y == y));
 
 	/* Preparo il messaggio */
@@ -118,6 +121,7 @@ void destination_and_call(map *pointer_at_map) {
 		perror("Processo Source: non riesco a collegarmi alla coda di messaggi della mia cella. Termino.");
 		exit(EXIT_FAILURE);
 	}
+	
 	/* DA FARE IN MODO PERIODICO */
 	if (msgsnd(message_queue_id, &cell_message_queue, MESSAGE_WIDTH, 0) < 0) {
 		perror("Processo Source: errore, non riesco a mandare il messaggio");
@@ -137,8 +141,12 @@ void destination_and_call(map *pointer_at_map) {
    */
 int main(int argc, char *argv[])
 {
-	srand(time(NULL)); /* Forse va bene forse no */
-
+	/* srand(time(NULL)); */
+	
+	struct timeval time;
+	gettimeofday(&time, NULL);
+    srand((time.tv_sec * 1000) + (time.tv_usec / 1000));  
+	
 	/* Mi collego alla mappa */	
 	map_shm_id = atoi(argv[1]);
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
