@@ -62,8 +62,7 @@ char * args_source[] = {"Source", NULL, NULL}; /* Array di argomenti da passare 
 char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL}; 
 pid_t * child_source; /* Malloc dove salviamo pid dei figli Source */
 pid_t * child_taxi; /* Malloc dove salviamo pid dei figli Taxi */
-struct sigaction sa; /* Struct per l'handler dei segnali mandati dai Taxi */
-#if 1
+#if 0
 static int taxi_ready = 0; /* Intero utilizzato per l'handler dei segnali mandati dai Taxi*/ 
 #endif
 
@@ -815,7 +814,6 @@ void kill_all() {
 	/* Completare. Dovrà terminare le risorse IPC che allocheremo. */
 	int msqid, i;
 	
-    if (map_shm_id )
 	/* Marco per la deallocazione la memoria condivisa con la mappa */
 	shmctl(map_shm_id, IPC_RMID, NULL);
 
@@ -849,7 +847,7 @@ void kill_all() {
 	if (pointer_at_msgq != NULL)free(child_taxi);
 }
 
-#if 1
+#if 0
 void taxi_handler(int signum) {
 	int j;
 	taxi_ready++;
@@ -860,13 +858,12 @@ void taxi_handler(int signum) {
 		}
 	}
 }
-#endif
 
 void ctrlc_handler(int signum) {
     printf("Ho ricevuto un control c \n");
     kill_all();
 }
-
+#endif
 int main () {
 
 	int i, j, valore_fork_sources, valore_fork_taxi;
@@ -875,24 +872,23 @@ int main () {
 	
     int created_at_start = 0;
 
-    struct sigaction sb;
+    /* struct sigaction sa, sb; */
 	
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec)); 
 	
 	/* srand(time(NULL)); */
-#if 1	
+#if 0	
 	bzero(&sa, sizeof(sa));
 	sa.sa_handler = taxi_handler;
 	sa.sa_flags = 0;
 	sigaction(SIGUSR1, &sa, NULL);
-#endif
 
     bzero(&sb, sizeof(sb));
     sb.sa_handler = ctrlc_handler;
     sb.sa_flags = 0;
     sigaction(SIGINT, &sb, NULL);
-
+#endif
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 
@@ -987,7 +983,6 @@ int main () {
 	}
 	printf("\n");
 	
-
 	/*
 	printf("IL NUMERO DI TAXI ATTIVI \n");
 	for (i = 0; i < SO_HEIGHT; i++){

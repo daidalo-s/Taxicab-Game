@@ -132,7 +132,7 @@ void destination_and_call(map *pointer_at_map) {
 		exit(EXIT_FAILURE);
 	}
 	
-	/* DA FARE IN MODO PERIODICO */
+	/* Invio il messaggio */
 	if (msgsnd(message_queue_id, &cell_message_queue, MESSAGE_WIDTH, 0) < 0) {
 		perror("Processo Source: errore, non riesco a mandare il messaggio");
 		/* Lo facciamo terminare? */
@@ -148,10 +148,10 @@ void destination_and_call(map *pointer_at_map) {
    con la chiamata ad attach(). 
    Quando arriva il segnale del master di "go" chiama destination_and_call per cominciare a 
    generare richieste. 
-   */
+*/
 int main(int argc, char *argv[])
 {
-	/* srand(time(NULL)); */
+	int numero_messaggi = 0;
 	
 	struct timeval time;
 	gettimeofday(&time, NULL);
@@ -175,16 +175,21 @@ int main(int argc, char *argv[])
 #if 1	
 	
 	printf("Sono il processo %i che esegue \n", getpid());
-	attach(pointer_at_map);
-	printf("Sono la cella source in posizione x %i y %i \n", x, y); 
 	
+	attach(pointer_at_map);
+	/*
+	printf("Sono la cella source in posizione x %i y %i \n", x, y); 
 	printf("STAMPO LE MIE INFORMAZIONI: \n");
 	printf("Sono in posizione x %i y %i \n", x, y); 
 	printf("Id mappa %i , Id semaforo mutex %i , Key coda di messaggi della mia cella %x \n", map_shm_id, source_sem_id, msg_queue_of_cell_key);
-
-
+	*/
+	
 	/* DOBBIAMO CHIAMARLA DOPO UNA RICEZIONE DI UN SEGNALE DA TERMINALE */
-	destination_and_call(pointer_at_map); 
+	while (numero_messaggi != 3) { 	
+		sleep(2);
+		destination_and_call(pointer_at_map);
+		numero_messaggi++;
+	}	 
 	printf("ID coda di messaggi %i \n", message_queue_id); 
 	
 #ifdef DEBUG
