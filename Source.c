@@ -109,9 +109,7 @@ void destination_and_call(map *pointer_at_map) {
 	/* Generare due coordinate tra le celle valide */
 	do { 
 		destination_x = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0;
-		printf("Ho il valore x %i \n", destination_x);
 		destination_y = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
-		printf("Ho il valore y %i \n", destination_y);
 	} while (pointer_at_map->mappa[destination_x][destination_y].cell_type == 0 || (destination_x == x && destination_y == y));
 
 	/* Preparo il messaggio */
@@ -151,7 +149,6 @@ void destination_and_call(map *pointer_at_map) {
 */
 int main(int argc, char *argv[])
 {
-	int numero_messaggi = 0;
 	
 	struct timeval time;
 	gettimeofday(&time, NULL);
@@ -185,11 +182,13 @@ int main(int argc, char *argv[])
 	*/
 	
 	/* DOBBIAMO CHIAMARLA DOPO UNA RICEZIONE DI UN SEGNALE DA TERMINALE */
-	while (numero_messaggi != 3) { 	
+	while (1) { 	
 		sleep(2);
 		destination_and_call(pointer_at_map);
-		numero_messaggi++;
-	}	 
+	}
+
+	printf("Ho finito di mandare messaggi \n");	
+	sleep(3); 
 	printf("ID coda di messaggi %i \n", message_queue_id); 
 	
 #ifdef DEBUG

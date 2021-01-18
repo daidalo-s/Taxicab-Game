@@ -305,6 +305,10 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 	}
 
+	while (1) {
+		
+	}
+
 #if 0
 	/* Chiamo il metodo attach */
 	attach(pointer_at_map);

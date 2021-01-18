@@ -863,7 +863,20 @@ void ctrlc_handler(int signum) {
     printf("Ho ricevuto un control c \n");
     kill_all();
 }
+
 #endif
+
+void the_end(int signum) {
+	int i;
+	for (i = 0; i < SO_SOURCES; i++){
+		kill(child_source[i], SIGTERM);
+	}
+	for (i = 0; i < SO_TAXI; i++){
+		kill(child_taxi[i], SIGTERM);
+	} 
+}
+
+
 int main () {
 
 	int i, j, valore_fork_sources, valore_fork_taxi;
@@ -874,6 +887,8 @@ int main () {
 
     /* struct sigaction sa, sb; */
 	
+    struct sigaction terminator;
+
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec)); 
 	
@@ -889,6 +904,12 @@ int main () {
     sb.sa_flags = 0;
     sigaction(SIGINT, &sb, NULL);
 #endif
+
+    bzero(&terminator, sizeof(terminator));
+    terminator.sa_handler = the_end;
+    terminator.sa_flags = 0;
+    sigaction(SIGTERM, &terminator, NULL);
+    
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 
@@ -967,7 +988,10 @@ int main () {
 	sleep(5);
 	*/
 	/* Aspetto la terminazione dei figli */
+	alarm(SO_DURATION);
+
 	while(wait(NULL) != -1) {
+	
 	}
 	
 	printf("\n");
