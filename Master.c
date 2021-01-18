@@ -873,7 +873,7 @@ int main () {
     int created_at_start = 0;
 	
     gettimeofday(&time, NULL);
-    srand((time.tv_sec * 1000) + (time.tv_usec / 1000)); 
+    srand((time.tv_sec * 1000) + (time.tv_usec)); 
 	
 	/* srand(time(NULL)); */
 #if 0	
@@ -964,7 +964,7 @@ int main () {
 	}
 	
 	printf("\n");
-	printf("Stampo tutte le informazioni dei figli e se crasha mi ammazzo \n");
+	printf("Stampo tutte le informazioni dei figli e se crasha \n");
 	for (i = 0; i < SO_SOURCES; i++){
 		printf("%i  ", child_source[i]);	
 	}

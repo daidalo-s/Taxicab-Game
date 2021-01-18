@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 	
 	struct timeval time;
 	gettimeofday(&time, NULL);
-    srand((time.tv_sec * 1000) + (time.tv_usec / 1000));  
+    srand((time.tv_sec * 1000) + (time.tv_usec));  
 	
 	/* Mi collego alla mappa */	
 	map_shm_id = atoi(argv[1]);
