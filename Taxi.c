@@ -12,7 +12,9 @@
 #include <sys/ipc.h> 
 #include <sys/sem.h>
 #include <sys/msg.h>
+#include <signal.h>
 #include "Map.h"
+
 /********** VARIABILI GLOBALI **********/
 /*  
  *	Deve accedere a: mappa in memoria condivisa, coda di messaggi della cella
@@ -268,7 +270,7 @@ void create_index(void **m, int rows, int cols, size_t sizeElement){
 int main(int argc, char *argv[])
 {	
 	int i,j,SO_HOLES=0;
-	/* int first_free_source; */
+	int first_free_source; 
 	/* srand(time(NULL)); */
 
 	/* Prendo l'id e mi attacco al segmento */ 
@@ -302,7 +304,7 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 	}
 
-#if 0
+#if 1
 	/* Chiamo il metodo attach */
 	attach(pointer_at_map);
 	printf("TAXI: La cella in cui sono ha coordinate x: %i y: %i e numero vertice %i \n", x, y, pointer_at_map->mappa[x][y].vertex_number);
@@ -320,7 +322,7 @@ int main(int argc, char *argv[])
 	   printf("\n");
 	   }
 	   */
-	#if 0
+	#if 1
 	kill(getppid(), SIGUSR1);
 	kill(getpid(), SIGSTOP);
 	#endif

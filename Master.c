@@ -20,15 +20,15 @@
 void reading_input_values ();
 int  max_hole_width();
 int  max_hole_height();
-void random_cell_type(map * pointer_at_map);
-void random_taxi_capacity(map *pointer_at_map);
-void random_travel_time(map *pointer_at_map); 
-void map_setup(map *pointer_at_map);
-void check_map(map *pointer_at_map);
-void map_print(map *pointer_at_map);
+void random_cell_type();
+void random_taxi_capacity();
+void random_travel_time(); 
+void map_setup();
+void check_map();
+void map_print();
 void addEdge(int ** pointer, int i, int j);
 void createAdjacencyMatrix();
-void createIPC(map *pointer_at_map);
+void createIPC();
 void kill_all();
 void taxi_handler(int signum);
 
@@ -63,7 +63,7 @@ char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL};
 pid_t * child_source; /* Malloc dove salviamo pid dei figli Source */
 pid_t * child_taxi; /* Malloc dove salviamo pid dei figli Taxi */
 struct sigaction sa; /* Struct per l'handler dei segnali mandati dai Taxi */
-#if 0
+#if 1
 static int taxi_ready = 0; /* Intero utilizzato per l'handler dei segnali mandati dai Taxi*/ 
 #endif
 
@@ -211,7 +211,7 @@ int max_hole_height() {
 
 /* ---------------- Metodi mappa ----------------- */
 #ifdef MAPPA_VALORI_CASUALI
-void random_cell_type(map * pointer_at_map) {
+void random_cell_type() {
 
     int num_hole_placed = 0;
     int position;
@@ -351,7 +351,7 @@ void random_cell_type(map * pointer_at_map) {
 }
 #endif
 
-void random_taxi_capacity(map *pointer_at_map) {
+void random_taxi_capacity() {
 	
 	int i, j;
 	
@@ -364,7 +364,7 @@ void random_taxi_capacity(map *pointer_at_map) {
 	}
 }
 
-void random_travel_time(map *pointer_at_map) {
+void random_travel_time() {
 	
 	int i, j;
 	
@@ -379,12 +379,12 @@ void random_travel_time(map *pointer_at_map) {
 
 
 /* La codifica è: 0 hole, 1 SO_SOURCES, 2 free */
-void map_setup(map *pointer_at_map) {
+void map_setup() {
 	
 	int i, j, max_taxi_map = 0, condizione_ok = 0, counter = 0; /* Counter mi serve per i vertici */
 
 #ifdef MAPPA_VALORI_CASUALI
-	random_cell_type(pointer_at_map);
+	random_cell_type();
 	/* Controlli su mappe particolari */
 	/* Mappe di una sola riga */
 	if (SO_HEIGHT == 1 && SO_WIDTH > 1) {
@@ -409,7 +409,7 @@ void map_setup(map *pointer_at_map) {
 #endif
 
 	do {
-		random_taxi_capacity(pointer_at_map);
+		random_taxi_capacity();
 		for (i = 0; i < SO_HEIGHT; i++) {
 			for (j = 0; j < SO_WIDTH; j++) {
 				/* Calcolo il numero massimo di taxi sulla mappa con le capienze assegnate */
@@ -423,7 +423,7 @@ void map_setup(map *pointer_at_map) {
 		} else condizione_ok = 1;
 	} while (condizione_ok == 0); /* Potenziale loop infinito se i parametri sono volutamente sbagliati */
 	
-	random_travel_time(pointer_at_map);
+	random_travel_time();
 	
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
@@ -459,12 +459,10 @@ void map_setup(map *pointer_at_map) {
 #endif
 }
 
-void check_map(map *pointer_at_map){
+void check_map(){
 
 	int num_source = 0, num_holes = 0, num_msg_queues = 0;
 	int i, j;
-	
-	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
 	
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
@@ -525,11 +523,10 @@ void check_map(map *pointer_at_map){
 }
 
 
-void map_print(map *pointer_at_map) {
+void map_print() {
 	
 	int i, j;
 
-	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG); 
 	if (pointer_at_map == NULL){
 		perror("Funzione map_print: non riesco ad accedere alla mappa. Termino.\n");
 		kill_all();
@@ -581,13 +578,12 @@ void addEdge(int ** pointer, int i, int j) {
 	pointer[i][j] = 1;
 }
 
-void createAdjacencyMatrix(map *pointer_at_map){
+void createAdjacencyMatrix(){
 
 	int i, j;
 	int ** pointer;
 	size_t dimension = sizeof_dm(number_of_vertices, number_of_vertices, sizeof(int));
 
-	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
 	if (pointer_at_map == NULL){
 		perror("Master createAdjacencyMatrix: non riesco ad attaccarmi alla mappa. Termino \n");
 		kill_all();
@@ -688,7 +684,7 @@ void createAdjacencyMatrix(map *pointer_at_map){
 
 }
 
-void createIPC(map *pointer_at_map) {
+void createIPC() {
 	
 	int i, j, counter;
 	
@@ -712,7 +708,7 @@ void createIPC(map *pointer_at_map) {
 	}
 	
 	/* Inizializziamo la mappa */
-	map_setup(pointer_at_map);
+	map_setup();
 
 	/* Preparo gli argomenti per la execve */
     map_shm_id_execve = malloc(sizeof(int));
@@ -800,7 +796,7 @@ void createIPC(map *pointer_at_map) {
 	} 
 
 	printf("Stampo la mappa \n");
-	map_print(pointer_at_map);
+	map_print();
 	printf("Stampo le celle dove ho la coda di messaggi \n");
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
@@ -819,6 +815,7 @@ void kill_all() {
 	/* Completare. Dovrà terminare le risorse IPC che allocheremo. */
 	int msqid, i;
 	
+    if (map_shm_id )
 	/* Marco per la deallocazione la memoria condivisa con la mappa */
 	shmctl(map_shm_id, IPC_RMID, NULL);
 
@@ -839,20 +836,20 @@ void kill_all() {
 		msgctl(msqid , IPC_RMID , NULL);
 	}
 	
-	free(pointer_at_msgq);
+	if (pointer_at_msgq != NULL)free(pointer_at_msgq);
 
-	free(adjacency_matrix_shm_id_execve);
+	if (pointer_at_msgq != NULL)free(adjacency_matrix_shm_id_execve);
 
-	free(map_shm_id_execve);
+	if (pointer_at_msgq != NULL)free(map_shm_id_execve);
 
-	free(creation_moment);
+	if (pointer_at_msgq != NULL)free(creation_moment);
 	
-	free(child_source);
+	if (pointer_at_msgq != NULL)free(child_source);
 
-	free(child_taxi);
+	if (pointer_at_msgq != NULL)free(child_taxi);
 }
 
-#if 0
+#if 1
 void taxi_handler(int signum) {
 	int j;
 	taxi_ready++;
@@ -865,6 +862,11 @@ void taxi_handler(int signum) {
 }
 #endif
 
+void ctrlc_handler(int signum) {
+    printf("Ho ricevuto un control c \n");
+    kill_all();
+}
+
 int main () {
 
 	int i, j, valore_fork_sources, valore_fork_taxi;
@@ -872,28 +874,36 @@ int main () {
     struct timeval time; 
 	
     int created_at_start = 0;
+
+    struct sigaction sb;
 	
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec)); 
 	
 	/* srand(time(NULL)); */
-#if 0	
+#if 1	
 	bzero(&sa, sizeof(sa));
 	sa.sa_handler = taxi_handler;
 	sa.sa_flags = 0;
 	sigaction(SIGUSR1, &sa, NULL);
-#endif	
+#endif
+
+    bzero(&sb, sizeof(sb));
+    sb.sa_handler = ctrlc_handler;
+    sb.sa_flags = 0;
+    sigaction(SIGINT, &sb, NULL);
+
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 
 	/* Creo gli oggetti ipc */
-	createIPC(pointer_at_map);
+	createIPC();
 
 	/* Creo la matrice adiacente */
-	createAdjacencyMatrix(pointer_at_map);
+	createAdjacencyMatrix();
 
 	/* Controlliamo che la mappa rispetti i valori inseriti */
-	check_map(pointer_at_map);
+	check_map();
 
 	/* Creo l'array dove salvo le dimensione dei figli */
 	child_source = calloc(SO_SOURCES, sizeof(pid_t));
@@ -990,7 +1000,7 @@ int main () {
 
 	printf("\n");
 	printf("Stampo la prima di finire \n");
-	map_print(pointer_at_map);
+	map_print();
 	printf("\n");
 	kill_all();
 	return 0;
