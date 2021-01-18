@@ -1,4 +1,4 @@
-#define SO_HEIGHT 20
+#define SO_HEIGHT 10
 #define SO_WIDTH 10
 #define SHM_FLG 0600
 #define SEM_FLG 0600
