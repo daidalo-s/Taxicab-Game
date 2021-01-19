@@ -14,7 +14,7 @@
 #include <sys/msg.h>
 #include <sys/time.h>
 #include <signal.h>
-#include "Map.h"
+#include "Function.h"
 
 /****************** Prototipi ******************/
 void reading_input_values ();
@@ -65,6 +65,16 @@ pid_t * child_taxi; /* Malloc dove salviamo pid dei figli Taxi */
 #if 0
 static int taxi_ready = 0; /* Intero utilizzato per l'handler dei segnali mandati dai Taxi*/ 
 #endif
+
+void set_handler(int signum, void(*function)(int)) {
+
+	struct sigaction sa;
+	bzero(&sa, sizeof(sa));
+	sa.sa_handler = function;
+	sa.sa_flags = 0;
+	sigaction(signum, &sa, NULL);
+
+}
 
 /* ---------------- Lettura parametri da file ----------------- */
 void reading_input_values () {
@@ -836,15 +846,15 @@ void kill_all() {
 	
 	if (pointer_at_msgq != NULL)free(pointer_at_msgq);
 
-	if (pointer_at_msgq != NULL)free(adjacency_matrix_shm_id_execve);
+	if (adjacency_matrix_shm_id_execve != NULL)free(adjacency_matrix_shm_id_execve);
 
-	if (pointer_at_msgq != NULL)free(map_shm_id_execve);
+	if (map_shm_id_execve != NULL)free(map_shm_id_execve);
 
-	if (pointer_at_msgq != NULL)free(creation_moment);
+	if (creation_moment != NULL)free(creation_moment);
 	
-	if (pointer_at_msgq != NULL)free(child_source);
+	if (child_source != NULL)free(child_source);
 
-	if (pointer_at_msgq != NULL)free(child_taxi);
+	if (child_taxi != NULL)free(child_taxi);
 }
 
 #if 0
@@ -859,14 +869,17 @@ void taxi_handler(int signum) {
 	}
 }
 
-void ctrlc_handler(int signum) {
-    printf("Ho ricevuto un control c \n");
-    kill_all();
-}
-
 #endif
 
-void the_end(int signum) {
+void ctrlc_handler(int signum) {
+    printf("ane dio Ho ricevuto un control c \n");
+    kill(1, SIGTERM);
+    kill_all();
+    kill(getpid(), SIGKILL);
+}
+
+
+void the_end_master(int signum) {
 	int i;
 	for (i = 0; i < SO_SOURCES; i++){
 		kill(child_source[i], SIGTERM);
@@ -887,7 +900,10 @@ int main () {
 
     /* struct sigaction sa, sb; */
 	
-    struct sigaction terminator;
+    /* struct sigaction terminator, sb; */
+
+    set_handler(SIGINT, &ctrlc_handler);
+    set_handler(SIGALRM, &the_end_master);
 
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec)); 
@@ -899,17 +915,20 @@ int main () {
 	sa.sa_flags = 0;
 	sigaction(SIGUSR1, &sa, NULL);
 
+   
+#endif
+    /*
     bzero(&sb, sizeof(sb));
     sb.sa_handler = ctrlc_handler;
     sb.sa_flags = 0;
     sigaction(SIGINT, &sb, NULL);
-#endif
 
     bzero(&terminator, sizeof(terminator));
     terminator.sa_handler = the_end;
     terminator.sa_flags = 0;
-    sigaction(SIGTERM, &terminator, NULL);
-    
+    sigaction(SIGALRM, &terminator, NULL);
+    */
+
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 

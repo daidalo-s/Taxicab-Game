@@ -13,7 +13,7 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include <signal.h>
-#include "Map.h"
+#include "Function.h"
 
 /********** VARIABILI GLOBALI **********/
 /*  
@@ -48,6 +48,15 @@ void find_path(int start_vertex, int destination_vertex);
 void create_index(void **m, int rows, int cols, size_t sizeElement);
 void map_print(map *pointer_at_map);
 
+void set_handler(int signum, void(*function)(int)) {
+
+	struct sigaction sa;
+	bzero(&sa, sizeof(sa));
+	sa.sa_handler = function;
+	sa.sa_flags = 0;
+	sigaction(signum, &sa, NULL);
+
+}
 
 void random_cell() {
 	/* Possibile loop infinito, dipende dai controlli */
@@ -262,6 +271,12 @@ void create_index(void **m, int rows, int cols, size_t sizeElement){
 	}
 }
 
+void the_end_taxi (int signum) {
+	
+	kill(getpid(), SIGKILL);
+
+}
+
 /********** MAIN **********/
 /*
  *	All'interno della funzione main il processo deve prendere controllo del segmento di memoria
@@ -274,6 +289,16 @@ int main(int argc, char *argv[])
 
 	/* srand(time(NULL)); */
 
+	set_handler(SIGINT, &the_end_taxi);
+
+	/*
+	struct sigaction terminator;
+	
+	bzero(&terminator, sizeof(terminator));
+    terminator.sa_handler = the_end_taxi;
+    terminator.sa_flags = 0;
+    sigaction(SIGTERM, &terminator, NULL);
+	*/
 	/* Prendo l'id e mi attacco al segmento */ 
 	map_shm_id = atoi(argv[1]);
 	adjacency_matrix_shm_id = atoi(argv[2]);

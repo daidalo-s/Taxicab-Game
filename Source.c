@@ -14,7 +14,7 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include <sys/time.h>
-#include "Map.h"
+#include "Function.h"
 
 
 /********** VARIABILI GLOBALI **********/
@@ -38,6 +38,15 @@ int * puntatore_a_msg_queue_id = &message_queue_id;
 
 void map_print(map *pointer_at_map);
 
+void set_handler(int signum, void(*function)(int)) {
+
+	struct sigaction sa;
+	bzero(&sa, sizeof(sa));
+	sa.sa_handler = function;
+	sa.sa_flags = 0;
+	sigaction(signum, &sa, NULL);
+
+}
 
 /********** ATTACH ALLA CELLA **********/
 /*
@@ -137,6 +146,13 @@ void destination_and_call(map *pointer_at_map) {
 	}
 }
 
+void the_end_source (int signum) {
+
+	shmctl(map_shm_id, IPC_RMID, NULL);
+	semctl(source_sem_id, 0, IPC_RMID);
+	kill(getpid(), SIGKILL);
+
+}
 
 /********** MAIN **********/
 /*
@@ -151,9 +167,19 @@ int main(int argc, char *argv[])
 {
 	
 	struct timeval time;
+	/* struct sigaction terminator;*/
+
+	set_handler(SIGINT, &the_end_source);
+
 	gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec));  
 	
+    /*
+    bzero(&terminator, sizeof(terminator));
+    terminator.sa_handler = the_end_source;
+    terminator.sa_flags = 0;
+    sigaction(SIGTERM, &terminator, NULL);
+	*/
 	/* Mi collego alla mappa */	
 	map_shm_id = atoi(argv[1]);
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
