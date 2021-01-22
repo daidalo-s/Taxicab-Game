@@ -25,18 +25,12 @@
 map *pointer_at_map;
 int map_shm_id = 0, source_sem_id = 0, msg_queue_of_cell_key = 0, message_queue_id = 0;
 int x = 0, y = 0;
+int start_sem_id;
 struct sembuf accesso = { 0, -1, 0}; 
 struct sembuf rilascio = { 0, +1, 0}; 
-/*
-int * puntatore_alla_mappa = &map_shm_id;
-int * puntatore_a_source_sem_id = &source_sem_id;
-int * puntatore_a_msg_queue_of_cell_key = &msg_queue_of_cell_key;
-int * puntatore_a_msg_queue_id = &message_queue_id;
-*/
+struct sembuf start = {0, -1, 0};
 
-
-
-void map_print(map *pointer_at_map);
+void map_print();
 
 void set_handler(int signum, void(*function)(int)) {
 
@@ -57,7 +51,7 @@ void set_handler(int signum, void(*function)(int)) {
  *	Rilascia il semaforo alla fine. 
  */
 
-void attach(map *pointer_at_map) {
+void attach() {
 	
 	int i,j, z = 0;
 
@@ -81,16 +75,11 @@ void attach(map *pointer_at_map) {
 				y = j;
 				break;
 			}
-			/*
-			printf("Stampo la mappa da attach \n");
-			map_print(pointer_at_map);
-			*/
 		}
 		if (z != 0){
 			break;
 		}
 	}
-
 	/* Rilascio la risorsa */	
 	semop(source_sem_id, &rilascio, 1);
 	TEST_ERROR
@@ -108,7 +97,7 @@ void attach(map *pointer_at_map) {
 	lo stesso nei processi riceventi) e lo invia. 
 	L'INVIO DOVRÀ ESSERE PERIODICO.
 	*/
-void destination_and_call(map *pointer_at_map) {
+void destination_and_call() {
 
 	int destination_x, destination_y;
 	char str1[5], comma[] = {","};
@@ -146,11 +135,32 @@ void destination_and_call(map *pointer_at_map) {
 	}
 }
 
-void the_end_source (int signum) {
+/* Terminazione su segnale del master dopo SO_DURATION*/
+void source_handler (int signum) {
 
-	shmctl(map_shm_id, IPC_RMID, NULL);
-	semctl(source_sem_id, 0, IPC_RMID);
-	kill(getpid(), SIGKILL);
+	/* Handler dopo SO_DURATION*/
+	if (signum == SIGINT) { 
+		printf("SOURCE Ricevo il segnale SIGINT\n");
+		shmctl(map_shm_id, IPC_RMID, NULL);
+		semctl(source_sem_id, 0, IPC_RMID);
+		kill(getpid(), SIGKILL);
+	}
+
+	/* Handler per ctrl c*/
+	if (signum == SIGTERM) {
+		printf("SOURCE Ricevo segnale ctrl c\n");
+		shmctl(map_shm_id, IPC_RMID, NULL);
+		semctl(source_sem_id, 0, IPC_RMID);
+		kill(getpid(), SIGKILL);
+	}	
+
+}
+
+/* Handler immissione messaggi nella coda da segnale SIGUSR1*/
+void message_handler (int signum) {	
+
+	printf("Sono il source %i e ho ricevuto il segnale, immetto un messaggio nella mia coda \n", getpid());
+	destination_and_call();
 
 }
 
@@ -167,19 +177,14 @@ int main(int argc, char *argv[])
 {
 	
 	struct timeval time;
-	/* struct sigaction terminator;*/
 
-	set_handler(SIGINT, &the_end_source);
+	set_handler(SIGINT, &source_handler);
+	set_handler(SIGTERM, &source_handler); 
+	signal(SIGUSR1, message_handler);
 
 	gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec));  
 	
-    /*
-    bzero(&terminator, sizeof(terminator));
-    terminator.sa_handler = the_end_source;
-    terminator.sa_flags = 0;
-    sigaction(SIGTERM, &terminator, NULL);
-	*/
 	/* Mi collego alla mappa */	
 	map_shm_id = atoi(argv[1]);
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
@@ -188,10 +193,17 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 	
-	/* Ottengo visibilità del semaforo a cui devo fare riferimento */
+	/* Ottengo visibilità del semaforo a cui devo fare riferimento per l'assegnazione */
 	source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600);
 	if (source_sem_id == -1){
 		perror("Processo Source: non riesco a prendere il semaforo. Termino.");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Ottengo visibilità del semaforo a cui devo fare riferimento per il via */
+	start_sem_id = semget(START_SEM_KEY, 1, 0600);
+	if (start_sem_id == -1) {
+		perror("Processo Source: non riesco a prendere il semaforo per il via. Termino ");
 		exit(EXIT_FAILURE);
 	}
 
@@ -199,7 +211,8 @@ int main(int argc, char *argv[])
 	
 	printf("Sono il processo %i che esegue \n", getpid());
 	
-	attach(pointer_at_map);
+	attach();
+	
 	/*
 	printf("Sono la cella source in posizione x %i y %i \n", x, y); 
 	printf("STAMPO LE MIE INFORMAZIONI: \n");
@@ -208,14 +221,25 @@ int main(int argc, char *argv[])
 	*/
 	
 	/* DOBBIAMO CHIAMARLA DOPO UNA RICEZIONE DI UN SEGNALE DA TERMINALE */
+	/*
+	printf("Ti lascio tempo per mandarmi segnali \n");
+	sleep(10);
+	*/
+	
+	/* Mi fermo e aspetto il segnale dal Master */
+	/*
+	kill(getppid(), SIGUSR2);
+	kill(getpid(), SIGSTOP);
+	*/
+
+	/* Attendo il via dal master */
+	printf("Aspetto il via dal master \n");
+	semop(start_sem_id, &start, 1);
+
 	while (1) { 	
 		sleep(2);
-		destination_and_call(pointer_at_map);
+		destination_and_call();
 	}
-
-	printf("Ho finito di mandare messaggi \n");	
-	sleep(3); 
-	printf("ID coda di messaggi %i \n", message_queue_id); 
 	
 #ifdef DEBUG
 	printf("Sono un processo SO_SOURCE \n");
@@ -224,7 +248,7 @@ int main(int argc, char *argv[])
 
 #ifdef DEBUG_STAMPA_MAPPA  
 	printf("Uso il metodo di stampa tradizionale \n");
-	map_print(pointer_at_map);
+	map_print();
 #endif
 
 #ifdef DEBUG_RICEZIONE_MESSAGGIO
@@ -243,7 +267,7 @@ int main(int argc, char *argv[])
 }
 
 /********** Metodi per debug **********/
-void map_print(map *pointer_at_map) {
+void map_print() {
 	int i, j;
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {

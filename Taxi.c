@@ -12,6 +12,7 @@
 #include <sys/ipc.h> 
 #include <sys/sem.h>
 #include <sys/msg.h>
+#include <sys/time.h>
 #include <signal.h>
 #include "Function.h"
 
@@ -30,6 +31,7 @@ int start_vertex, destination_vertex;
 int element_counter;
 int source = 0;
 int length_of_path;
+int start_sem_id;
 int * distance;
 int * predecessor;
 int * visited;
@@ -37,16 +39,17 @@ int * path_to_follow;
 int ** pointer_at_adjacency_matrix;
 struct sembuf accesso;
 struct sembuf rilascio;
+struct sembuf start = {0, -1, 0};
 message_queue cell_message_queue;    
 map *pointer_at_map; 
 
 /********** PROTOTIPI **********/
 void random_cell();
-void attach(map *pointer_at_map);
+void attach();
 void receive_and_go();
 void find_path(int start_vertex, int destination_vertex);
 void create_index(void **m, int rows, int cols, size_t sizeElement);
-void map_print(map *pointer_at_map);
+void map_print();
 
 void set_handler(int signum, void(*function)(int)) {
 
@@ -70,7 +73,7 @@ void random_cell() {
 	/* Impostazione di accesso */
 	accesso.sem_num = pointer_at_map->mappa[tmpx][tmpy].reference_sem_number; 
 	accesso.sem_op = -1;
-	accesso.sem_flg = IPC_NOWAIT;
+	accesso.sem_flg = IPC_NOWAIT | SEM_UNDO;
 	/* Impostazione di rilascio */
 	rilascio.sem_num = pointer_at_map->mappa[tmpx][tmpy].reference_sem_number;
 	rilascio.sem_op = +1;
@@ -82,7 +85,7 @@ void random_cell() {
  *	Con questo metodo il processo taxi si attacca a una cella in modo casuale che trova
  *	tra le libere e quelle che non eccedono già la capacità.
  */
-void attach(map *pointer_at_map) {
+void attach() {
 #ifdef MAPPA_VALORI_CASUALI
 
 	random_cell();
@@ -135,9 +138,11 @@ void receive_and_find_path() {
 	}
 	x_destination = atoi(&cell_message_queue.message[0]);
 	y_destination = atoi(&cell_message_queue.message[2]);
+	/*
 	printf("La x_destination e' % i \n", x_destination);
 	printf("La y_destination e' %i \n", y_destination);
 	printf("Ho ricevuto il messaggio %s \n", cell_message_queue.message);
+	*/
 	/* Devo chiamare dijkstra: ho bisogno di passare il vertice in cui mi trovo e il vertice in cui voglio andare */
 	start_vertex = pointer_at_map->mappa[x][y].vertex_number; /* La cella in cui sono */
 	destination_vertex = pointer_at_map->mappa[x_destination][y_destination].vertex_number; /* La cella in cui voglio andare*/
@@ -151,11 +156,11 @@ void find_path(int start_vertex, int destination_vertex) {
 
 	int count, min_distance, next_node, i, j;
 	int tmp_int;
-
+	/*
 	printf("La grandezza e %i \n", dimension_of_adjacency_matrix);
 	printf("Parto dal vertice numero %i \n", start_vertex);
 	printf("Arrivo al vertice numero %i \n", destination_vertex);
-
+	*/
 	/* Creo l'array per contenere la distanza, lo faccio ad ogni nuovo viaggio */
 	distance = malloc(dimension_of_adjacency_matrix * sizeof(int));
 	/* Creo l'array per salvare la provenienza, lo faccio ad ogni nuovo viaggio */
@@ -228,13 +233,13 @@ void move() {
 	/* La struct dove salvo il tempo */
 	struct timespec ts;
 	/* Finche' sono all'interno dell'array del percorso */
-	printf("MOVE 1\n");
+	/* printf("MOVE 1\n"); */
 	while (k < length_of_path) {
 		/* Prendo il tempo della cella in cui mi trovo */
 		ts.tv_sec = 0;
 		ts.tv_nsec = pointer_at_map->mappa[x][y].travel_time;
 		/* Dormo il tempo giusto */
-		printf("MOVE 2\n");
+		/* printf("MOVE 2\n"); */
 		if (nanosleep(&ts, NULL) == -1){
 			perror("Non riesco a dormire");
 		}
@@ -271,11 +276,21 @@ void create_index(void **m, int rows, int cols, size_t sizeElement){
 	}
 }
 
-void the_end_taxi (int signum) {
+void taxi_handler (int signum) {
 	
-	kill(getpid(), SIGKILL);
-
+	/* Handler dopo SO_DURATION */
+	if (signum == SIGINT) { 
+		printf("TAXI Ricevo il segnale SIGINT\n");
+		kill(getpid(), SIGKILL);
+	}
+	
+	/* Handler dopo ctrl c*/
+	if (signum == SIGTERM) {
+		printf("TAXI Ricevo il segnale SIGTERM\n");
+		kill(getpid(), SIGKILL);
+	}	
 }
+
 
 /********** MAIN **********/
 /*
@@ -284,31 +299,30 @@ void the_end_taxi (int signum) {
  */
 int main(int argc, char *argv[])
 {	
-	int i,j,SO_HOLES=0;
-	/* int first_free_source; */
-
-	/* srand(time(NULL)); */
-
-	set_handler(SIGINT, &the_end_taxi);
-
-	/*
-	struct sigaction terminator;
 	
-	bzero(&terminator, sizeof(terminator));
-    terminator.sa_handler = the_end_taxi;
-    terminator.sa_flags = 0;
-    sigaction(SIGTERM, &terminator, NULL);
-	*/
-	/* Prendo l'id e mi attacco al segmento */ 
-	map_shm_id = atoi(argv[1]);
-	adjacency_matrix_shm_id = atoi(argv[2]);
+	int i,j,SO_HOLES=0;
 
+	int first_free_source;  
+
+	/* Inizializzazione rand */
+	struct timeval time;
+	gettimeofday(&time, NULL);
+    srand((time.tv_sec * 1000) + (time.tv_usec));  
+	
+	/* Impostiamo gli handler per i segnali che gestiamo */
+	set_handler(SIGINT, &taxi_handler);
+	set_handler(SIGTERM, &taxi_handler);
+		
+	/* Prendo l'id della mappa e mi attacco al segmento */ 
+	map_shm_id = atoi(argv[1]);
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
 	if (pointer_at_map == NULL){
 		perror("Processo Taxi: non riesco ad accedere alla mappa. Termino.");
 		exit(EXIT_FAILURE);
 	}
 
+	/* Prendo l'id della matrice adiacente e mi attacco */
+	adjacency_matrix_shm_id = atoi(argv[2]);
 	pointer_at_adjacency_matrix = (int **)shmat(adjacency_matrix_shm_id, NULL, 0);
 	if (pointer_at_adjacency_matrix == NULL){
 		perror("Processo Taxi: non riesco ad accedere alla matrice adiacente. Termino.");
@@ -322,19 +336,27 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* Prendo visibilita dell'array di semafori */
+	/* Prendo visibilita dell'array di semafori per l'accesso alle celle */
 	taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, SEM_FLG);
 	if (taxi_sem_id == -1){
 		perror("Processo Taxi: non riesco ad accedere al mio semaforo. Termino.");
 		TEST_ERROR 
-			exit(EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 
-	while (1) {
-		
+	/* Prendo visibilità del semaforo per il via */
+	start_sem_id = semget(START_SEM_KEY, 1, 0600);
+	if (start_sem_id == -1){
+		perror("Processo Taxi: non riesco a prendere visibilità de semaforo per il via. Termino. ");
+		exit(EXIT_FAILURE);
 	}
 
-#if 0
+	/* Rimango in attesa del via */
+	printf("Aspetto il via dal master \n");
+	semop(start_sem_id, &start, 1);
+	printf("SONO UN TAXI E PARTO DIO CANNONE \n");
+
+#if 1
 	/* Chiamo il metodo attach */
 	attach(pointer_at_map);
 	printf("TAXI: La cella in cui sono ha coordinate x: %i y: %i e numero vertice %i \n", x, y, pointer_at_map->mappa[x][y].vertex_number);
@@ -351,11 +373,8 @@ int main(int argc, char *argv[])
 	   }
 	   printf("\n");
 	   }
-	   */
-	#if 1
-	kill(getppid(), SIGUSR1);
-	kill(getpid(), SIGSTOP);
-	#endif
+	*/
+
 	/* ------------ TAXI INIZIALIZZATO --------------- */
 
 	/* Chiamo receive_and_find_path solo se sono in una cella SOURCE*/
@@ -408,7 +427,9 @@ int main(int argc, char *argv[])
 
 	/* ----------------------- OLTRE QUESTA LINEA SOLO COSE DA CACELLARE --------------------------- */
 	/*Libero la matrice dei costi solo alla fine di tutti i viaggi */
+	while (1) {
 
+	}
 	return 0;
 }
 

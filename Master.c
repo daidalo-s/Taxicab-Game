@@ -53,6 +53,7 @@ int map_shm_id;    /* valore ritornato da shmget(), id del segmento */
 int adjacency_matrix_shm_id; /* valore ritornato da shmget, id del segmento */
 int source_sem_id; /* valore ritornato da semget() per i SOURCE, id dell'array */
 int taxi_sem_id;   /* valore ritornato da semget() per i TAXI, id dell'array*/
+int start_sem_id; /* Id del semaforo per il via */
 int * pointer_at_msgq; /* Malloc di interi dove salviamo le key delle code di messaggi che poi inseriamo nelle celle */
 char * map_shm_id_execve; /* Puntatore a char dove salvo l'id della mappa per passarlo ai figli*/
 char * adjacency_matrix_shm_id_execve; /* Puntatore a char dove salvo l'id della matrice adiacente per passarlo ai figli*/
@@ -62,9 +63,7 @@ char * args_source[] = {"Source", NULL, NULL}; /* Array di argomenti da passare 
 char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL}; 
 pid_t * child_source; /* Malloc dove salviamo pid dei figli Source */
 pid_t * child_taxi; /* Malloc dove salviamo pid dei figli Taxi */
-#if 0
-static int taxi_ready = 0; /* Intero utilizzato per l'handler dei segnali mandati dai Taxi*/ 
-#endif
+
 
 void set_handler(int signum, void(*function)(int)) {
 
@@ -744,6 +743,19 @@ void createIPC() {
 		exit(EXIT_FAILURE);
 	}
 	
+	/* Creo il semaforo per il go */
+	start_sem_id = semget(START_SEM_KEY, 1, 0600 | IPC_CREAT);
+	if (start_sem_id == -1){
+		perror("Master createIPC: non riesco a generare il semaforo per il via. Termino \n");
+		kill_all();
+		exit(EXIT_FAILURE);
+	}
+	if (semctl(start_sem_id, 0, SETVAL, 0) == -1) {
+		perror("Master createIPC: non riesco a impostare il semaforo per il via. Termino\n");
+		kill_all();
+		exit(EXIT_FAILURE);
+	}
+
 	/* Creo l'array di semafori per i TAXI, uno per ogni cella */
 	taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, 0600 | IPC_CREAT);
 	if (taxi_sem_id == -1){
@@ -757,6 +769,9 @@ void createIPC() {
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
 			if (pointer_at_map->mappa[i][j].cell_type != 0) {
+				printf("ID ARRAY DI SEMAFORI: %i \n", taxi_sem_id);
+				printf("NUMERO SEMAFORO SU CUI LAVORO: %i \n", counter);
+				printf("VALORE A CUI VOGLIO IMPOSTARE IL SEMAFORO: %i \n", pointer_at_map->mappa[i][j].taxi_capacity);
 				if(semctl(taxi_sem_id, counter, SETVAL, pointer_at_map->mappa[i][j].taxi_capacity) == -1 ){
 					TEST_ERROR
 					perror("Master createIPC: non riesco a impostare il semaforo per Taxi. Termino\n");
@@ -835,6 +850,9 @@ void kill_all() {
 	
 	/* Dealloco l'array di semafori per Taxi */
 	semctl(taxi_sem_id, 0, IPC_RMID);
+
+	/* Dealocco il semaforo per la partenza */
+	semctl(start_sem_id, 0, IPC_RMID);
 	
 	for (i = 0; i < SO_SOURCES; i++) {
 		msqid = msgget(pointer_at_msgq[i], 0600);
@@ -857,36 +875,33 @@ void kill_all() {
 	if (child_taxi != NULL)free(child_taxi);
 }
 
-#if 0
-void taxi_handler(int signum) {
-	int j;
-	taxi_ready++;
-	printf("Mi e' arrivato il segnale numero %i \n", taxi_ready);
-	if (taxi_ready == SO_TAXI) {
-		for (j = 0; j < SO_TAXI; j++){
-			kill(child_taxi[j], SIGCONT);
-		}
-	}
-}
-
-#endif
-
+/* Per la terminazione improvvisa da control c*/
 void ctrlc_handler(int signum) {
+    
+    int i;
     printf("ane dio Ho ricevuto un control c \n");
-    kill(1, SIGTERM);
-    kill_all();
-    kill(getpid(), SIGKILL);
-}
-
-
-void the_end_master(int signum) {
-	int i;
-	for (i = 0; i < SO_SOURCES; i++){
+    for (i = 0; i < SO_TAXI; i++) {
+		kill(child_taxi[i], SIGTERM);
+	}
+	for (i = 0; i < SO_SOURCES; i++) {
 		kill(child_source[i], SIGTERM);
 	}
-	for (i = 0; i < SO_TAXI; i++){
-		kill(child_taxi[i], SIGTERM);
-	} 
+    kill_all();
+    kill(getpid(), SIGKILL); /* Suicidio rituale */
+
+}
+
+/* Per la terminazione natuale da alarm */
+void the_end_master(int signum) {
+
+	int i; 
+	printf("Invio il segnale ai figli\n");
+	for (i = 0; i < SO_TAXI; i++) {
+		kill(child_taxi[i], SIGINT);
+	}
+	for (i = 0; i < SO_SOURCES; i++) {
+		kill(child_source[i], SIGINT);
+	}
 }
 
 
@@ -894,41 +909,20 @@ int main () {
 
 	int i, j, valore_fork_sources, valore_fork_taxi;
 	
-    struct timeval time; 
+    struct timeval time;
+
+    struct sembuf start; 
 	
     int created_at_start = 0;
 
-    /* struct sigaction sa, sb; */
-	
-    /* struct sigaction terminator, sb; */
-
+    
     set_handler(SIGINT, &ctrlc_handler);
     set_handler(SIGALRM, &the_end_master);
+   	/* signal(SIGUSR2, taxi_handler); */
 
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec)); 
-	
-	/* srand(time(NULL)); */
-#if 0	
-	bzero(&sa, sizeof(sa));
-	sa.sa_handler = taxi_handler;
-	sa.sa_flags = 0;
-	sigaction(SIGUSR1, &sa, NULL);
-
-   
-#endif
-    /*
-    bzero(&sb, sizeof(sb));
-    sb.sa_handler = ctrlc_handler;
-    sb.sa_flags = 0;
-    sigaction(SIGINT, &sb, NULL);
-
-    bzero(&terminator, sizeof(terminator));
-    terminator.sa_handler = the_end;
-    terminator.sa_flags = 0;
-    sigaction(SIGALRM, &terminator, NULL);
-    */
-
+	  
 	/* Lettura degli altri parametri specificati da file */
 	reading_input_values();
 
@@ -941,7 +935,7 @@ int main () {
 	/* Controlliamo che la mappa rispetti i valori inseriti */
 	check_map();
 
-	/* Creo l'array dove salvo le dimensione dei figli */
+	/* Creo l'array dove salvo i pid dei figli */
 	child_source = calloc(SO_SOURCES, sizeof(pid_t));
 	if (child_source == NULL){
 		perror("Master main: non riesco a crare l'array dove salvare le informazioni sui processi Source. Termino \n");
@@ -1006,6 +1000,19 @@ int main () {
 	printf("Ora dormo \n");
 	sleep(5);
 	*/
+	
+	printf("Faccio partire i figli \n");
+	while (1) {
+		if ((semctl(start_sem_id, 0, GETNCNT)) == (SO_SOURCES+SO_TAXI))	{
+			start.sem_flg = 0;
+			start.sem_op = SO_SOURCES + SO_TAXI;
+			start.sem_num = 0;
+			semop(start_sem_id, &start, 1);
+			break;
+		}
+	}
+
+	printf("Esco dal ciclo, aspetto SO_DURATION \n");
 	/* Aspetto la terminazione dei figli */
 	alarm(SO_DURATION);
 
