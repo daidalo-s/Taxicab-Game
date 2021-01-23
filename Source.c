@@ -177,10 +177,13 @@ int main(int argc, char *argv[])
 {
 	
 	struct timeval time;
-
+	/*
 	set_handler(SIGINT, &source_handler);
 	set_handler(SIGTERM, &source_handler); 
+	*/
 	signal(SIGUSR1, message_handler);
+	signal(SIGINT, source_handler);
+	signal(SIGTERM, source_handler);
 
 	gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec));  

@@ -916,10 +916,12 @@ int main () {
 	
     int created_at_start = 0;
 
-    
+    /*
     set_handler(SIGINT, &ctrlc_handler);
     set_handler(SIGALRM, &the_end_master);
-   	/* signal(SIGUSR2, taxi_handler); */
+   	*/
+   	signal(SIGINT, ctrlc_handler);
+   	signal(SIGALRM, the_end_master);
 
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec)); 

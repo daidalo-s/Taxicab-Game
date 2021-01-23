@@ -94,27 +94,30 @@ void attach() {
 		random_cell();
 	}
 	/* Ci parcheggiamo. Quindi siamo sicuri di poterlo fare? */
-	if (pointer_at_map->mappa[tmpx][tmpy].active_taxis <= pointer_at_map->mappa[tmpx][tmpy].taxi_capacity) {
+	if (pointer_at_map->mappa[tmpx][tmpy].active_taxis < pointer_at_map->mappa[tmpx][tmpy].taxi_capacity) {
 		x = tmpx;
 		y = tmpy;
 		pointer_at_map->mappa[x][y].active_taxis++;
 	} else {
-		perror("Errore nella logica, non potrei stare in questa cella. ");
+		printf("Errore nella logica, non potrei stare in questa cella. ");
 		printf("SONO UN TAXI CHE HA SBAGLIATO TUTTO NELLA VITA \n");
 	}
+	/* Questa deve andare */
+	/*
 	semop(taxi_sem_id, &rilascio, 1);
 	TEST_ERROR
-		/* Verifico se la cella è 1 o 3 e prendo l'id della coda di messaggi. */
-		if (pointer_at_map->mappa[x][y].cell_type == 1 || pointer_at_map->mappa[x][y].cell_type == 3) {
-			msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;		
-			/* Ci attacchiamo alla coda di messaggi */
-			msg_queue_of_cell = msgget(msg_queue_of_cell_key, 0);
-			if (msg_queue_of_cell == -1){
-				perror("Sono un processo Taxi: non riesco ad attaccarmi alla coda di messaggi della mia cella.");
-			}
-			/* Condizione true/false per fare il receive_and_find_path nel main */
-			source = 1;
+	*/
+	/* Verifico se la cella è 1 o 3 e prendo l'id della coda di messaggi. */
+	if (pointer_at_map->mappa[x][y].cell_type == 1 || pointer_at_map->mappa[x][y].cell_type == 3) {
+		msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;		
+		/* Ci attacchiamo alla coda di messaggi */
+		msg_queue_of_cell = msgget(msg_queue_of_cell_key, 0);
+		if (msg_queue_of_cell == -1){
+			perror("Sono un processo Taxi: non riesco ad attaccarmi alla coda di messaggi della mia cella.");
 		}
+		/* Condizione true/false per fare il receive_and_find_path nel main */
+		source = 1;
+	}
 #endif
 
 #ifndef MAPPA_VALORI_CASUALI	
@@ -310,9 +313,13 @@ int main(int argc, char *argv[])
     srand((time.tv_sec * 1000) + (time.tv_usec));  
 	
 	/* Impostiamo gli handler per i segnali che gestiamo */
+	/*
 	set_handler(SIGINT, &taxi_handler);
 	set_handler(SIGTERM, &taxi_handler);
-		
+	*/
+    signal(SIGINT, taxi_handler);
+    signal(SIGTERM, taxi_handler);
+
 	/* Prendo l'id della mappa e mi attacco al segmento */ 
 	map_shm_id = atoi(argv[1]);
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
