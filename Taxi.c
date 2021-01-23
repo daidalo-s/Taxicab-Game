@@ -357,9 +357,26 @@ int main(int argc, char *argv[])
 	printf("SONO UN TAXI E PARTO DIO CANNONE \n");
 
 #if 1
+	printf("Stampo la mappa secondo la capacità dei taxi \n");
+	for(i = 0; i < SO_HEIGHT; i++){
+		for(j = 0; j < SO_WIDTH; j++){
+			printf("%i  ", pointer_at_map->mappa[i][j].taxi_capacity);
+		}
+		printf("\n");
+	}
+
 	/* Chiamo il metodo attach */
 	attach(pointer_at_map);
 	printf("TAXI: La cella in cui sono ha coordinate x: %i y: %i e numero vertice %i \n", x, y, pointer_at_map->mappa[x][y].vertex_number);
+
+
+	printf("Stampo la mappa secondo il numero di taxi attivi \n");
+	for(i = 0; i < SO_HEIGHT; i++){
+		for(j = 0; j < SO_WIDTH; j++){
+			printf("%i  ", pointer_at_map->mappa[i][j].active_taxis);
+		}
+		printf("\n");
+	}
 
 	/* E' una variabile globale*/
 	dimension_of_adjacency_matrix = (SO_WIDTH*SO_HEIGHT)-SO_HOLES;
@@ -410,13 +427,6 @@ int main(int argc, char *argv[])
 		printf("\n");
 	}
 
-	printf("TAXI DEBUG PT2\n");
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			printf("%i  ", pointer_at_map->mappa[i][j].active_taxis);
-		}
-		printf("\n");
-	}
 
 #endif
 

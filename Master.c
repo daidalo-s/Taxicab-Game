@@ -309,8 +309,8 @@ void random_cell_type() {
             break;
         
         case 6: /* bordo a sinistra */
-            if (pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0 
-                && pointer_at_map->mappa[x+1][y+1].cell_type != 0 && pointer_at_map->mappa[x+1][y].cell_type != 0) {
+            if ((pointer_at_map->mappa[x-1][y].cell_type != 0 && pointer_at_map->mappa[x-1][y+1].cell_type != 0 && pointer_at_map->mappa[x][y+1].cell_type != 0 
+                && (pointer_at_map->mappa[x+1][y+1].cell_type != 0) && pointer_at_map->mappa[x+1][y].cell_type != 0) && (pointer_at_map->mappa[x][y].cell_type != 0)) {
                     pointer_at_map->mappa[x][y].cell_type = 0;
                     num_hole_placed++;
             }
@@ -356,6 +356,7 @@ void random_cell_type() {
         }
 	}
 	printf("Ho posizionato %i source \n", num_source_placed);
+	printf("Ho posizionato %i hole \n", num_hole_placed);
 }
 #endif
 
@@ -765,6 +766,7 @@ void createIPC() {
 	}
 
 	/* Assegno il numero del semaforo Taxi di riferimento ad ogni cella */
+	map_print();
 	counter = 0;
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
