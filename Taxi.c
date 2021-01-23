@@ -14,7 +14,7 @@
 #include <sys/msg.h>
 #include <sys/time.h>
 #include <signal.h>
-#include "Map.h"
+#include "Function.h"
 
 /********** VARIABILI GLOBALI **********/
 /*  

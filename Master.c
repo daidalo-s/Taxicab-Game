@@ -14,7 +14,7 @@
 #include <sys/msg.h>
 #include <sys/time.h>
 #include <signal.h>
-#include "Map.h"
+#include "Function.h"
 /****************** Prototipi ******************/
 void reading_input_values ();
 int  max_hole_width();
