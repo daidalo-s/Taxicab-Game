@@ -139,15 +139,15 @@ void destination_and_call() {
 void source_handler (int signum) {
 
 	/* Handler dopo SO_DURATION*/
-	if (signum == SIGINT) { 
-		printf("SOURCE Ricevo il segnale SIGINT\n");
+	if (signum == SIGTERM) { 
+		printf("SOURCE Ricevo il segnale SIGTERM\n");
 		shmctl(map_shm_id, IPC_RMID, NULL);
 		semctl(source_sem_id, 0, IPC_RMID);
 		kill(getpid(), SIGKILL);
 	}
 
 	/* Handler per ctrl c*/
-	if (signum == SIGTERM) {
+	if (signum == SIGINT) {
 		printf("SOURCE Ricevo segnale ctrl c\n");
 		shmctl(map_shm_id, IPC_RMID, NULL);
 		semctl(source_sem_id, 0, IPC_RMID);
@@ -177,14 +177,11 @@ int main(int argc, char *argv[])
 {
 	
 	struct timeval time;
-	/*
-	set_handler(SIGINT, &source_handler);
-	set_handler(SIGTERM, &source_handler); 
-	*/
-	signal(SIGUSR1, message_handler);
-	signal(SIGINT, source_handler);
-	signal(SIGTERM, source_handler);
-
+	
+	set_handler(SIGTERM, &source_handler);
+	set_handler(SIGINT, &source_handler); 
+	set_handler(SIGUSR1, &message_handler);
+	
 	gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec));  
 	
@@ -229,21 +226,16 @@ int main(int argc, char *argv[])
 	sleep(10);
 	*/
 	
-	/* Mi fermo e aspetto il segnale dal Master */
-	/*
-	kill(getppid(), SIGUSR2);
-	kill(getpid(), SIGSTOP);
-	*/
-
 	/* Attendo il via dal master */
 	printf("Aspetto il via dal master \n");
 	semop(start_sem_id, &start, 1);
-
+	
 	while (1) { 	
-		sleep(2);
+		/* da cambiare */
+ 		sleep(2);
 		destination_and_call();
 	}
-	
+
 #ifdef DEBUG
 	printf("Sono un processo SO_SOURCE \n");
 	printf("Il campo della cella 2.2 e': %i \n", pointer_at_map->mappa[2][2].cell_type);

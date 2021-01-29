@@ -99,7 +99,6 @@ void attach() {
 		y = tmpy;
 		pointer_at_map->mappa[x][y].active_taxis++;
 	} else {
-		printf("Errore nella logica, non potrei stare in questa cella. ");
 		printf("SONO UN TAXI CHE HA SBAGLIATO TUTTO NELLA VITA \n");
 	}
 	/* Questa deve andare */
@@ -133,8 +132,10 @@ void attach() {
 
 void receive_and_find_path() {
 	int x_destination, y_destination;
+	/*
 	printf("Sono il processo Taxi che proverà a ricevere il messaggio \n");
 	printf("L'id della coda di messaggi da cui proverò a leggere è %i \n", msg_queue_of_cell_key);
+	*/
 	/* msg_queue_of_cell_key = pointer_at_map->mappa[2][2].message_queue_key; */
 	if (msgrcv(msg_queue_of_cell, &cell_message_queue, MESSAGE_WIDTH, 0, 0) < 0) { /* In teoria non ha flag ipcnowait */
 		perror("Errore non riesco a ricevere il messaggio\n ");
@@ -218,7 +219,7 @@ void find_path(int start_vertex, int destination_vertex) {
 		tmp_int --;
 		element_counter++;
 	} while (destination_vertex != start_vertex && tmp_int >= 0);
-	printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE \n");
+	/* printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE \n"); */
 	for (j = 0; j < element_counter; j++){
 		printf("%i \t", path_to_follow[j]);
 	}
@@ -263,7 +264,7 @@ void move() {
 	}
 	/* Verifico di essere arrivato a destinazione */
 	if (pointer_at_map->mappa[x][y].vertex_number == path_to_follow[length_of_path-1]) {
-		printf("Sono giunto a destinazione \n");
+		/* printf("Sono giunto a destinazione \n"); */
 	}
 	/* Libero l'array contente il path */
 	free(path_to_follow);
@@ -282,14 +283,14 @@ void create_index(void **m, int rows, int cols, size_t sizeElement){
 void taxi_handler (int signum) {
 	
 	/* Handler dopo SO_DURATION */
-	if (signum == SIGINT) { 
-		printf("TAXI Ricevo il segnale SIGINT\n");
+	if (signum == SIGTERM) { 
+		/*printf("TAXI Ricevo il segnale SIGTERM\n"); */
 		kill(getpid(), SIGKILL);
 	}
 	
 	/* Handler dopo ctrl c*/
-	if (signum == SIGTERM) {
-		printf("TAXI Ricevo il segnale SIGTERM\n");
+	if (signum == SIGINT) {
+		/* printf("TAXI Ricevo il segnale SIGINT\n"); */
 		kill(getpid(), SIGKILL);
 	}	
 }
@@ -313,12 +314,9 @@ int main(int argc, char *argv[])
     srand((time.tv_sec * 1000) + (time.tv_usec));  
 	
 	/* Impostiamo gli handler per i segnali che gestiamo */
-	/*
 	set_handler(SIGINT, &taxi_handler);
 	set_handler(SIGTERM, &taxi_handler);
-	*/
-    signal(SIGINT, taxi_handler);
-    signal(SIGTERM, taxi_handler);
+	
 
 	/* Prendo l'id della mappa e mi attacco al segmento */ 
 	map_shm_id = atoi(argv[1]);
@@ -358,12 +356,8 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	/* Rimango in attesa del via */
-	printf("Aspetto il via dal master \n");
-	semop(start_sem_id, &start, 1);
-	printf("SONO UN TAXI E PARTO DIO CANNONE \n");
-
 #if 1
+	/*
 	printf("Stampo la mappa secondo la capacità dei taxi \n");
 	for(i = 0; i < SO_HEIGHT; i++){
 		for(j = 0; j < SO_WIDTH; j++){
@@ -371,12 +365,19 @@ int main(int argc, char *argv[])
 		}
 		printf("\n");
 	}
+	*/
 
 	/* Chiamo il metodo attach */
 	attach(pointer_at_map);
-	printf("TAXI: La cella in cui sono ha coordinate x: %i y: %i e numero vertice %i \n", x, y, pointer_at_map->mappa[x][y].vertex_number);
+	/* Rimango in attesa del via */
+	
+	/* printf("Aspetto il via dal master \n"); */
+	semop(start_sem_id, &start, 1);
+	/* printf("SONO UN TAXI E PARTO DIO CANNONE \n"); */
 
+	/* printf("TAXI: La cella in cui sono ha coordinate x: %i y: %i e numero vertice %i \n", x, y, pointer_at_map->mappa[x][y].vertex_number); */
 
+	/*
 	printf("Stampo la mappa secondo il numero di taxi attivi \n");
 	for(i = 0; i < SO_HEIGHT; i++){
 		for(j = 0; j < SO_WIDTH; j++){
@@ -384,6 +385,7 @@ int main(int argc, char *argv[])
 		}
 		printf("\n");
 	}
+	*/
 
 	/* E' una variabile globale*/
 	dimension_of_adjacency_matrix = (SO_WIDTH*SO_HEIGHT)-SO_HOLES;
@@ -409,25 +411,25 @@ int main(int argc, char *argv[])
 		move(); 
 	} else {
 		/* Devo trovare una cella source libera ed andarci */
-		printf("Sto cercando una cella SOURCE in cui andare \n");
+		/* printf("Sto cercando una cella SOURCE in cui andare \n"); */
 		for(i = 0; i < SO_HEIGHT; i++){
 			for(j = 0; j < SO_WIDTH; j++){
 				if ((pointer_at_map->mappa[i][j].cell_type == 1 || pointer_at_map->mappa[i][j].cell_type == 3) 
 						&& (pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
 					first_free_source = pointer_at_map->mappa[i][j].vertex_number;
-					printf("L'ho trovata. \n");
+					/* printf("L'ho trovata. \n"); */
 				}
 			}
 		}
 		/* Cerco un percorso da dove sono alla prima source libera */
-		printf("Cerco un percorso alla cella SOURCE\n");
+		/* printf("Cerco un percorso alla cella SOURCE\n"); */
 		find_path(pointer_at_map->mappa[x][y].vertex_number, first_free_source);
-		printf("Ora provo a muovermi \n");
+		/* printf("Ora provo a muovermi \n"); */
 		move(); 
 	}
 	/* Per debug */
 	if (source) { 
-		printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE DAL MAIN\n");
+		/* printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE DAL MAIN\n"); */
 		for (j = 0; j < element_counter; j++){
 			printf("%i \t", path_to_follow[j]);
 		}

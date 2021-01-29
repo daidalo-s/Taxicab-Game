@@ -23,7 +23,7 @@ void random_cell_type();
 void random_taxi_capacity();
 void random_travel_time(); 
 void map_setup();
-void check_map();
+void map_check();
 void map_print();
 void addEdge(int ** pointer, int i, int j);
 void createAdjacencyMatrix();
@@ -390,7 +390,7 @@ void random_travel_time() {
 void map_setup() {
 	
 	int i, j, max_taxi_map = 0, condizione_ok = 0, counter = 0; /* Counter mi serve per i vertici */
-
+	int numero_esecuzioni = 0;
 #ifdef MAPPA_VALORI_CASUALI
 	random_cell_type();
 	/* Controlli su mappe particolari */
@@ -418,6 +418,7 @@ void map_setup() {
 
 	do {
 		random_taxi_capacity();
+		numero_esecuzioni++;
 		for (i = 0; i < SO_HEIGHT; i++) {
 			for (j = 0; j < SO_WIDTH; j++) {
 				/* Calcolo il numero massimo di taxi sulla mappa con le capienze assegnate */
@@ -428,9 +429,18 @@ void map_setup() {
 		if (SO_TAXI > max_taxi_map) {
 			printf("Errore: dovrei mettere %i taxi, ma la capeinza massima della mappa e' %i \n", SO_TAXI, max_taxi_map);
 			printf("Assegno nuove capienze massime. Assicurarsi che il numero inserito non sia troppo alto per la mappa. [Possibile loop infinito]\n");
+			max_taxi_map = 0;
 		} else condizione_ok = 1;
-	} while (condizione_ok == 0); /* Potenziale loop infinito se i parametri sono volutamente sbagliati */
+	} while (condizione_ok == 0 && numero_esecuzioni < 1000); /* Potenziale loop infinito se i parametri sono volutamente sbagliati */
 	
+	if (condizione_ok == 0) {
+		printf("Non e' possibile inserire tutti quei taxi. Termino. \n");
+		kill_all();
+		kill(getpid(), SIGKILL);
+	} else {
+		printf("La capienza massima e' %i \n", max_taxi_map);
+	}
+
 	random_travel_time();
 	
 	for (i = 0; i < SO_HEIGHT; i++) {
@@ -467,9 +477,9 @@ void map_setup() {
 #endif
 }
 
-void check_map(){
+void map_check(){
 
-	int num_source = 0, num_holes = 0, num_msg_queues = 0;
+	int num_source = 0, num_holes = 0, num_msg_queues = 0, max_taxi_number = 0;
 	int i, j;
 	
 	for (i = 0; i < SO_HEIGHT; i++){
@@ -512,6 +522,19 @@ void check_map(){
 		} 
 	}
 
+	/* Calcolo il numero massimo di taxi che posso avere con la mappa generata */
+	for (i = 0; i < SO_HEIGHT; i++){
+		for (j = 0; j < SO_WIDTH; j++){
+			if (pointer_at_map->mappa[i][j].cell_type != 0){
+				max_taxi_number = max_taxi_number + pointer_at_map->mappa[i][j].taxi_capacity;
+			}
+		}
+	}
+	if (SO_TAXI > max_taxi_number){
+		printf("Il numero di taxi da inserire e' piu' grande della capacità massima della mappa. Termino. \n");
+		kill_all();
+		exit(EXIT_FAILURE);
+	}
 	if (num_holes != SO_HOLES) {
 		printf("%i \n", num_holes);
 		perror("Non ho abbastanza holes. Termino. ");
@@ -528,6 +551,7 @@ void check_map(){
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
+
 }
 
 
@@ -770,9 +794,11 @@ void createIPC() {
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
 			if (pointer_at_map->mappa[i][j].cell_type != 0) {
+				/*
 				printf("ID ARRAY DI SEMAFORI: %i \n", taxi_sem_id);
 				printf("NUMERO SEMAFORO SU CUI LAVORO: %i \n", counter);
 				printf("VALORE A CUI VOGLIO IMPOSTARE IL SEMAFORO: %i \n", pointer_at_map->mappa[i][j].taxi_capacity);
+				*/
 				if(semctl(taxi_sem_id, counter, SETVAL, pointer_at_map->mappa[i][j].taxi_capacity) == -1 ){
 					TEST_ERROR
 					perror("Master createIPC: non riesco a impostare il semaforo per Taxi. Termino\n");
@@ -819,7 +845,7 @@ void createIPC() {
 			}
 		}
 	} 
-
+	/*
 	printf("Stampo la mappa \n");
 	map_print();
 	printf("Stampo le celle dove ho la coda di messaggi \n");
@@ -833,7 +859,7 @@ void createIPC() {
 		}
 	printf("\n");
 	}
-
+	*/
 }
 
 void kill_all() {
@@ -841,26 +867,28 @@ void kill_all() {
 	int msqid, i;
 	
 	/* Marco per la deallocazione la memoria condivisa con la mappa */
-	shmctl(map_shm_id, IPC_RMID, NULL);
+	if (map_shm_id != 0) shmctl(map_shm_id, IPC_RMID, NULL);
 
 	/* Marco per la deallocazione la memoria condivisa con la matrice adiacente */
-	shmctl(adjacency_matrix_shm_id, IPC_RMID, NULL);
+	if (adjacency_matrix_shm_id != 0) shmctl(adjacency_matrix_shm_id, IPC_RMID, NULL);
 
 	/* Dealloco il semaforo per Source */
-	semctl(source_sem_id, 0, IPC_RMID);
+	if (source_sem_id != 0) semctl(source_sem_id, 0, IPC_RMID);
 	
 	/* Dealloco l'array di semafori per Taxi */
-	semctl(taxi_sem_id, 0, IPC_RMID);
+	if (taxi_sem_id != 0) semctl(taxi_sem_id, 0, IPC_RMID);
 
 	/* Dealocco il semaforo per la partenza */
-	semctl(start_sem_id, 0, IPC_RMID);
+	if (start_sem_id != 0) semctl(start_sem_id, 0, IPC_RMID);
 	
-	for (i = 0; i < SO_SOURCES; i++) {
-		msqid = msgget(pointer_at_msgq[i], 0600);
-		if (msqid < 0) {
-			perror("Errore nella deallocazione \n");
+	if (pointer_at_msgq != NULL) { 
+		for (i = 0; i < SO_SOURCES; i++) {
+			msqid = msgget(pointer_at_msgq[i], 0600);
+			if (msqid < 0) {
+				perror("Errore nella deallocazione \n");
+			}
+			msgctl(msqid , IPC_RMID , NULL);
 		}
-		msgctl(msqid , IPC_RMID , NULL);
 	}
 	
 	if (pointer_at_msgq != NULL)free(pointer_at_msgq);
@@ -876,35 +904,31 @@ void kill_all() {
 	if (child_taxi != NULL)free(child_taxi);
 }
 
-/* Per la terminazione improvvisa da control c*/
-void ctrlc_handler(int signum) {
-    
-    int i;
-    printf("ane dio Ho ricevuto un control c \n");
-    for (i = 0; i < SO_TAXI; i++) {
-		kill(child_taxi[i], SIGTERM);
-	}
-	for (i = 0; i < SO_SOURCES; i++) {
-		kill(child_source[i], SIGTERM);
-	}
-    kill_all();
-    kill(getpid(), SIGKILL); /* Suicidio rituale */
-
-}
-
-/* Per la terminazione natuale da alarm */
 void the_end_master(int signum) {
+	int i;
+	switch (signum) {
+		case SIGINT:
+			printf("ane dio Ho ricevuto un control c \n");
+   			for (i = 0; i < SO_TAXI; i++) {
+				kill(child_taxi[i], SIGINT);
+			}
+			for (i = 0; i < SO_SOURCES; i++) {
+				kill(child_source[i], SIGINT);
+			}
+			kill_all();
+    		kill(getpid(), SIGKILL); /* Suicidio rituale */
+    		break;
 
-	int i; 
-	printf("Invio il segnale ai figli\n");
-	for (i = 0; i < SO_TAXI; i++) {
-		kill(child_taxi[i], SIGINT);
-	}
-	for (i = 0; i < SO_SOURCES; i++) {
-		kill(child_source[i], SIGINT);
-	}
+		case SIGALRM:
+			printf("Invio il segnale ai figli\n");
+			for (i = 0; i < SO_TAXI; i++) {
+				kill(child_taxi[i], SIGTERM);
+			}
+			for (i = 0; i < SO_SOURCES; i++) {
+				kill(child_source[i], SIGTERM);
+			}
+		}
 }
-
 
 int main () {
 
@@ -916,13 +940,10 @@ int main () {
 	
     int created_at_start = 0;
 
-    /*
-    set_handler(SIGINT, &ctrlc_handler);
+    
+    set_handler(SIGINT, &the_end_master);
     set_handler(SIGALRM, &the_end_master);
-   	*/
-   	signal(SIGINT, ctrlc_handler);
-   	signal(SIGALRM, the_end_master);
-
+   	
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec)); 
 	  
@@ -936,7 +957,7 @@ int main () {
 	createAdjacencyMatrix();
 
 	/* Controlliamo che la mappa rispetti i valori inseriti */
-	check_map();
+	map_check();
 
 	/* Creo l'array dove salvo i pid dei figli */
 	child_source = calloc(SO_SOURCES, sizeof(pid_t));
@@ -999,10 +1020,6 @@ int main () {
 				break;
 		}
 	}
-	/*
-	printf("Ora dormo \n");
-	sleep(5);
-	*/
 	
 	printf("Faccio partire i figli \n");
 	while (1) {
