@@ -141,16 +141,18 @@ void source_handler (int signum) {
 	/* Handler dopo SO_DURATION*/
 	if (signum == SIGTERM) { 
 		printf("SOURCE Ricevo il segnale SIGTERM\n");
-		shmctl(map_shm_id, IPC_RMID, NULL);
-		semctl(source_sem_id, 0, IPC_RMID);
+		if (map_shm_id != 0) shmctl(map_shm_id, IPC_RMID, NULL);
+		if (source_sem_id != 0) semctl(source_sem_id, 0, IPC_RMID);
+		if (start_sem_id != 0) semctl(start_sem_id, 0, IPC_RMID);
 		kill(getpid(), SIGKILL);
 	}
 
 	/* Handler per ctrl c*/
 	if (signum == SIGINT) {
 		printf("SOURCE Ricevo segnale ctrl c\n");
-		shmctl(map_shm_id, IPC_RMID, NULL);
-		semctl(source_sem_id, 0, IPC_RMID);
+		if (map_shm_id != 0) shmctl(map_shm_id, IPC_RMID, NULL);
+		if (source_sem_id != 0) semctl(source_sem_id, 0, IPC_RMID);
+		if (start_sem_id != 0) semctl(start_sem_id, 0, IPC_RMID);
 		kill(getpid(), SIGKILL);
 	}	
 

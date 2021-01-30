@@ -28,6 +28,8 @@ typedef struct
 	int message_queue_key;
 	int reference_sem_number;
 	int vertex_number;
+	int completed_trip;
+	int aborted_trip;
 } cell;
 
 /* Spiega la memoria condivisa con esempi */

@@ -448,6 +448,8 @@ void map_setup() {
 			/* Imposto ogni cella con active_taxis = 0, crossings = 0, numero di vertice */
 			pointer_at_map->mappa[i][j].active_taxis = 0;
 			pointer_at_map->mappa[i][j].crossings = 0;
+			pointer_at_map->mappa[i][j].completed_trip = 0;
+			pointer_at_map->mappa[i][j].aborted_trip = 0;
 			if (pointer_at_map->mappa[i][j].cell_type != 0) {
 				pointer_at_map->mappa[i][j].vertex_number = counter;
 				counter++;
