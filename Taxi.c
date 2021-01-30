@@ -137,7 +137,7 @@ void receive_and_find_path() {
 	
 		printf("La x_destination e' % i \n", x_destination);
 		printf("La y_destination e' %i \n", y_destination);
-		printf("Il vertex_number della destination e' %i \n", pointer_at_map->mappa[x][y].vertex_number);
+		printf("Il vertex_number della destination e' %i \n", pointer_at_map->mappa[x_destination][y_destination].vertex_number);
 		/* Devo chiamare dijkstra: ho bisogno di passare il vertice in cui mi trovo e il vertice in cui voglio andare */
 		start_vertex = pointer_at_map->mappa[x][y].vertex_number; /* La cella in cui sono */
 		destination_vertex = pointer_at_map->mappa[x_destination][y_destination].vertex_number; /* La cella in cui voglio andare*/
@@ -222,8 +222,11 @@ void find_path(int start_vertex, int destination_vertex) {
 	printf("\n");
 	/* Devo spostare l'array path, non devo pulirlo fino a quando non sono arrivato a destinazione */
 	free(distance);
+	distance = NULL;
 	free(predecessor);
+	predecessor = NULL;
 	free(visited);
+	visited = NULL;
 }
 
 
@@ -276,7 +279,8 @@ void move() {
 	}
 
 	/* Libero l'array contente il path */
-	free(path_to_follow); 
+	free(path_to_follow);
+	path_to_follow = NULL; 
 }
 
 void create_index(void **m, int rows, int cols, size_t sizeElement){
@@ -332,6 +336,8 @@ int main(int argc, char *argv[])
 	int i,j,SO_HOLES=0, source;
 
 	int first_free_source;  
+
+	int mph, mpw;
 
 	/* Inizializzazione rand */
 	struct timeval time;
@@ -460,15 +466,52 @@ int main(int argc, char *argv[])
 			/* Una volta che esco dalla move dovrei essere arrivato nella cella di destinazione */
 
 		} else {
-			printf("ESEGUO L'ELSE MADONNA PINGUINA \n");
-			/* Devo trovare una cella source libera ed andarci */
-			printf("Sto cercando una cella SOURCE in cui andare \n"); 
-			for(i = 0; i < SO_HEIGHT; i++){
-				for(j = 0; j < SO_WIDTH; j++){
-					if (pointer_at_map->mappa[i][j].cell_type == 3 && 
-						(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
-						first_free_source = pointer_at_map->mappa[i][j].vertex_number;
-						printf("L'ho trovata. \n"); 
+
+			mph = SO_HEIGHT / 2; 
+			mpw = SO_WIDTH / 2;
+			
+			/* q1 */
+			if (x < mph && y < mpw){
+				for(i = 0; i < SO_HEIGHT; i++){
+					for(j = 0; j < SO_WIDTH; j++){
+						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
+							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
+							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
+							printf("L'ho trovata. \n"); 
+						}
+					}
+				}
+			} else if (x < mph && y >= mpw){
+				/* q2 */
+				for(i = 0; i < SO_HEIGHT; i++){
+					for(j = SO_WIDTH-1; j >= 0; j--){
+						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
+							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
+							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
+							printf("L'ho trovata. \n"); 
+						}
+					}
+				}
+			} else if (x >= mph && y < mpw){
+				/* q3 */
+				for(i = SO_HEIGHT-1; i >= 0; i--){
+					for(j = 0; j < SO_WIDTH; j++){
+						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
+							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
+							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
+							printf("L'ho trovata. \n"); 
+						}
+					}
+				}
+			} else {	
+				/* q4 (x >= mph && y >= mpw) */
+				for(i = SO_HEIGHT-1; i >= 0; i--){
+					for(j = SO_WIDTH-1; j >= 0; j--){
+						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
+							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
+							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
+							printf("L'ho trovata. \n"); 
+						}
 					}
 				}
 			}
@@ -511,6 +554,13 @@ void map_print() {
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
 			printf ("%i ", pointer_at_map->mappa[i][j].cell_type);
+		}
+		printf("\n");
+	}
+	printf(" \n");
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			printf ("%i \t", pointer_at_map->mappa[i][j].vertex_number);
 		}
 		printf("\n");
 	}
