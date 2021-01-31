@@ -25,12 +25,14 @@
 int x, y;
 int random_coordinates[2];
 int tmpx, tmpy;
+int previous_x, previous_y;
 int msg_queue_of_cell_key, msg_queue_of_cell, map_shm_id, taxi_sem_id, adjacency_matrix_shm_id;
 int dimension_of_adjacency_matrix;
 int start_vertex, destination_vertex;
 int element_counter;
 int length_of_path;
 int start_sem_id;
+int SO_DURATION;
 int * distance;
 int * predecessor;
 int * visited;
@@ -55,7 +57,7 @@ void set_handler(int signum, void(*function)(int)) {
 	struct sigaction sa;
 	bzero(&sa, sizeof(sa));
 	sa.sa_handler = function;
-	sa.sa_flags = 0;
+	sa.sa_flags = SA_SIGINFO;
 	sigaction(signum, &sa, NULL);
 
 }
@@ -231,6 +233,7 @@ void find_path(int start_vertex, int destination_vertex) {
 
 
 void move() {
+	
 	int i = 0, j = 0, k = 0;
 	int next_vertex = 0;
 
@@ -257,6 +260,11 @@ void move() {
 		/* Esco dalla cella in cui mi trovavo */
 		pointer_at_map->mappa[x][y].active_taxis--;
 
+		/* Alarm per la terminazione, devo salvare la cella in cui mi trovavo */
+		previous_x = x;
+		previous_y = y;
+		/* alarm(SO_DURATION); */
+
 		/* Aggiorno i valori di x e y: MIGLIORABILE DIVIDENDO LA MAPPA IN QUADRANTI */
 		for (i = 0; i < SO_HEIGHT; i++){
 			for (j = 0; j < SO_WIDTH; j++){
@@ -266,12 +274,13 @@ void move() {
 					semop(taxi_sem_id, &accesso, 1);
 					x = i;
 					y = j;
+					pointer_at_map->mappa[x][y].active_taxis++;
 				}
-				pointer_at_map->mappa[i][j].active_taxis++;
 			}
 		}
 		k++;
 	}
+
 	/* Verifico di essere arrivato a destinazione */
 	if (pointer_at_map->mappa[x][y].vertex_number == path_to_follow[length_of_path]) {
 		printf("Sono giunto a destinazione \n");
@@ -321,6 +330,15 @@ void taxi_handler (int signum) {
 		printf("TAXI Ricevo il segnale SIGINT\n"); 
 		kill_all();
 		kill(getpid(), SIGKILL);
+	}
+
+	/* Alarm SO_TIMEOUT */
+	if (signum == SIGALRM) {
+		printf("Ho ricevuto il segnale TIMEOUT \n");
+		pointer_at_map->mappa[x][y].aborted_trip++;
+		kill_all();
+		kill(getppid(), SIGCHLD);
+		pause();
 	}	
 }
 
@@ -347,7 +365,7 @@ int main(int argc, char *argv[])
 	/* Impostiamo gli handler per i segnali che gestiamo */
 	set_handler(SIGINT, &taxi_handler);
 	set_handler(SIGTERM, &taxi_handler);
-	
+
 	/* Prendo l'id della mappa e mi attacco al segmento */ 
 	map_shm_id = atoi(argv[1]);
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
@@ -372,6 +390,9 @@ int main(int argc, char *argv[])
 	}	
 	dimension_of_adjacency_matrix = (SO_WIDTH*SO_HEIGHT)-SO_HOLES;
 	create_index((void*)pointer_at_adjacency_matrix, dimension_of_adjacency_matrix, dimension_of_adjacency_matrix, sizeof(int)); 
+
+	/* Leggo SO_DURATION */
+	SO_DURATION = atoi(argv[3]);
 
 	/* Prendo visibilita dell'array di semafori per l'accesso alle celle */
 	taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, SEM_FLG);
@@ -459,6 +480,11 @@ int main(int argc, char *argv[])
 			
 			/* Leggo un messaggio e calcolo il percorso */
 			receive_and_find_path();
+
+			/* Controllo per eventuali errori DA TOGLIERE */
+			for (i = 0; i <= length_of_path; i++){
+				if (path_to_follow[i] < 0) printf("SPERO DI NON VEDERLO MAI \n");
+			}
 
 			/* Parto */
 			move();

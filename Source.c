@@ -37,7 +37,7 @@ void set_handler(int signum, void(*function)(int)) {
 	struct sigaction sa;
 	bzero(&sa, sizeof(sa));
 	sa.sa_handler = function;
-	sa.sa_flags = 0;
+	sa.sa_flags = SA_SIGINFO;
 	sigaction(signum, &sa, NULL);
 
 }
@@ -100,7 +100,7 @@ void attach() {
 void destination_and_call() {
 
 	int destination_x, destination_y;
-	char str1[5], comma[] = {","};
+	char str1[5], comma[] = {","}, str2[4];
 	char destination_string[MESSAGE_WIDTH];
 	message_queue cell_message_queue;
 
@@ -115,6 +115,12 @@ void destination_and_call() {
 	strcat(destination_string, comma);
 	sprintf(str1, "%d", destination_y);
 	strcat(destination_string, str1);
+	strcat(destination_string, comma);
+	sprintf(str2, "%d", x);
+	strcat(str2, comma);
+	strcat(destination_string, str2);
+	sprintf(str2, "%d", y);
+	strcat(destination_string, str2);
 	
 	/* Imposto i campi della struct message_queue */
 	cell_message_queue.mtype = 1; /* Le richieste hanno long 1 */

@@ -46,6 +46,8 @@ int SO_TIMENSEC_MAX = 0;
 int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
 int number_of_vertices = 0;
+int signalPid;
+int simulation = 1;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
 int map_shm_id;    /* valore ritornato da shmget(), id del segmento */
@@ -69,7 +71,7 @@ void set_handler(int signum, void(*function)(int)) {
 	struct sigaction sa;
 	bzero(&sa, sizeof(sa));
 	sa.sa_handler = function;
-	sa.sa_flags = 0;
+	sa.sa_flags = SA_SIGINFO;
 	sigaction(signum, &sa, NULL);
 
 }
@@ -917,6 +919,7 @@ void the_end_master(int signum) {
 			for (i = 0; i < SO_SOURCES; i++) {
 				kill(child_source[i], SIGINT);
 			}
+			simulation = 0;
 			kill_all();
     		kill(getpid(), SIGKILL); /* Suicidio rituale */
     		break;
@@ -929,7 +932,39 @@ void the_end_master(int signum) {
 			for (i = 0; i < SO_SOURCES; i++) {
 				kill(child_source[i], SIGTERM);
 			}
+			simulation = 0;
 		}
+}
+
+void handler_timeout(int sig, siginfo_t *info, void *ucontext) {
+
+	int i, child_pid;
+	printf("Un taxi non si e' mosso in tempo \n");
+	signalPid = info->si_pid;
+	kill(signalPid, SIGKILL);
+	for (i = 0; i < SO_TAXI; i++) {
+		if (child_taxi[i] == signalPid) {
+			printf("L'ho trovato\n");
+			break;
+		}
+	}
+	switch(child_pid = fork()) {
+
+		case -1:
+			printf("Errore nella fork nell'handler. Esco.\n");
+			kill_all();
+			exit(EXIT_FAILURE);
+			break;
+		case 0:
+			execve("Taxi", args_taxi, NULL);
+			TEST_ERROR;
+			break;
+		default:
+			/* Codice che voglio esegua il Master */
+			child_taxi[i] = child_pid;
+			break;
+		}
+
 }
 
 int main () {
@@ -940,11 +975,19 @@ int main () {
 
     struct sembuf start; 
 	
-    int created_at_start = 0;
+    struct sigaction dead_taxi;
 
+    char so_duration[2];
+    char * argomento_durata = so_duration;
     
     set_handler(SIGINT, &the_end_master);
     set_handler(SIGALRM, &the_end_master);
+    
+    /* Handler per SIGCHLD */
+	bzero(&dead_taxi, sizeof(dead_taxi));
+	dead_taxi.sa_sigaction = handler_timeout;
+	dead_taxi.sa_flags = SA_SIGINFO;
+	sigaction(SIGCHLD, &dead_taxi, NULL);
    	
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec)); 
@@ -975,15 +1018,8 @@ int main () {
 		exit(EXIT_FAILURE);
 	}
 	
-	/* Creo la stringa per informare il taxi su quando e' stato creato */
-	creation_moment = malloc(sizeof(int));
-	if (creation_moment == NULL){
-		perror("Master main: non riesco a creare l'array dove salvare il momento di creazione del processo Taxi. Termino \n");
-		kill_all();
-		exit(EXIT_FAILURE);
-	}
-	args_taxi[3] = creation_moment;
-	sprintf(creation_moment, "%d", created_at_start); 
+	sprintf(so_duration, "%d", SO_DURATION);
+	args_taxi[3] = argomento_durata;
 	
 	/* Creo processi SO_SOURCES. Sistema gli argomenti */
 	for (i = 0; i < SO_SOURCES; i++) {
@@ -1038,8 +1074,18 @@ int main () {
 	/* Aspetto la terminazione dei figli */
 	alarm(SO_DURATION);
 
-	while(wait(NULL) != -1) {
-	
+	while(simulation) {
+		system("clear"); 
+		for (i = 0; i < SO_HEIGHT; i++){
+			for (j = 0; j < SO_WIDTH; j++){
+				if (pointer_at_map->mappa[i][j].cell_type == 0) {
+					printf("H  ");
+				} else printf("%i  ", pointer_at_map->mappa[i][j].active_taxis);
+			}
+			printf("\n");
+		}
+		printf("\n");
+		sleep(1);
 	}
 	
 	printf("\n");
@@ -1066,7 +1112,7 @@ int main () {
 	*/
 
 	printf("\n");
-	printf("Stampo la prima di finire \n");
+	printf("Stampo la mappa prima di finire \n");
 	map_print();
 	printf("\n");
 	kill_all();
