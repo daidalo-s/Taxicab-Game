@@ -32,7 +32,8 @@ int start_vertex, destination_vertex;
 int element_counter;
 int length_of_path;
 int start_sem_id;
-int SO_DURATION;
+int SO_TIMEOUT;
+int ongoing_trip = 0;
 int * distance;
 int * predecessor;
 int * visited;
@@ -162,12 +163,21 @@ void find_path(int start_vertex, int destination_vertex) {
 	
 	/* Creo l'array per contenere la distanza, lo faccio ad ogni nuovo viaggio */
 	distance = malloc(dimension_of_adjacency_matrix * sizeof(int));
-	
+	if (distance == NULL) {
+		perror("1");
+	}
+
 	/* Creo l'array per salvare la provenienza, lo faccio ad ogni nuovo viaggio */
 	predecessor = malloc(dimension_of_adjacency_matrix * sizeof(int));
-	
+	if (predecessor == NULL) {
+		perror("2");
+	}
+
 	/* Creo l'array per salvare i vertici visitati, lo faccio ad ogni nuovo viaggio */
 	visited = malloc(dimension_of_adjacency_matrix * sizeof(int));
+	if (visited == NULL) {
+		perror("3");
+	}
 
 	/* Inizializzo i tre array */
 	for (i = 0; i < dimension_of_adjacency_matrix; i++){
@@ -207,28 +217,33 @@ void find_path(int start_vertex, int destination_vertex) {
 
 	/* Creo l'array dove salvo il percorso che devo seguire */
 	tmp_int = distance[destination_vertex] - 1;
+	printf("tmp_int % i \n", tmp_int);
 	/* Potrebbe essere eliminato, element counter fa lo stesso lavoro */
 	length_of_path = tmp_int;
-	path_to_follow = malloc(tmp_int * sizeof(int));
+	path_to_follow = malloc((tmp_int+1) * sizeof(int));
 	element_counter = 0;
+	/* POTREBBE ESSERE QUI */
 	do {
 		path_to_follow[tmp_int] = destination_vertex;
 		destination_vertex = predecessor[destination_vertex];
 		tmp_int --;
 		element_counter++;
-	} while (destination_vertex != start_vertex && tmp_int >= 0);
+	} while (destination_vertex != start_vertex);
 	/* printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE \n"); */
+	/* Qua no */ 
 	for (j = 0; j < element_counter; j++){
 		printf("%i \t", path_to_follow[j]);
 	}
 	printf("\n");
-	/* Devo spostare l'array path, non devo pulirlo fino a quando non sono arrivato a destinazione */
-	free(distance);
-	distance = NULL;
-	free(predecessor);
-	predecessor = NULL;
+
 	free(visited);
 	visited = NULL;
+
+	free(predecessor);
+	predecessor = NULL;
+	
+	free(distance);
+	distance = NULL;
 }
 
 
@@ -236,46 +251,53 @@ void move() {
 	
 	int i = 0, j = 0, k = 0;
 	int next_vertex = 0;
-
+	int stop = 0;
 	/* La struct dove salvo il tempo */
-	struct timespec ts;
+	struct timespec ts; 
 	
 	/* Finche' sono all'interno dell'array del percorso */
 	while (k <= length_of_path) {
-	
+		
+		stop = 0;
+
 		/* Prendo il tempo della cella in cui mi trovo */
+		
 		ts.tv_sec = 0;
 		ts.tv_nsec = pointer_at_map->mappa[x][y].travel_time;
-	
+		
 		/* Dormo il tempo giusto */
 		if (nanosleep(&ts, NULL) == -1){
 			perror("Non riesco a dormire");
 		}
-		
+
 		pointer_at_map->mappa[x][y].crossings++;
 		
 		/* Prendo il prossimo vertice */
 		next_vertex = path_to_follow[k];
 		
-		/* Esco dalla cella in cui mi trovavo */
-		pointer_at_map->mappa[x][y].active_taxis--;
-
 		/* Alarm per la terminazione, devo salvare la cella in cui mi trovavo */
 		previous_x = x;
 		previous_y = y;
-		/* alarm(SO_DURATION); */
+
+		alarm(SO_TIMEOUT);
 
 		/* Aggiorno i valori di x e y: MIGLIORABILE DIVIDENDO LA MAPPA IN QUADRANTI */
 		for (i = 0; i < SO_HEIGHT; i++){
 			for (j = 0; j < SO_WIDTH; j++){
 				if (pointer_at_map->mappa[i][j].vertex_number == next_vertex) {
+					/* Esco dalla cella in cui mi trovavo */
+					pointer_at_map->mappa[x][y].active_taxis = pointer_at_map->mappa[x][y].active_taxis - 1;
 					semop(taxi_sem_id, &rilascio, 1);
-					TEST_ERROR
 					semop(taxi_sem_id, &accesso, 1);
 					x = i;
 					y = j;
 					pointer_at_map->mappa[x][y].active_taxis++;
+					stop = 1;
+					break;
 				}
+			}
+			if (stop) {
+				break;
 			}
 		}
 		k++;
@@ -318,7 +340,7 @@ void kill_all() {
 
 void taxi_handler (int signum) {
 	
-	/* Handler dopo SO_DURATION */
+	/* Handler dopo SO_TIMEOUT */
 	if (signum == SIGTERM) { 
 		printf("TAXI Ricevo il segnale SIGTERM\n");
 		kill_all(); 
@@ -334,11 +356,18 @@ void taxi_handler (int signum) {
 
 	/* Alarm SO_TIMEOUT */
 	if (signum == SIGALRM) {
+
 		printf("Ho ricevuto il segnale TIMEOUT \n");
-		pointer_at_map->mappa[x][y].aborted_trip++;
-		kill_all();
-		kill(getppid(), SIGCHLD);
-		pause();
+		if (previous_x == x && previous_y == y) {
+			/* E se non stavo effettuando una corsa? */
+			if (ongoing_trip) { 	
+				pointer_at_map->mappa[x][y].aborted_trip++;
+			}
+			pointer_at_map->mappa[x][y].active_taxis--;
+			kill_all();
+			kill(getppid(), SIGUSR2);
+			pause();
+		} 
 	}	
 }
 
@@ -356,6 +385,8 @@ int main(int argc, char *argv[])
 	int first_free_source;  
 
 	int mph, mpw;
+
+	int stop = 0;
 
 	/* Inizializzazione rand */
 	struct timeval time;
@@ -391,14 +422,13 @@ int main(int argc, char *argv[])
 	dimension_of_adjacency_matrix = (SO_WIDTH*SO_HEIGHT)-SO_HOLES;
 	create_index((void*)pointer_at_adjacency_matrix, dimension_of_adjacency_matrix, dimension_of_adjacency_matrix, sizeof(int)); 
 
-	/* Leggo SO_DURATION */
-	SO_DURATION = atoi(argv[3]);
+	/* Leggo SO_TIMEOUT */
+	SO_TIMEOUT = atoi(argv[3]);
 
 	/* Prendo visibilita dell'array di semafori per l'accesso alle celle */
 	taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, SEM_FLG);
 	if (taxi_sem_id == -1){
 		perror("Processo Taxi: non riesco ad accedere al mio semaforo. Termino.");
-		TEST_ERROR 
 		exit(EXIT_FAILURE);
 	}
 
@@ -455,7 +485,8 @@ int main(int argc, char *argv[])
 	map_print();
 	while (1) {
 
-		source = 0;
+		source = stop = ongoing_trip = 0;
+		
 		printf("Mi trovo nella cella con x %i e y %i e cell_type %i e vertex_number %i \n", x, y, pointer_at_map->mappa[x][y].cell_type, pointer_at_map->mappa[x][y].vertex_number);
 		/* Capire in quale cella mi trovo */
 
@@ -485,6 +516,11 @@ int main(int argc, char *argv[])
 			for (i = 0; i <= length_of_path; i++){
 				if (path_to_follow[i] < 0) printf("SPERO DI NON VEDERLO MAI \n");
 			}
+			for (i = 0; i <= length_of_path; i++){
+				printf("%i  ", path_to_follow[i]);
+			}
+
+			ongoing_trip = 1;
 
 			/* Parto */
 			move();
@@ -503,8 +539,13 @@ int main(int argc, char *argv[])
 						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
 							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
 							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
-							printf("L'ho trovata. \n"); 
+							printf("L'ho trovata. \n");
+							stop = 1;
+							break; 
 						}
+					}
+					if (stop) {
+						break;
 					}
 				}
 			} else if (x < mph && y >= mpw){
@@ -515,7 +556,12 @@ int main(int argc, char *argv[])
 							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
 							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
 							printf("L'ho trovata. \n"); 
+							stop = 1;
+							break;
 						}
+					}
+					if (stop) {
+						break;
 					}
 				}
 			} else if (x >= mph && y < mpw){
@@ -525,8 +571,13 @@ int main(int argc, char *argv[])
 						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
 							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
 							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
-							printf("L'ho trovata. \n"); 
+							printf("L'ho trovata. \n");
+							stop = 1;
+							break; 
 						}
+					}
+					if (stop) {
+						break;
 					}
 				}
 			} else {	
@@ -536,8 +587,13 @@ int main(int argc, char *argv[])
 						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
 							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
 							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
-							printf("L'ho trovata. \n"); 
+							printf("L'ho trovata. \n");
+							stop = 1;
+							break; 
 						}
+					}
+					if (stop) {
+						break;
 					}
 				}
 			}
@@ -545,6 +601,13 @@ int main(int argc, char *argv[])
 			/* printf("Cerco un percorso alla cella SOURCE\n"); */
 			find_path(pointer_at_map->mappa[x][y].vertex_number, first_free_source);
 			printf("Ora provo a muovermi \n"); 
+			/* Controllo per eventuali errori DA TOGLIERE */
+			for (i = 0; i <= length_of_path; i++){
+				if (path_to_follow[i] < 0) printf("SPERO DI NON VEDERLO MAI \n");
+			}
+			for (i = 0; i <= length_of_path; i++){
+				printf("%i  ", path_to_follow[i]);
+			}
 			move();
 		}
 
@@ -583,6 +646,7 @@ void map_print() {
 		}
 		printf("\n");
 	}
+	/*
 	printf(" \n");
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
@@ -590,4 +654,5 @@ void map_print() {
 		}
 		printf("\n");
 	}
+	*/
 }

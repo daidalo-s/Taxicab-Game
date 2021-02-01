@@ -48,6 +48,7 @@ int SO_DURATION = 0;
 int number_of_vertices = 0;
 int signalPid;
 int simulation = 1;
+int numero_taxi_che_non_si_muovono;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
 int map_shm_id;    /* valore ritornato da shmget(), id del segmento */
@@ -58,7 +59,6 @@ int start_sem_id; /* Id del semaforo per il via */
 int * pointer_at_msgq; /* Malloc di interi dove salviamo le key delle code di messaggi che poi inseriamo nelle celle */
 char * map_shm_id_execve; /* Puntatore a char dove salvo l'id della mappa per passarlo ai figli*/
 char * adjacency_matrix_shm_id_execve; /* Puntatore a char dove salvo l'id della matrice adiacente per passarlo ai figli*/
-char * creation_moment; /* Puntatore a char dove salvo il momento di creazione del taxi, 0 in inizializzazione, 1 dopo timeout*/
 char * args_source[] = {"Source", NULL, NULL}; /* Array di argomenti da passare a Source, [1]=id_mappa*/
 /* Array di argomenti da passare a Taxi [1]=id_mappa,[2]=matrice_adiacente,[3]=momento creazione*/ 
 char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL}; 
@@ -753,8 +753,10 @@ void createIPC() {
     	kill_all();
     	exit(EXIT_FAILURE);
     }
+    /* Sprintf sbagliata */
+	sprintf(map_shm_id_execve, "%d", map_shm_id);
 	args_source[1] = args_taxi[1] = map_shm_id_execve;
-    sprintf(map_shm_id_execve, "%d", map_shm_id);
+    
 
     /* Creo il semaforo mutex per l'assegnazione delle celle di SOURCE */
 	source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600 | IPC_CREAT);
@@ -900,8 +902,6 @@ void kill_all() {
 	if (adjacency_matrix_shm_id_execve != NULL)free(adjacency_matrix_shm_id_execve);
 
 	if (map_shm_id_execve != NULL)free(map_shm_id_execve);
-
-	if (creation_moment != NULL)free(creation_moment);
 	
 	if (child_source != NULL)free(child_source);
 
@@ -940,6 +940,7 @@ void handler_timeout(int sig, siginfo_t *info, void *ucontext) {
 
 	int i, child_pid;
 	printf("Un taxi non si e' mosso in tempo \n");
+	numero_taxi_che_non_si_muovono++;
 	signalPid = info->si_pid;
 	kill(signalPid, SIGKILL);
 	for (i = 0; i < SO_TAXI; i++) {
@@ -983,11 +984,15 @@ int main () {
     set_handler(SIGINT, &the_end_master);
     set_handler(SIGALRM, &the_end_master);
     
+    /* Test senza set_handler */
+
+
+
     /* Handler per SIGCHLD */
 	bzero(&dead_taxi, sizeof(dead_taxi));
 	dead_taxi.sa_sigaction = handler_timeout;
 	dead_taxi.sa_flags = SA_SIGINFO;
-	sigaction(SIGCHLD, &dead_taxi, NULL);
+	sigaction(SIGUSR2, &dead_taxi, NULL);
    	
     gettimeofday(&time, NULL);
     srand((time.tv_sec * 1000) + (time.tv_usec)); 
@@ -1018,7 +1023,8 @@ int main () {
 		exit(EXIT_FAILURE);
 	}
 	
-	sprintf(so_duration, "%d", SO_DURATION);
+	/* Sprintf sbagliata  ?*/
+	sprintf(so_duration, "%d", SO_TIMEOUT);
 	args_taxi[3] = argomento_durata;
 	
 	/* Creo processi SO_SOURCES. Sistema gli argomenti */
@@ -1112,9 +1118,16 @@ int main () {
 	*/
 
 	printf("\n");
+	printf("Il numero di taxi che non si sono mossi %i \n", numero_taxi_che_non_si_muovono);
 	printf("Stampo la mappa prima di finire \n");
 	map_print();
 	printf("\n");
+	/* Spostabile in una funzione a parte 
+	*/
+	system("clear");
+	printf("Stampo le statistiche \n");
+
+
 	kill_all();
 	return 0;
 }
