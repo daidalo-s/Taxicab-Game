@@ -49,6 +49,7 @@ int number_of_vertices = 0;
 int signalPid;
 int simulation = 1;
 int numero_taxi_che_non_si_muovono;
+int not_performed = 0;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
 int map_shm_id;    /* valore ritornato da shmget(), id del segmento */
@@ -870,7 +871,7 @@ void createIPC() {
 
 void kill_all() {
 	/* Completare. Dovrà terminare le risorse IPC che allocheremo. */
-	int msqid, i;
+	int msgqid, i;
 	
 	/* Marco per la deallocazione la memoria condivisa con la mappa */
 	if (map_shm_id != 0) shmctl(map_shm_id, IPC_RMID, NULL);
@@ -889,11 +890,11 @@ void kill_all() {
 	
 	if (pointer_at_msgq != NULL) { 
 		for (i = 0; i < SO_SOURCES; i++) {
-			msqid = msgget(pointer_at_msgq[i], 0600);
-			if (msqid < 0) {
+			msgqid = msgget(pointer_at_msgq[i], 0600);
+			if (msgqid < 0) {
 				perror("Errore nella deallocazione \n");
 			}
-			msgctl(msqid , IPC_RMID , NULL);
+			msgctl(msgqid , IPC_RMID , NULL);
 		}
 	}
 	
@@ -909,7 +910,9 @@ void kill_all() {
 }
 
 void the_end_master(int signum) {
-	int i;
+	int i, msgqid;
+	struct msqid_ds msqid_ds, *qbuf;
+	qbuf = &msqid_ds;
 	switch (signum) {
 		case SIGINT:
 			printf("ane dio Ho ricevuto un control c \n");
@@ -925,6 +928,15 @@ void the_end_master(int signum) {
     		break;
 
 		case SIGALRM:
+			for (i = 0; i < SO_SOURCES; i++) {
+				msgqid = msgget(pointer_at_msgq[i], 0600);
+				if (msgqid < 0) {
+					perror("Errore nel conteggio  \n");
+				}
+				msgctl(msgqid , IPC_STAT , qbuf);
+				TEST_ERROR
+				not_performed = not_performed + qbuf->msg_qnum;
+			}
 			printf("Invio il segnale ai figli\n");
 			for (i = 0; i < SO_TAXI; i++) {
 				kill(child_taxi[i], SIGTERM);
@@ -972,22 +984,25 @@ int main () {
 
 	int i, j, valore_fork_sources, valore_fork_taxi;
 	
+    /* Interi per la stampa */
+	int completed = 0, aborted = 0;
+
     struct timeval time;
 
     struct sembuf start; 
 	
     struct sigaction dead_taxi;
 
+    /* struct msqid_ds msqid_ds, *qbuf; */
+
     char so_duration[2];
     char * argomento_durata = so_duration;
     
+    /* qbuf = &msqid_ds; */
+
     set_handler(SIGINT, &the_end_master);
     set_handler(SIGALRM, &the_end_master);
     
-    /* Test senza set_handler */
-
-
-
     /* Handler per SIGCHLD */
 	bzero(&dead_taxi, sizeof(dead_taxi));
 	dead_taxi.sa_sigaction = handler_timeout;
@@ -1126,8 +1141,31 @@ int main () {
 	*/
 	system("clear");
 	printf("Stampo le statistiche \n");
-
-
+	/* Numero di viaggi eseguiti con successo, inevasi, abortiti */
+	/* Mappa con evidenziate SO_SOURCES e SO_TOP_CELLS piu' attraversate */
+	/* Il processo Taxi che ha fatto piu' strada come numero celle di tutti
+	   Quello che fatto il viaggio piu' lungo come tempo nel servire una richiesta 
+	   Quello che ha raccolto piu' richieste*/
+	/*
+	for (i = 0; i < SO_SOURCES; i++) {
+		msgqid = msgget(pointer_at_msgq[i], 0600);
+		if (msgqid < 0) {
+			perror("Errore nella deallocazione \n");
+		}
+		msgctl(msgqid , IPC_STAT , qbuf);
+		TEST_ERROR
+		not_performed = not_performed + qbuf->msg_qnum;
+	}
+	*/
+	for (i = 0; i < SO_HEIGHT; i++){
+		for (j = 0; j < SO_WIDTH; j++){
+			completed =  completed + pointer_at_map->mappa[i][j].completed_trip;
+			aborted = aborted + pointer_at_map->mappa[i][j].aborted_trip;
+		}
+	}
+	printf("Numero viaggi completati: %i \n", completed);
+	printf("NUmero viaggi abortiti: %i \n", aborted);
+	printf("Numero viaggi inevasi: %i \n", not_performed);
 	kill_all();
 	return 0;
 }
