@@ -73,6 +73,14 @@ void attach() {
 				
 				x = i;
 				y = j;
+
+				/* Prendo l'id della coda di messaggi della cella */
+				message_queue_id = msgget(msg_queue_of_cell_key, 0600);
+				if (message_queue_id == -1){
+					perror("Processo Source: non riesco a collegarmi alla coda di messaggi della mia cella. Termino.");
+					exit(EXIT_FAILURE);
+				}
+	
 				break;
 			}
 		}
@@ -125,15 +133,8 @@ void destination_and_call() {
 	/* Imposto i campi della struct message_queue */
 	cell_message_queue.mtype = 1; /* Le richieste hanno long 1 */
 	strcpy(cell_message_queue.message, destination_string);
-	printf("Il messaggio che manderò è %s \n", cell_message_queue.message);
+	printf("Il messaggio che manderò è %s sulla coda %i \n", cell_message_queue.message, message_queue_id);
 
-	/* Prendo l'id della coda di messaggi e mando */
-	message_queue_id = msgget(msg_queue_of_cell_key, 0600);
-	if (message_queue_id == -1){
-		perror("Processo Source: non riesco a collegarmi alla coda di messaggi della mia cella. Termino.");
-		exit(EXIT_FAILURE);
-	}
-	
 	/* Invio il messaggio */
 	if (msgsnd(message_queue_id, &cell_message_queue, MESSAGE_WIDTH, 0) < 0) {
 		perror("Processo Source: errore, non riesco a mandare il messaggio");

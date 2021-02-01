@@ -7,7 +7,7 @@
 #define START_SEM_KEY 1098
 #define INFINITY 9999
 #define TAXI_SEM_ARRAY_DIM ((SO_WIDTH*SO_HEIGHT)-SO_HOLES)
-#define MESSAGE_WIDTH 4
+#define MESSAGE_WIDTH 7
 #define MAPPA_VALORI_CASUALI
 #define TEST_ERROR    if (errno) {dprintf(STDERR_FILENO,        \
 		"%s:%d: PID=%5d: Error %d (%s)\n", \

@@ -1096,7 +1096,7 @@ int main () {
 	alarm(SO_DURATION);
 
 	while(simulation) {
-		system("clear"); 
+		/* system("clear"); */
 		for (i = 0; i < SO_HEIGHT; i++){
 			for (j = 0; j < SO_WIDTH; j++){
 				if (pointer_at_map->mappa[i][j].cell_type == 0) {
@@ -1139,7 +1139,7 @@ int main () {
 	printf("\n");
 	/* Spostabile in una funzione a parte 
 	*/
-	system("clear");
+	/* system("clear"); */
 	printf("Stampo le statistiche \n");
 	/* Numero di viaggi eseguiti con successo, inevasi, abortiti */
 	/* Mappa con evidenziate SO_SOURCES e SO_TOP_CELLS piu' attraversate */
