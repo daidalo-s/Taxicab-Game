@@ -14,6 +14,7 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include <sys/time.h>
+#include <signal.h>
 #include "Function.h"
 
 
