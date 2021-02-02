@@ -338,8 +338,8 @@ void kill_all() {
 	if (path_to_follow != NULL) free (path_to_follow);
 
 	/* Memoria condivisa */
-	if (map_shm_id != 0) shmctl(map_shm_id, IPC_RMID, NULL);
-	if (adjacency_matrix_shm_id != 0) shmctl(adjacency_matrix_shm_id, IPC_RMID, NULL);
+	if (map_shm_id != 0) shmdt(pointer_at_map);
+	if (adjacency_matrix_shm_id != 0) shmdt(pointer_at_adjacency_matrix);
 	if (taxi_sem_id != 0) semctl(taxi_sem_id, 0, IPC_RMID);
 	if (start_sem_id != 0) semctl(start_sem_id, 0, IPC_RMID);
 }
