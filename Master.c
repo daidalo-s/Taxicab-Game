@@ -394,6 +394,7 @@ void map_setup() {
 	
 	int i, j, max_taxi_map = 0, condizione_ok = 0, counter = 0; /* Counter mi serve per i vertici */
 	int numero_esecuzioni = 0;
+	
 #ifdef MAPPA_VALORI_CASUALI
 	random_cell_type();
 	/* Controlli su mappe particolari */
@@ -628,7 +629,7 @@ void createAdjacencyMatrix(){
 	}
 
 	/* Creo il segmento di memoria condivisa per la matrice adiacente */
-	adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, IPC_CREAT|0600);
+	adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, 0600);
 	if (adjacency_matrix_shm_id < 0){
 		perror("Master createAdjacencyMatrix: non riesco a creare la memoria condivisa. Termino\n");
 		kill_all();
@@ -1097,16 +1098,18 @@ int main () {
 
 	while(simulation) {
 		/* system("clear"); */
+		
 		for (i = 0; i < SO_HEIGHT; i++){
 			for (j = 0; j < SO_WIDTH; j++){
 				if (pointer_at_map->mappa[i][j].cell_type == 0) {
-					printf("H  ");
+					 printf("H  "); 
 				} else printf("%i  ", pointer_at_map->mappa[i][j].active_taxis);
 			}
 			printf("\n");
 		}
 		printf("\n");
 		sleep(1);
+		
 	}
 	
 	printf("\n");

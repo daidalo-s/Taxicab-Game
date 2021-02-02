@@ -1,7 +1,8 @@
 #define SO_HEIGHT 10
 #define SO_WIDTH 10
-#define SHM_FLG 0600
+#define SHM_FLG 0666
 #define SEM_FLG 0600
+#define ADJ_MAT_KEY 7654
 #define SOURCE_SEM_KEY 9876
 #define TAXI_SEM_KEY 5432
 #define START_SEM_KEY 1098

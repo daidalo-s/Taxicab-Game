@@ -70,7 +70,7 @@ void attach() {
 				pointer_at_map->mappa[i][j].cell_type = 3;
 				msg_queue_of_cell_key = pointer_at_map->mappa[i][j].message_queue_key;
 				
-				printf("Ho preso id %x \n", msg_queue_of_cell_key);
+				/* printf("Ho preso id %x \n", msg_queue_of_cell_key); */
 				
 				x = i;
 				y = j;
@@ -219,8 +219,6 @@ int main(int argc, char *argv[])
 
 #if 1	
 	
-	printf("Sono il processo %i che esegue \n", getpid());
-	
 	attach();
 	
 	/*
@@ -237,12 +235,12 @@ int main(int argc, char *argv[])
 	*/
 	
 	/* Attendo il via dal master */
-	printf("Aspetto il via dal master \n");
+	printf("Source %i : aspetto il via dal master \n", getpid());
 	semop(start_sem_id, &start, 1);
 	
 	while (1) { 	
 		/* da cambiare */
- 		sleep(2);
+ 		sleep(1);
 		destination_and_call();
 	}
 

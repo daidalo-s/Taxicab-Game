@@ -76,6 +76,11 @@ void setting_sem_struct (int x, int y) {
 	rilascio.sem_flg = 0;	
 } 
 
+/* Aggiunge gli archi */
+void addEdge(int ** pointer_at_adjacency_matrix, int i, int j) {
+	pointer_at_adjacency_matrix[i][j] = 1;
+}
+
 void random_cell() {
 	/* Possibile loop infinito, dipende dai controlli */
 	/* Tiro a caso valori finche' trovo una cella non hole*/
@@ -165,31 +170,37 @@ void find_path(int start_vertex, int destination_vertex) {
 
 	int count = 0, min_distance = 0, next_node = 0, i = 0, j = 0, tmp_int = 0;
 	
-	printf("Creo l'array per le distanze, sono %i \n", getpid());
 	/* Creo l'array per contenere la distanza, lo faccio ad ogni nuovo viaggio */
-	distance = malloc(num_of_vertices * sizeof(int));
-	if (distance == NULL) {
-		perror("1");
-	}
-
-	printf("Creo l'array per i nodi precedenti, sono %i \n", getpid());
-	/* Creo l'array per salvare la provenienza, lo faccio ad ogni nuovo viaggio */
-	predecessor = malloc(num_of_vertices * sizeof(int));
-	if (predecessor == NULL) {
-		perror("2");
-	}
-
-	printf("Creo l'array per i nodi visitati, sono %i \n", getpid());
-	/* Creo l'array per salvare i vertici visitati, lo faccio ad ogni nuovo viaggio */
-	visited = malloc(num_of_vertices * sizeof(int));
-	if (visited == NULL) {
-		perror("3");
-	}
+	distance = (int*)malloc(num_of_vertices * sizeof(int));
 	
-	printf("Inizializzo i tre array, sono %i \n", getpid());
+	/* Creo l'array per salvare la provenienza, lo faccio ad ogni nuovo viaggio */
+	predecessor = (int*)malloc(num_of_vertices * sizeof(int));
+	
+	/* Creo l'array per salvare i vertici visitati, lo faccio ad ogni nuovo viaggio */
+	visited = (int*)malloc(num_of_vertices * sizeof(int));
+	
+	/*
+	printf("Sono %i, provo a scorrere l'array distance \n", getpid());
+	for (i = 0; j < num_of_vertices; i++) {
+		printf("%d ", distance[i]);
+	}
+	*/
+
+	/*
+	printf("Sono %i, provo a stampare la matrice adiacente \n", getpid());
+	for (i = 0; i < num_of_vertices; i++){
+		for (j = 0; j < num_of_vertices; j++){
+			printf("%d  ", pointer_at_adjacency_matrix[i][j]);
+		}
+		printf("\n");
+	}
+	*/
+
 	/* Inizializzo i tre array */
 	for (i = 0; i < num_of_vertices; i++){
+		
 		distance[i] = pointer_at_adjacency_matrix[start_vertex][i];
+
 		predecessor[i] = start_vertex;
 		visited[i] = 0;
 	}
@@ -198,12 +209,10 @@ void find_path(int start_vertex, int destination_vertex) {
 	visited[start_vertex] = 1;
 	count = 1;
 
-	printf("Entro nel while, sono %i  \n", getpid());
 	while(count < num_of_vertices-1){
 		
 		min_distance = INFINITY;
 		
-		printf("Trovo il nodo alla distanza minima, sono %i \n", getpid());
 		/* Trovo il nodo alla distanza minima */
 		for (i = 0; i < num_of_vertices; i++) { 
 			if (distance[i] < min_distance && !visited[i]) {
@@ -212,7 +221,6 @@ void find_path(int start_vertex, int destination_vertex) {
 			}
 		}
 		
-		printf("Cerco un percorso migliore, sono %i \n", getpid());
 		/* Continuo l'esplorazione alla ricerca di un path migliore */
 		visited[next_node] = 1;
 
@@ -227,7 +235,6 @@ void find_path(int start_vertex, int destination_vertex) {
 		count++;
 	}
 
-	printf("Creo l'array dove salvare il percorso, sono %i \n", getpid());
 	/* Creo l'array dove salvo il percorso che devo seguire */
 	tmp_int = distance[destination_vertex] - 1;
 
@@ -236,7 +243,6 @@ void find_path(int start_vertex, int destination_vertex) {
 	path_to_follow = malloc((tmp_int+1) * sizeof(int));
 	element_counter = 0;
 
-	printf("Copio il path, sono %i \n", getpid());
 	do {
 		path_to_follow[tmp_int] = destination_vertex;
 		destination_vertex = predecessor[destination_vertex];
@@ -249,7 +255,6 @@ void find_path(int start_vertex, int destination_vertex) {
 		printf("%i \t", path_to_follow[j]);
 	}
 	printf("\n");
-	printf("Libero le risorse, sono %i \n",getpid() );
 	free(visited);
 	visited = NULL;
 
@@ -267,22 +272,17 @@ void move() {
 	
 	/* La struct dove salvo il tempo */
 	struct timespec ts; 
-	printf("Ho finito l'inizializzaione di move, sono %i \n", getpid());
 	
 	/* Finche' sono all'interno dell'array del percorso */
 	while (k <= length_of_path) {
 		
-		printf("Entro nel ciclo di move, sono %i \n", getpid());
 		stop = 0;
 
 		/* Prendo il tempo della cella in cui mi trovo */
 		
 		ts.tv_sec = 0;
 		ts.tv_nsec = pointer_at_map->mappa[x][y].travel_time;
-		printf("SOno %i, i nanosecondi per cui devo dormire sono % i \n", getpid(), pointer_at_map->mappa[x][y].travel_time);
 		
-		printf("Ho impostato la struct per la nanosleep, sono %i \n", getpid());
-
 		/* Dormo il tempo giusto */
 		if (nanosleep(&ts, NULL) == -1){
 			perror("Non riesco a dormire");
@@ -290,7 +290,6 @@ void move() {
 
 		pointer_at_map->mappa[x][y].crossings++;
 		
-		printf("Ho preso il prossimo vertice, sono %i \n", getpid());
 		/* Prendo il prossimo vertice */
 		next_vertex = path_to_follow[k];
 		
@@ -300,7 +299,6 @@ void move() {
 
 		alarm(SO_TIMEOUT);
 
-		printf("Entro nel ciclo per trovare il prossimo vertice, sono %i \n", getpid());
 		/* Aggiorno i valori di x e y: MIGLIORABILE DIVIDENDO LA MAPPA IN QUADRANTI */
 		for (i = 0; i < SO_HEIGHT; i++){
 			for (j = 0; j < SO_WIDTH; j++){
@@ -326,19 +324,9 @@ void move() {
 				break;
 			}
 		}
-		printf("Mi sono mosso di una cella, sono %i \n", getpid());
 		k++;
 	}
 
-}
-
-void create_index(void **m, int rows, int cols, size_t sizeElement){
-	int i;  
-	size_t sizeRow = cols * sizeElement;
-	m[0] = m+rows;
-	for(i=1; i<rows; i++){      
-		m[i] = ((u_int8_t*)m[i-1]+sizeRow);
-	}
 }
 
 void kill_all() {
@@ -360,7 +348,7 @@ void taxi_handler (int signum) {
 	
 	/* Handler dopo SO_TIMEOUT */
 	if (signum == SIGTERM) { 
-		printf("TAXI Ricevo il segnale SIGTERM\n");
+		printf("TAXI %i  Ricevo il segnale SIGTERM\n", getpid());
 		kill_all(); 
 		kill(getpid(), SIGKILL);
 	}
@@ -374,8 +362,10 @@ void taxi_handler (int signum) {
 
 	/* Alarm SO_TIMEOUT */
 	if (signum == SIGALRM) {
-
-		printf("Ho ricevuto il segnale TIMEOUT \n");
+		printf("********************************************\n");
+		printf("********************************************\n");
+		printf("********************************************\n");
+		printf("Sono %i : ho ricevuto il segnale TIMEOUT \n", getpid());
 		if (previous_x == x && previous_y == y) {
 			/* E se non stavo effettuando una corsa? */
 			if (ongoing_trip) { 	
@@ -398,7 +388,10 @@ void taxi_handler (int signum) {
 int main(int argc, char *argv[])
 {	
 	
-	int i,j,SO_HOLES=0, source;
+	int i,j,SO_HOLES=0;
+	/* int della_speranza = 0; */
+	
+	int source;
 
 	int first_free_source;  
 
@@ -416,13 +409,6 @@ int main(int argc, char *argv[])
 	set_handler(SIGTERM, &taxi_handler);
 	set_handler(SIGALRM, &taxi_handler);
 
-	/* Calcolo il numero di holes per calcolare la dimensione della matrice adiacente */
-	for (i = 0; i < SO_HEIGHT; i ++) {
-		for (j = 0; j < SO_WIDTH; j++){
-			if (pointer_at_map->mappa[i][j].cell_type == 0) SO_HOLES++;
-		}
-	}
-
 	/* Prendo l'id della mappa e mi attacco al segmento */ 
 	map_shm_id = atoi(argv[1]);
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
@@ -431,16 +417,91 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	/* Calcolo il numero di holes per calcolare la dimensione della matrice adiacente */
+	for (i = 0; i < SO_HEIGHT; i ++) {
+		for (j = 0; j < SO_WIDTH; j++){
+			if (pointer_at_map->mappa[i][j].cell_type == 0) SO_HOLES++;
+		}
+	}
+
 	/* Prendo l'id della matrice adiacente e mi attacco */
-	adjacency_matrix_shm_id = atoi(argv[2]);
-	pointer_at_adjacency_matrix = (int **)shmat(adjacency_matrix_shm_id, NULL, 0);
+	/*
+	adjacency_matrix_shm_id = atoi(argv[2]); 
+	num_of_vertices = ((SO_WIDTH*SO_HEIGHT)-SO_HOLES);
+	pointer_at_adjacency_matrix = shmat(adjacency_matrix_shm_id, NULL, 0600);
+	TEST_ERROR
 	if (pointer_at_adjacency_matrix == NULL){
 		perror("Processo Taxi: non riesco ad accedere alla matrice adiacente. Termino.");
 		exit(EXIT_FAILURE);
 	}	
-	num_of_vertices = (SO_WIDTH*SO_HEIGHT)-SO_HOLES;
 	printf("num_of_vertices %i \n", num_of_vertices);
 	create_index((void*)pointer_at_adjacency_matrix, num_of_vertices, num_of_vertices, sizeof(int)); 
+	*/
+
+	printf("Sono %i, creo la matrice adiacente \n", getpid());
+	/* Mi creo la matrice adiacente con blackjack e squillo di lusso */
+	num_of_vertices = ((SO_WIDTH*SO_HEIGHT)-SO_HOLES);
+	/* Creo la matrice maledetta */
+	printf("num_of_vertices %i \n", num_of_vertices);
+	pointer_at_adjacency_matrix = malloc(num_of_vertices*sizeof(int*));
+	for (i = 0; i < num_of_vertices; i++){
+		pointer_at_adjacency_matrix[i] = malloc(num_of_vertices*sizeof(int));
+	}
+	
+	/*
+	printf("Sono %i, stampo la matrice adiacente \n", getpid());
+	for (i = 0; i < num_of_vertices; i++){
+		for (j = 0; j < num_of_vertices; j++){
+			printf("%i", pointer_at_adjacency_matrix[i][j]);
+		}
+		printf("\n");
+	}
+	*/
+
+
+	printf("Sono %i, inizializzo la matrice adiacente \n", getpid()); 
+	/* Inizializzo la matrice */
+	
+	for (i = 0; i < num_of_vertices; i++){
+		for (j = 0; j < num_of_vertices; j++){
+			pointer_at_adjacency_matrix[i][j] = 0;
+		}
+	}
+	
+	printf("Fin qui arrivo \n");
+	/* Aggiungo gli archi */
+	for (i = 0; i < SO_HEIGHT; i++){
+		for (j = 0; j < SO_WIDTH; j++){
+			if (pointer_at_map->mappa[i][j].vertex_number != -1) { 
+
+				/* Aggiungo destra se esiste */
+				if (((j+1) < SO_WIDTH) && pointer_at_map->mappa[i][j+1].vertex_number != -1) {
+					addEdge(pointer_at_adjacency_matrix, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j+1].vertex_number);
+				}
+				/* Aggiungo sotto se esiste */
+				if (((i+1) < SO_HEIGHT) && pointer_at_map->mappa[i+1][j].vertex_number != -1) {
+					addEdge(pointer_at_adjacency_matrix, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i+1][j].vertex_number);
+				}
+				/* Aggiungo sinistra se esiste */
+				if (((j-1) >= 0) && pointer_at_map->mappa[i][j-1].vertex_number != -1) {
+					addEdge(pointer_at_adjacency_matrix, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j-1].vertex_number);
+				}
+				/* Aggiungo sopra se esiste */
+				if (((i-1) >= 0) && pointer_at_map->mappa[i-1][j].vertex_number != -1) {
+					addEdge(pointer_at_adjacency_matrix, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i-1][j].vertex_number);
+				}    
+			}   
+		}
+	}
+
+	/* Imposto gli zeri ad INFINITY cosi non lo devo fare ogni volta nei processi TAXI */
+	for (i = 0; i < num_of_vertices; i++){
+		for (j = 0; j < num_of_vertices; j++){
+			if (pointer_at_adjacency_matrix[i][j] == 0){
+				pointer_at_adjacency_matrix[i][j] = INFINITY;
+			}
+		}
+	}
 
 	/* Leggo SO_TIMEOUT */
 	SO_TIMEOUT = atoi(argv[3]);
@@ -459,7 +520,6 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-#if 1
 
 	/*
 	printf("Stampo la mappa secondo la capacità dei taxi \n");
@@ -470,11 +530,10 @@ int main(int argc, char *argv[])
 		printf("\n");
 	}
 	*/
-
 	/* Ci posizionamo a caso sulla mappa */
 	attach();
 	
-	/* printf("Aspetto il via dal master \n"); */
+	printf("Taxi %i : aspetto il via dal master \n", getpid()); 
 	semop(start_sem_id, &start, 1);
 
 	/*
@@ -502,11 +561,23 @@ int main(int argc, char *argv[])
 	printf("Provo a stampare la mappa \n");
 	map_print();
 	*/
+
+	/*
+	printf("Sono %i, provo a stampare la matrice adiacente \n", getpid());
+	for (i = 0; i < num_of_vertices; i++){
+		for (j = 0; j < num_of_vertices; j++){
+			printf("%i  ", pointer_at_adjacency_matrix[i][j]);
+		}
+		printf("\n");
+	}
+	*/
+	/* map_print();*/
+#if 1	
 	while (1) {
 
 		source = stop = ongoing_trip = 0;
 		
-		printf("Mi trovo nella cella con x %i e y %i e cell_type %i e vertex_number %i \n", x, y, pointer_at_map->mappa[x][y].cell_type, pointer_at_map->mappa[x][y].vertex_number);
+		printf("Taxi %i: mi trovo nella cella con x %i e y %i e cell_type %i e vertex_number %i \n", getpid(),x, y, pointer_at_map->mappa[x][y].cell_type, pointer_at_map->mappa[x][y].vertex_number);
 		
 		/* Devo capire in quale tipologia di cella mi trovo */
 		printf("controllo che la cella sia source \n");
@@ -673,6 +744,8 @@ int main(int argc, char *argv[])
 	/* ----------------------- OLTRE QUESTA LINEA SOLO COSE DA CACELLARE --------------------------- */
 	/*Libero la matrice dei costi solo alla fine di tutti i viaggi */
 
+
+	return 0;
 }
 
 
