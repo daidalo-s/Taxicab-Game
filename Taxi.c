@@ -139,7 +139,7 @@ void receive_and_find_path() {
 
 	int start_vertex = 0, destination_vertex = 0;
 	
-	printf("ARGOMENTI PER LA msgrcv \n");	
+	printf("%i ARGOMENTI PER LA msgrcv \n", getpid());	
 	printf("%i \n", msg_queue_of_cell);
 	printf("%i \n", MESSAGE_WIDTH);
 
@@ -297,7 +297,7 @@ void move() {
 		previous_x = x;
 		previous_y = y;
 
-		alarm(SO_TIMEOUT);
+		/* alarm(SO_TIMEOUT); */
 
 		/* Aggiorno i valori di x e y: MIGLIORABILE DIVIDENDO LA MAPPA IN QUADRANTI */
 		for (i = 0; i < SO_HEIGHT; i++){
@@ -438,11 +438,11 @@ int main(int argc, char *argv[])
 	create_index((void*)pointer_at_adjacency_matrix, num_of_vertices, num_of_vertices, sizeof(int)); 
 	*/
 
-	printf("Sono %i, creo la matrice adiacente \n", getpid());
+	/* printf("Sono %i, creo la matrice adiacente \n", getpid()); */
 	/* Mi creo la matrice adiacente con blackjack e squillo di lusso */
 	num_of_vertices = ((SO_WIDTH*SO_HEIGHT)-SO_HOLES);
 	/* Creo la matrice maledetta */
-	printf("num_of_vertices %i \n", num_of_vertices);
+	/* printf("num_of_vertices %i \n", num_of_vertices); */
 	pointer_at_adjacency_matrix = malloc(num_of_vertices*sizeof(int*));
 	for (i = 0; i < num_of_vertices; i++){
 		pointer_at_adjacency_matrix[i] = malloc(num_of_vertices*sizeof(int));
@@ -459,7 +459,6 @@ int main(int argc, char *argv[])
 	*/
 
 
-	printf("Sono %i, inizializzo la matrice adiacente \n", getpid()); 
 	/* Inizializzo la matrice */
 	
 	for (i = 0; i < num_of_vertices; i++){
@@ -468,7 +467,6 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	printf("Fin qui arrivo \n");
 	/* Aggiungo gli archi */
 	for (i = 0; i < SO_HEIGHT; i++){
 		for (j = 0; j < SO_WIDTH; j++){
@@ -577,14 +575,14 @@ int main(int argc, char *argv[])
 
 		source = stop = ongoing_trip = 0;
 		
-		printf("Taxi %i: mi trovo nella cella con x %i e y %i e cell_type %i e vertex_number %i \n", getpid(),x, y, pointer_at_map->mappa[x][y].cell_type, pointer_at_map->mappa[x][y].vertex_number);
+		/* printf("Taxi %i: mi trovo nella cella con x %i e y %i e cell_type %i e vertex_number %i \n", getpid(),x, y, pointer_at_map->mappa[x][y].cell_type, pointer_at_map->mappa[x][y].vertex_number); */
 		
 		/* Devo capire in quale tipologia di cella mi trovo */
-		printf("controllo che la cella sia source \n");
+		/* printf("controllo che la cella sia source \n"); */
 		if (pointer_at_map->mappa[x][y].cell_type == 3) {
 			source = 1;
 		}	
-		printf("Il valore di source e' %i \n", source);
+		/*printf("Il valore di source e' %i \n", source);*/
 		
 		/* Biforcazione in base a dove sono */
 		if (source == 1) {
@@ -593,7 +591,7 @@ int main(int argc, char *argv[])
 			msg_queue_of_cell_key = pointer_at_map->mappa[x][y].message_queue_key;		
 			
 			/* Ci attacchiamo alla coda di messaggi */
-			printf("LA KEY A CUI MI ATTACCO %i \n", msg_queue_of_cell_key);
+			/*printf("LA KEY A CUI MI ATTACCO %i \n", msg_queue_of_cell_key);*/
 			msg_queue_of_cell = msgget(msg_queue_of_cell_key, 0);
 			if (msg_queue_of_cell == -1){
 				perror("Sono un processo Taxi: non riesco ad attaccarmi alla coda di messaggi della mia cella.");
@@ -609,7 +607,7 @@ int main(int argc, char *argv[])
 
 			ongoing_trip = 1;
 
-			printf("Parto da una Source \n");
+			/* printf("Parto da una Source \n"); */
 			
 			/* Parto */
 			move();
@@ -617,7 +615,8 @@ int main(int argc, char *argv[])
 			/* Una volta che esco dalla move dovrei essere arrivato nella cella di destinazione */
 			/* Verifico di essere arrivato a destinazione */
 			if (pointer_at_map->mappa[x][y].vertex_number == path_to_follow[length_of_path]) {
-				printf("Sono giunto a destinazione \n");
+				/* printf("Sono giunto a destinazione \n"); */
+				ongoing_trip = 0;
 				pointer_at_map->mappa[x][y].completed_trip++;
 				
 				/* Libero l'array contente il path */
@@ -641,7 +640,7 @@ int main(int argc, char *argv[])
 						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
 							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
 							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
-							printf("L'ho trovata, e' il numero %i . \n", first_free_source);
+							/*printf("L'ho trovata, e' il numero %i . \n", first_free_source);*/
 							stop = 1;
 							break; 
 						}
@@ -658,7 +657,7 @@ int main(int argc, char *argv[])
 						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
 							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
 							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
-							printf("L'ho trovata, e' il numero %i . \n", first_free_source);
+							/*printf("L'ho trovata, e' il numero %i . \n", first_free_source);*/
 							stop = 1;
 							break;
 						}
@@ -676,7 +675,7 @@ int main(int argc, char *argv[])
 						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
 							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
 							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
-							printf("L'ho trovata, e' il numero %i . \n", first_free_source);
+							/*printf("L'ho trovata, e' il numero %i . \n", first_free_source);*/
 							stop = 1;
 							break; 
 						}
@@ -694,7 +693,7 @@ int main(int argc, char *argv[])
 						if (pointer_at_map->mappa[i][j].cell_type == 3 && 
 							(pointer_at_map->mappa[i][j].active_taxis < pointer_at_map->mappa[i][j].taxi_capacity)) {
 							first_free_source = pointer_at_map->mappa[i][j].vertex_number;
-							printf("L'ho trovata, e' il numero %i . \n", first_free_source);
+							/*printf("L'ho trovata, e' il numero %i . \n", first_free_source);*/
 							stop = 1;
 							break; 
 						}
@@ -709,22 +708,22 @@ int main(int argc, char *argv[])
 			
 			/* Cerco un percorso da dove sono alla prima source libera */
 			/* printf("Cerco un percorso alla cella SOURCE\n"); */
-			printf("Provo a cercare un percorso da una non source \n");
+			/* printf("Provo a cercare un percorso da una non source \n"); */
 			find_path(pointer_at_map->mappa[x][y].vertex_number, first_free_source);
-			printf("Ora provo a muovermi, sono il processo %i \n", getpid()); 
+			/* printf("Ora provo a muovermi, sono il processo %i \n", getpid()); */
 			/* Controllo per eventuali errori DA TOGLIERE */
 			for (i = 0; i <= length_of_path; i++){
 				if (path_to_follow[i] < 0) printf("SPERO DI NON VEDERLO MAI \n");
 			}
 			
-			printf("Parto alla volta di una source \n");
+			/*printf("Parto alla volta di una source \n");*/
 
 			move();
 
 			/* Quando finisco qua dovrei essere arrivato */
 			/* Verifico di essere arrivato a destinazione */
 			if (pointer_at_map->mappa[x][y].vertex_number == path_to_follow[length_of_path]) {
-				printf("Sono giunto a destinazione \n");
+				/*printf("Sono giunto a destinazione \n");*/
 				/* Libero l'array contente il path */
 				free(path_to_follow);
 				path_to_follow = NULL; 
