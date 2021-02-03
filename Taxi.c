@@ -331,11 +331,17 @@ void move() {
 
 void kill_all() {
 
+	int i;
+
 	/* Array */
 	if (distance != NULL) free (distance);
 	if (predecessor != NULL) free (predecessor);
 	if (visited != NULL) free (visited);
 	if (path_to_follow != NULL) free (path_to_follow);
+	for (i = 0; i < num_of_vertices; i++){
+		free (pointer_at_adjacency_matrix[i]);
+	}
+	free(pointer_at_adjacency_matrix);
 
 	/* Memoria condivisa */
 	if (map_shm_id != 0) shmdt(pointer_at_map);
