@@ -32,15 +32,27 @@ int element_counter;
 int length_of_path;
 int start_sem_id;
 int SO_TIMEOUT;
+int SO_TAXI;
 int ongoing_trip = 0;
+int info_taxi_id;
+int info_taxi_sem_id;
+int local_longest_trip = 0;
+int local_served_clients = 0;
+int local_service_time = 0;
+int prev_service_time = 0;
+int source = 0;
 int * distance;
 int * predecessor;
 int * visited;
 int * path_to_follow;
 int ** pointer_at_adjacency_matrix;
+taxi_info * pointer_at_taxi_info;
 struct sembuf accesso;
 struct sembuf rilascio;
 struct sembuf start = {0, -1, 0};
+struct sembuf end = {0, +1, 0};
+struct sembuf write_info = {0, -1, 0}; 
+struct sembuf release_info = {0, +1, 0};
 message_queue cell_message_queue;    
 map *pointer_at_map; 
 
@@ -117,6 +129,7 @@ void attach() {
 	random_cell();
 	/* Entro in sezione critica */
 	while (semop(taxi_sem_id, &accesso, 1) == -1) { /* Possibile loop infinito. Dipende dai controlli. */
+		TEST_ERROR
 		random_cell();
 	}
 
@@ -139,27 +152,33 @@ void receive_and_find_path() {
 
 	int start_vertex = 0, destination_vertex = 0;
 	
+	/*
 	printf("%i ARGOMENTI PER LA msgrcv \n", getpid());	
 	printf("%i \n", msg_queue_of_cell);
 	printf("%i \n", MESSAGE_WIDTH);
+	*/
 
 	while (msgrcv(msg_queue_of_cell, &cell_message_queue, MESSAGE_WIDTH, 1, 0) < 0){
+		/*
 		perror("Errore non riesco a ricevere il messaggio\n ");
 		TEST_ERROR
+		*/
 	}
 
-	printf("Ho ricevuto il messaggio %s \n", cell_message_queue.message); 
+	/* printf("Ho ricevuto il messaggio %s \n", cell_message_queue.message); */
 	x_destination = atoi(&cell_message_queue.message[0]);
 	y_destination = atoi(&cell_message_queue.message[2]);
 	
+	/*
 	printf("La x_destination e' % i \n", x_destination);
 	printf("La y_destination e' %i \n", y_destination);
 	printf("Il vertex_number della destination e' %i \n", pointer_at_map->mappa[x_destination][y_destination].vertex_number);
-	
+	*/	
+
 	/* Devo chiamare dijkstra: ho bisogno di passare il vertice in cui mi trovo e il vertice in cui voglio andare */
 	start_vertex = pointer_at_map->mappa[x][y].vertex_number; /* La cella in cui sono */
 	destination_vertex = pointer_at_map->mappa[x_destination][y_destination].vertex_number; /* La cella in cui voglio andare*/
-	printf("Cerco un percorso \n");
+	/* printf("Cerco un percorso \n"); */
 	find_path(start_vertex, destination_vertex);
 	/* Accedendo a path to follow il primo elemento è la prossima cella in cui andare */
 
@@ -168,7 +187,7 @@ void receive_and_find_path() {
 
 void find_path(int start_vertex, int destination_vertex) {
 
-	int count = 0, min_distance = 0, next_node = 0, i = 0, j = 0, tmp_int = 0;
+	int count = 0, min_distance = 0, next_node = 0, i = 0,  tmp_int = 0;
 	
 	/* Creo l'array per contenere la distanza, lo faccio ad ogni nuovo viaggio */
 	distance = (int*)malloc(num_of_vertices * sizeof(int));
@@ -251,9 +270,11 @@ void find_path(int start_vertex, int destination_vertex) {
 	} while (destination_vertex != start_vertex);
 	/* printf("TEST METODO DIJKSTRA: STAMPO IL PATH PIU BREVE \n"); */
 	/* Qua no */ 
+	/*
 	for (j = 0; j < element_counter; j++){
 		printf("%i \t", path_to_follow[j]);
 	}
+	*/
 	printf("\n");
 	free(visited);
 	visited = NULL;
@@ -269,10 +290,15 @@ void find_path(int start_vertex, int destination_vertex) {
 void move() {
 	
 	int i = 0, j = 0, k = 0, next_vertex = 0, stop = 0;
-	
+
 	/* La struct dove salvo il tempo */
 	struct timespec ts; 
 	
+	sigset_t my_mask;
+	sigemptyset(&my_mask);
+	sigaddset(&my_mask, SIGALRM);
+
+	prev_service_time = local_service_time;
 	/* Finche' sono all'interno dell'array del percorso */
 	while (k <= length_of_path) {
 		
@@ -282,14 +308,15 @@ void move() {
 		
 		ts.tv_sec = 0;
 		ts.tv_nsec = pointer_at_map->mappa[x][y].travel_time;
-		
+		if (source) { 
+			local_service_time = local_service_time + (pointer_at_map->mappa[x][y].travel_time / 1000);
+		}
 		/* Dormo il tempo giusto */
 		if (nanosleep(&ts, NULL) == -1){
 			perror("Non riesco a dormire");
 		}
 
 		pointer_at_map->mappa[x][y].crossings++;
-		
 		/* Prendo il prossimo vertice */
 		next_vertex = path_to_follow[k];
 		
@@ -304,6 +331,8 @@ void move() {
 			for (j = 0; j < SO_WIDTH; j++){
 				if (pointer_at_map->mappa[i][j].vertex_number == next_vertex) {
 					/* Esco dalla cella in cui mi trovavo */
+					/* Blocco alarm */
+					sigprocmask(SIG_BLOCK, &my_mask, NULL);
 					pointer_at_map->mappa[x][y].active_taxis = pointer_at_map->mappa[x][y].active_taxis - 1;
 					semop(taxi_sem_id, &rilascio, 1);
 
@@ -313,9 +342,12 @@ void move() {
 
 					x = i;
 					y = j;
-					
+					/* printf("Sono %i, entro in una cella con %i taxi attivi \n", getpid(), pointer_at_map->mappa[x][y].active_taxis); */
 					pointer_at_map->mappa[x][y].active_taxis++;
-					
+					local_longest_trip++;
+					/* Sblocco alarm*/
+					sigaddset(&my_mask, SIGALRM);
+					sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
 					stop = 1;
 					break;
 				}
@@ -346,38 +378,61 @@ void kill_all() {
 	/* Memoria condivisa */
 	if (map_shm_id != 0) shmdt(pointer_at_map);
 	if (adjacency_matrix_shm_id != 0) shmdt(pointer_at_adjacency_matrix);
+	if (info_taxi_id != 0) shmdt(pointer_at_taxi_info);
+	/*
 	if (taxi_sem_id != 0) semctl(taxi_sem_id, 0, IPC_RMID);
 	if (start_sem_id != 0) semctl(start_sem_id, 0, IPC_RMID);
+	*/
 }
 
 void taxi_handler (int signum) {
 	
+	int i;
 	/* Handler dopo SO_TIMEOUT */
 	if (signum == SIGTERM) { 
-		printf("TAXI %i  Ricevo il segnale SIGTERM\n", getpid());
+		/* printf("TAXI %i  Ricevo il segnale SIGTERM\n", getpid()); */
+		/* Semop, controllo prima cella vuota, immissione, rilascio */
+		semop(info_taxi_sem_id, &write_info, 1);
+	
+		for(i = 0; i < SO_TAXI; i++){
+			if (pointer_at_taxi_info[i].pid == 0) {
+				pointer_at_taxi_info[i].pid = getpid();
+				pointer_at_taxi_info[i].service_time = local_service_time;
+				pointer_at_taxi_info[i].served_clients = local_served_clients;
+				pointer_at_taxi_info[i].longest_trip = local_longest_trip;
+				break;
+			}
+		}
+
+		semop(info_taxi_sem_id, &release_info, 1);
+
 		kill_all(); 
 		kill(getpid(), SIGKILL);
 	}
 	
 	/* Handler dopo ctrl c*/
 	if (signum == SIGINT) {
-		printf("TAXI Ricevo il segnale SIGINT\n"); 
+		/* printf("TAXI Ricevo il segnale SIGINT\n"); */
 		kill_all();
 		kill(getpid(), SIGKILL);
 	}
 
 	/* Alarm SO_TIMEOUT */
 	if (signum == SIGALRM) {
+		
 		printf("********************************************\n");
 		printf("********************************************\n");
 		printf("********************************************\n");
 		printf("Sono %i : ho ricevuto il segnale TIMEOUT \n", getpid());
+
 		if (previous_x == x && previous_y == y) {
-			/* E se non stavo effettuando una corsa? */
-			if (ongoing_trip) { 	
+			printf("Sono %i ongoing_trip vale %i \n", getpid(), ongoing_trip);
+			if (ongoing_trip) {	
 				pointer_at_map->mappa[x][y].aborted_trip++;
 			}
 			pointer_at_map->mappa[x][y].active_taxis--;
+			semop(taxi_sem_id, &rilascio, 1);
+			semop(start_sem_id, &end, 1);
 			kill_all();
 			kill(getppid(), SIGUSR2);
 			pause();
@@ -396,8 +451,6 @@ int main(int argc, char *argv[])
 	
 	int i,j,SO_HOLES=0;
 	/* int della_speranza = 0; */
-	
-	int source;
 
 	int first_free_source;  
 
@@ -418,6 +471,7 @@ int main(int argc, char *argv[])
 	/* Prendo l'id della mappa e mi attacco al segmento */ 
 	map_shm_id = atoi(argv[1]);
 	pointer_at_map = shmat(map_shm_id, NULL, 0);
+
 	if (pointer_at_map == NULL){
 		perror("Processo Taxi: non riesco ad accedere alla mappa. Termino.");
 		exit(EXIT_FAILURE);
@@ -509,7 +563,11 @@ int main(int argc, char *argv[])
 
 	/* Leggo SO_TIMEOUT */
 	SO_TIMEOUT = atoi(argv[3]);
+	printf("Il valore di SO_TIMEOUT che leggo e' %i \n", SO_TIMEOUT);
 
+	/* Leggo SO_TAXI */
+	SO_TAXI = atoi(argv[2]);
+	printf("Il valore di SO_TAXI che leggo e' %i \n", atoi(argv[2]));
 	/* Prendo visibilita dell'array di semafori per l'accesso alle celle */
 	taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, SEM_FLG);
 	if (taxi_sem_id == -1){
@@ -524,6 +582,21 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	/* Prendere visibilita' del semaforo mutex per la scrittura finale */
+	info_taxi_sem_id = semget(INFO_SEM_KEY, 1, 0600);
+	if (info_taxi_sem_id == -1){
+		perror("Processo Taxi: non riesco a prendere visibilità de semaforo per la scrittura statistiche. Termino. ");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Prendere visibilita' della memoria condivisa dove salvare le statistiche */
+	info_taxi_id = atoi(argv[4]);
+	printf("Info taxi id vale %i \n", info_taxi_id);
+	pointer_at_taxi_info = shmat(info_taxi_id, NULL, 0);
+	if (pointer_at_taxi_info == NULL){
+		perror("Processo Taxi: non riesco ad accedere alla memoria condivisa per le statistiche. Termino.");
+		exit(EXIT_FAILURE);
+	}
 
 	/*
 	printf("Stampo la mappa secondo la capacità dei taxi \n");
@@ -537,9 +610,9 @@ int main(int argc, char *argv[])
 	/* Ci posizionamo a caso sulla mappa */
 	attach();
 	
-	printf("Taxi %i : aspetto il via dal master \n", getpid()); 
+	printf("Taxi %i : aspetto il via dal master, la cella in cui sono ha %i \n", getpid(), pointer_at_map->mappa[x][y].active_taxis); 
 	semop(start_sem_id, &start, 1);
-
+	printf("Taxi %i: ho avuto il via \n", getpid());
 	/*
 	printf("Stampo la mappa secondo il numero di taxi attivi \n");
 	for(i = 0; i < SO_HEIGHT; i++){
@@ -577,6 +650,8 @@ int main(int argc, char *argv[])
 	*/
 	/* map_print();*/
 #if 1	
+	alarm(SO_TIMEOUT);
+
 	while (1) {
 
 		source = stop = ongoing_trip = 0;
@@ -624,13 +699,20 @@ int main(int argc, char *argv[])
 				/* printf("Sono giunto a destinazione \n"); */
 				ongoing_trip = 0;
 				pointer_at_map->mappa[x][y].completed_trip++;
-				
+				local_served_clients++;
+				if (prev_service_time > local_service_time){
+					local_service_time = prev_service_time;
+				}
 				/* Libero l'array contente il path */
 				free(path_to_follow);
 				path_to_follow = NULL;  
+
+				/* kill(getpid(), SIGALRM); */
 			} else {
 				printf("Qualcosa non ha funzionato nel movimento da una Source, non sono arrivato a destinazione. Termino.\n");
-				exit(EXIT_FAILURE);
+				pointer_at_map->mappa[x][y].active_taxis--;
+				kill(getppid(), SIGUSR2);
+				pause();
 			}
 			
 

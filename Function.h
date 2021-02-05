@@ -1,11 +1,12 @@
 #define SO_HEIGHT 10
-#define SO_WIDTH 10
+#define SO_WIDTH 20
 #define SHM_FLG 0666
 #define SEM_FLG 0600
-#define ADJ_MAT_KEY 7654
+#define ADJ_MAT_KEY 1111
 #define SOURCE_SEM_KEY 9876
 #define TAXI_SEM_KEY 5432
 #define START_SEM_KEY 1098
+#define INFO_SEM_KEY 7654
 #define INFINITY 9999
 #define TAXI_SEM_ARRAY_DIM ((SO_WIDTH*SO_HEIGHT)-SO_HOLES)
 #define MESSAGE_WIDTH 7
@@ -35,6 +36,14 @@ typedef struct
 
 /* Spiega la memoria condivisa con esempi */
 /* http://users.cs.cf.ac.uk/Dave.Marshall/C/node27.html */
+
+typedef struct {
+	int pid;
+	int service_time; /* Tempo */
+	int served_clients; /* Clienti raccolti */
+	int longest_trip; /* Numero celle */
+} taxi_info;
+
 
 typedef struct 
 {

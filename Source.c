@@ -134,7 +134,7 @@ void destination_and_call() {
 	/* Imposto i campi della struct message_queue */
 	cell_message_queue.mtype = 1; /* Le richieste hanno long 1 */
 	strcpy(cell_message_queue.message, destination_string);
-	printf("Il messaggio che manderò è %s sulla coda %i \n", cell_message_queue.message, message_queue_id);
+	/* printf("Il messaggio che manderò è %s sulla coda %i \n", cell_message_queue.message, message_queue_id); */
 
 	/* Invio il messaggio */
 	if (msgsnd(message_queue_id, &cell_message_queue, MESSAGE_WIDTH, 0) < 0) {
@@ -148,19 +148,23 @@ void source_handler (int signum) {
 
 	/* Handler dopo SO_DURATION*/
 	if (signum == SIGTERM) { 
-		printf("SOURCE Ricevo il segnale SIGTERM\n");
+		/* printf("SOURCE Ricevo il segnale SIGTERM\n"); */
 		if (map_shm_id != 0) shmdt(pointer_at_map);
+		/*
 		if (source_sem_id != 0) semctl(source_sem_id, 0, IPC_RMID);
 		if (start_sem_id != 0) semctl(start_sem_id, 0, IPC_RMID);
+		*/
 		kill(getpid(), SIGKILL);
 	}
 
 	/* Handler per ctrl c*/
 	if (signum == SIGINT) {
-		printf("SOURCE Ricevo segnale ctrl c\n");
+		/* printf("SOURCE Ricevo segnale ctrl c\n"); */
 		if (map_shm_id != 0) shmdt(pointer_at_map);
+		/*
 		if (source_sem_id != 0) semctl(source_sem_id, 0, IPC_RMID);
 		if (start_sem_id != 0) semctl(start_sem_id, 0, IPC_RMID);
+		*/
 		kill(getpid(), SIGKILL);
 	}	
 
@@ -235,12 +239,12 @@ int main(int argc, char *argv[])
 	*/
 	
 	/* Attendo il via dal master */
-	printf("Source %i : aspetto il via dal master \n", getpid());
+	/* printf("Source %i : aspetto il via dal master \n", getpid()); */
 	semop(start_sem_id, &start, 1);
 	
 	while (1) { 	
 		/* da cambiare */
- 		sleep(1);
+ 		sleep(3);
 		destination_and_call();
 	}
 
