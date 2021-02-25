@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <signal.h>
 #include "Function.h"
+
 /****************** Prototipi ******************/
 void reading_input_values ();
 int  max_hole_width();
@@ -25,14 +26,13 @@ void random_travel_time();
 void map_setup();
 void map_check();
 void map_print();
-void addEdge(int ** pointer, int i, int j);
-void createAdjacencyMatrix();
+void map_print_stat();
+int min_of_array (int * p);
 void createIPC();
 void kill_all();
 void taxi_handler(int signum);
 
 /* ---------------- Variabili globali ----------------- */
-/* SO_WIDTH e SO_HEIGHT sono delle define im map.h */
 map mappa;
 map *pointer_at_map = &mappa;
 taxi_info *pointer_at_info;  
@@ -46,31 +46,26 @@ int SO_TIMENSEC_MIN = 0;
 int SO_TIMENSEC_MAX = 0;
 int SO_TIMEOUT = 0;
 int SO_DURATION = 0;
-int number_of_vertices = 0;
 int signalPid;
 int simulation = 1;
-int numero_taxi_che_non_si_muovono;
 int not_performed = 0;
 /* Variabili per la gestione della mappa*/
 /* Argomenti da passare alla execve */
-int map_shm_id;    /* valore ritornato da shmget(), id del segmento */
-int adjacency_matrix_shm_id; /* valore ritornato da shmget, id del segmento */
-int info_taxi_id;
+int map_shm_id; /* valore ritornato da shmget(), id del segmento */
+int info_taxi_id; /* valore ritornato da shmget() per le infomrazioni dei taxi */
 int source_sem_id; /* valore ritornato da semget() per i SOURCE, id dell'array */
-int taxi_sem_id;   /* valore ritornato da semget() per i TAXI, id dell'array*/
+int taxi_sem_id; /* valore ritornato da semget() per i TAXI, id dell'array*/
 int start_sem_id; /* Id del semaforo per il via */
 int info_taxi_sem_id;
 int * pointer_at_msgq; /* Malloc di interi dove salviamo le key delle code di messaggi che poi inseriamo nelle celle */
 char * map_shm_id_execve; /* Puntatore a char dove salvo l'id della mappa per passarlo ai figli*/
-char * adjacency_matrix_shm_id_execve; /* Puntatore a char dove salvo l'id della matrice adiacente per passarlo ai figli*/
 char * info_taxi_id_execve;
-char * num_of_taxies;
+char * num_of_taxis;
 char * args_source[] = {"Source", NULL, NULL}; /* Array di argomenti da passare a Source, [1]=id_mappa*/
 /* Array di argomenti da passare a Taxi [1]=id_mappa,[2]=matrice_adiacente,[3]=momento creazione*/ 
-char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL, NULL, NULL}; 
+char * args_taxi[] = {"Taxi", NULL, NULL, NULL, NULL, NULL}; 
 pid_t * child_source; /* Malloc dove salviamo pid dei figli Source */
 pid_t * child_taxi; /* Malloc dove salviamo pid dei figli Taxi */
-
 
 void set_handler(int signum, void(*function)(int)) {
 
@@ -105,7 +100,6 @@ void reading_input_values () {
 			}       
 			else if (strcmp(tmpstr1,"SO_TOP_CELLS")==0) {
 				SO_TOP_CELLS = atoi(tmpstr2);
-
 			}
 			else if (strcmp(tmpstr1,"SO_SOURCES")==0) {
 				SO_SOURCES = atoi(tmpstr2);
@@ -130,15 +124,13 @@ void reading_input_values () {
 			}
 			else if (strcmp(tmpstr1,"SO_DURATION")==0) {
 				SO_DURATION = atoi(tmpstr2);
-			}
-			else {
+			} else {
 				printf("Parametro non riconosciuto : \"%s\"\n", tmpstr1);
 			}
 		}
 	}
 
 	fclose(input);
-	TEST_ERROR;
 
 	/* Controlli sui parametri */
 	if (SO_HOLES < 1 || SO_HOLES > (max_hole_width() * max_hole_height())) {
@@ -181,40 +173,24 @@ void reading_input_values () {
 		printf("Errore, parametro SO_DURATION non valido. Esco.\n");
 		exit(EXIT_FAILURE);
 	}
-
 	/* Evito mappe di una sola cella */
 	if ((SO_WIDTH == 1) && (SO_HEIGHT == 1)){
 		printf("Errore, non posso avere mappe di una sola cella. Esco. \n");
 		exit(EXIT_FAILURE);
 	}
-
-#ifdef STAMPA_PARAMETRI
-	printf("SO_HOLES : %i\n", SO_HOLES);
-	printf("SO_TOP_CELLS : %i\n", SO_TOP_CELLS);
-	printf("SO_CAP_MIN : %i\n", SO_CAP_MIN);
-	printf("SO_CAP_MAX : %i\n", SO_CAP_MAX);
-	printf("SO_TAXI : %i\n", SO_TAXI);
-	printf("SO_TIMENSEC_MIN : %i\n", SO_TIMENSEC_MIN);
-	printf("SO_TIMENSEC_MAX : %i\n", SO_TIMENSEC_MAX);
-	printf("SO_TIMEOUT : %i\n", SO_TIMEOUT);
-	printf("SO_DURATION : %i\n", SO_DURATION);
-	printf("SO_HOLES : %i\n", SO_HOLES);
-#endif
-	/* Lo calcolo qua per poter creare la matrice adiancente della giusta dimensione */
-	number_of_vertices = (SO_HEIGHT*SO_WIDTH) - SO_HOLES;
 }
 
-/* Metodo utilizzato per capire il massimo numero di Hole*/
+/* Funzione utilizzata per sapere il massimo numero di Hole in altezza */
 int max_hole_width() {
 	int max_so_width = SO_WIDTH;
-	if (SO_WIDTH % 2 != 0){
+	if (SO_WIDTH % 2 != 0) {
 		max_so_width ++;
 		max_so_width = max_so_width / 2;
 		return max_so_width;
 	} else return max_so_width / 2;
 }
 
-/* Metodo utilizzato per capire il massimo numero di Hole*/
+/* Funzione utilizzata per capire il massimo numero di Hole in larghezza */
 int max_hole_height() {
 	int max_so_height = SO_HEIGHT;
 	if (SO_HEIGHT % 2 != 0){
@@ -224,8 +200,7 @@ int max_hole_height() {
 	} else return max_so_height / 2;
 }
 
-/* ---------------- Metodi mappa ----------------- */
-#ifdef MAPPA_VALORI_CASUALI
+/* ---------------- Funzioni mappa ----------------- */
 void random_cell_type() {
 
     int num_hole_placed = 0;
@@ -235,20 +210,20 @@ void random_cell_type() {
     int i, j;
 
     /* Inizializzo tutta la mappa a 2 */
-    for (i = 0; i < SO_HEIGHT; i++){
-    	for (j = 0; j < SO_WIDTH; j++){
+    for (i = 0; i < SO_HEIGHT; i++) {
+    	for (j = 0; j < SO_WIDTH; j++) {
     		pointer_at_map->mappa[i][j].cell_type = 2;
     	}
     }
 
-    /* prima posiziono gli hole */
+    /* Posiziono prima gli hole */
     while (num_hole_placed != SO_HOLES) {
         
         x = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0;
         y = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
 
         /* devo capire dove mi trovo */
-        if ((x == 0 && y == 0)||(x == 0 && y == SO_WIDTH-1)||(x == SO_HEIGHT-1 && y == 0)||(x == SO_HEIGHT-1 && y == SO_WIDTH -1)){
+        if ((x == 0 && y == 0) || (x == 0 && y == SO_WIDTH-1) || (x == SO_HEIGHT-1 && y == 0) || (x == SO_HEIGHT-1 && y == SO_WIDTH -1)) {
             if ((x == 0 && y == 0)) {
                 position = 1; /* angolo in alto a sinistra */
             } else if ((x == 0 && y == SO_WIDTH-1)){
@@ -258,7 +233,7 @@ void random_cell_type() {
             } else {
                 position = 4; /* angolo in basso a destra */
             }
-        } else if ((x == 0) || (y == 0) || (x == SO_HEIGHT -1) || (y == SO_WIDTH-1)){
+        } else if ((x == 0) || (y == 0) || (x == SO_HEIGHT -1) || (y == SO_WIDTH-1)) {
             if (x == 0){
                 position = 5; /* bordo in alto */
             } else if (y == 0) {
@@ -352,21 +327,19 @@ void random_cell_type() {
             break;
         }
     }
-    /* ora posiziono le source */
-    while (num_source_placed != SO_SOURCES)
-    {
+    
+    /* Posiziono le source */
+    while (num_source_placed != SO_SOURCES) {
         x = rand() % ((SO_HEIGHT-1) - 0 + 1) + 0;
         y = rand() % ((SO_WIDTH-1) - 0 + 1) + 0;
-        if (pointer_at_map->mappa[x][y].cell_type != 0 && pointer_at_map->mappa[x][y].cell_type != 1){
+        if (pointer_at_map->mappa[x][y].cell_type != 0 && pointer_at_map->mappa[x][y].cell_type != 1) {
             pointer_at_map->mappa[x][y].cell_type = 1;
             num_source_placed++;
         }
 	}
-	printf("Ho posizionato %i source \n", num_source_placed);
-	printf("Ho posizionato %i hole \n", num_hole_placed);
 }
-#endif
 
+/* Funzione utilizzata per la capacita' massima di taxi di una cella */
 void random_taxi_capacity() {
 	
 	int i, j;
@@ -375,12 +348,12 @@ void random_taxi_capacity() {
 		for (j = 0; j < SO_WIDTH; j++) {
 			if (pointer_at_map->mappa[i][j].cell_type != 0) { 
 				pointer_at_map->mappa[i][j].taxi_capacity = rand() % (SO_CAP_MAX - SO_CAP_MIN + 1) + SO_CAP_MIN;
-				printf("La capacità per la cella che sto esaminando e' %i \n", pointer_at_map->mappa[i][j].taxi_capacity);
 			}
 		}
 	}
 }
 
+/* Funzione utilizzata per il tempo di transito di un taxi in una cella */
 void random_travel_time() {
 	
 	int i, j;
@@ -394,17 +367,14 @@ void random_travel_time() {
 	}
 }
 
-
-/* La codifica è: 0 hole, 1 SO_SOURCES, 2 free */
 void map_setup() {
 	
 	int i, j, max_taxi_map = 0, condizione_ok = 0, counter = 0; /* Counter mi serve per i vertici */
 	int numero_esecuzioni = 0;
 	
-#ifdef MAPPA_VALORI_CASUALI
 	random_cell_type();
-	/* Controlli su mappe particolari */
-	/* Mappe di una sola riga */
+
+	/* Controllo su mappe di una sola riga */
 	if (SO_HEIGHT == 1 && SO_WIDTH > 1) {
 		for(j = 1; j < SO_WIDTH - 1; j++){
 			if (pointer_at_map->mappa[0][j].cell_type == 0) {
@@ -414,7 +384,7 @@ void map_setup() {
 			}
 		}
 	}   
-	/* Mappe di una sola colonna */
+	/* Controllo su mappe di una sola colonna */
 	if (SO_WIDTH == 1 && SO_HEIGHT > 1) {
 		for(i = 1; i < SO_HEIGHT - 1; i++){
 			if (pointer_at_map->mappa[i][0].cell_type == 0) {
@@ -424,7 +394,6 @@ void map_setup() {
 			}
 		}
 	}
-#endif
 
 	do {
 		random_taxi_capacity();
@@ -435,7 +404,7 @@ void map_setup() {
 				max_taxi_map = max_taxi_map + pointer_at_map->mappa[i][j].taxi_capacity;
 			}
 		}
-		/* Controllo che SO TAXI non sia > capacità di taxi massima della mappa */
+		/* Controllo che SO TAXI non sia > della capacita' di taxi massima della mappa */
 		if (SO_TAXI > max_taxi_map) {
 			printf("Errore: dovrei mettere %i taxi, ma la capeinza massima della mappa e' %i \n", SO_TAXI, max_taxi_map);
 			printf("Assegno nuove capienze massime. Assicurarsi che il numero inserito non sia troppo alto per la mappa. [Possibile loop infinito]\n");
@@ -444,18 +413,16 @@ void map_setup() {
 	} while (condizione_ok == 0 && numero_esecuzioni < 1000); /* Potenziale loop infinito se i parametri sono volutamente sbagliati */
 	
 	if (condizione_ok == 0) {
-		printf("Non e' possibile inserire tutti quei taxi. Termino. \n");
+		printf("Non e' possibile inserire tutti quei taxi. Termino.\n");
 		kill_all();
 		kill(getpid(), SIGKILL);
-	} else {
-		printf("La capienza massima e' %i \n", max_taxi_map);
-	}
+	} 
 
 	random_travel_time();
 	
+	/* Imposto ogni cella con active_taxis = 0, crossings = 0, numero di vertice */
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			/* Imposto ogni cella con active_taxis = 0, crossings = 0, numero di vertice */
 			pointer_at_map->mappa[i][j].active_taxis = 0;
 			pointer_at_map->mappa[i][j].crossings = 0;
 			pointer_at_map->mappa[i][j].completed_trip = 0;
@@ -468,35 +435,16 @@ void map_setup() {
 			}
 		}
 	}
-
-/* Se non e' definita random_taxi_capacity e random_travel_time assegnano valori anche a celle che non avrebbero bisogno */
-#ifndef MAPPA_VALORI_CASUALI
-	pointer_at_map->mappa[0][0].cell_type = 0;
-	pointer_at_map->mappa[1][3].cell_type = 0;
-	pointer_at_map->mappa[3][2].cell_type = 0;
-	pointer_at_map->mappa[2][2].cell_type = 1;
-	for (i = 0; i < SO_HEIGHT; i++){
-		for(j = 0; j < SO_WIDTH; j++){
-			if (pointer_at_map->mappa[i][j].cell_type != 0) {
-				/* printf("Almeno una volta lo faccio\n"); */
-				pointer_at_map->mappa[i][j].vertex_number = counter;
-				counter++;
-			} else {
-				pointer_at_map->mappa[i][j].vertex_number = -1;
-			}
-		}
-	}
-#endif
 }
 
-void map_check(){
+void map_check() {
 
 	int num_source = 0, num_holes = 0, num_msg_queues = 0, max_taxi_number = 0;
 	int i, j;
 	
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			if (pointer_at_map->mappa[i][j].cell_type == 0){
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			if (pointer_at_map->mappa[i][j].cell_type == 0) {
 				num_holes++;
 			} else if (pointer_at_map->mappa[i][j].cell_type == 1 || pointer_at_map->mappa[i][j].cell_type == 2) {
 				if (pointer_at_map->mappa[i][j].cell_type == 1) { 
@@ -535,15 +483,15 @@ void map_check(){
 	}
 
 	/* Calcolo il numero massimo di taxi che posso avere con la mappa generata */
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			if (pointer_at_map->mappa[i][j].cell_type != 0){
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			if (pointer_at_map->mappa[i][j].cell_type != 0) {
 				max_taxi_number = max_taxi_number + pointer_at_map->mappa[i][j].taxi_capacity;
 			}
 		}
 	}
-	if (SO_TAXI > max_taxi_number){
-		printf("Il numero di taxi da inserire e' piu' grande della capacità massima della mappa. Termino. \n");
+	if (SO_TAXI > max_taxi_number) {
+		printf("Il numero di taxi da inserire e' piu' grande della capacità massima della mappa. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
@@ -563,212 +511,124 @@ void map_check(){
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
-
 }
-
 
 void map_print() {
 	
-	int i, j, k;
+	int i, j;
 
-	if (pointer_at_map == NULL){
-		perror("Funzione map_print: non riesco ad accedere alla mappa. Termino.\n");
-		kill_all();
-		exit(EXIT_FAILURE);
-	} 
+	while(simulation) {
+		system("clear");
+		
+		for (i = 0; i < SO_HEIGHT; i++) {
+			for (j = 0; j < SO_WIDTH; j++) {
+				if (pointer_at_map->mappa[i][j].cell_type == 0) {
+					 printf("H   "); 
+				} else printf("%i   ", pointer_at_map->mappa[i][j].active_taxis);
+			}
+			printf("\n");
+		}
+		printf("\n");
+		sleep(1);
+	}
+}
+
+void map_print_stat() {
+
+	int i, j, k;
+	
+	int pid1 = 0, pid2 = 0, pid3 = 0, max_service_time = 0, max_served_clients = 0, max_longest_trip = 0;
+	
+	/* Interi per la stampa */
+	int completed = 0, aborted = 0;
+	
+	int * top_cells;
+
+	system("clear");
+
+	printf("Stampo le statistiche \n");
 
 	for (i = 0; i < SO_HEIGHT; i++) {
 		for (j = 0; j < SO_WIDTH; j++) {
-			printf ("%i ", pointer_at_map->mappa[i][j].cell_type);
+			completed =  completed + pointer_at_map->mappa[i][j].completed_trip;
+			aborted = aborted + pointer_at_map->mappa[i][j].aborted_trip;
+		}
+	}
+	printf("Numero viaggi completati: %i \n", completed);
+	printf("NUmero viaggi abortiti: %i \n", aborted);
+	printf("Numero viaggi inevasi: %i \n", not_performed);
 	
-#ifdef STAMPA_VALORI_CELLA
-			printf ("%i", pointer_at_map->mappa[i][j].taxi_capacity);
-			printf ("%i", pointer_at_map->mappa[i][j].active_taxis);
-			printf ("%i", pointer_at_map->mappa[i][j].travel_time);
-			printf ("%i", pointer_at_map->mappa[i][j].crossings);
-#endif
-		}
-		printf("\n");
-	}
-
-	/*
-	printf("Stampo la mappa secondo la capienza \n");
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			printf("%i ", pointer_at_map->mappa[i][j].taxi_capacity);
-		}
-		printf("\n");
-	}
-
-	printf("Stampo la mappa secondo i crossings \n");
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			printf("%i ", pointer_at_map->mappa[i][j].crossings);
-		}
-		printf("\n");
-	}
-
-	printf("Stampo la mappa secondo i viaggi abortiti \n");
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			printf("%i ", pointer_at_map->mappa[i][j].aborted_trip);
-		}
-		printf("\n");
-	}
-	*/
-	
-	printf("Stampo la mappa secondo le capienza massima di ogni cella \n");
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			printf("%i ", pointer_at_map->mappa[i][j].taxi_capacity);
-		}
-		printf("\n");
-	}
-	
-	printf("Stampo il numero massimo di operazioni di ogni semaforo della mappa \n");
 	k = 0;
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			if (pointer_at_map->mappa[i][j].cell_type != 0) {
-				printf("%i  ", semctl(taxi_sem_id, k, GETVAL));
+	top_cells = calloc (SO_TOP_CELLS, sizeof(int));
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			/* Inserisco i primi SO_TOP_CELLS valori nell'array */
+			if (pointer_at_map->mappa[i][j].crossings > top_cells[k] && k < SO_TOP_CELLS) {
+				top_cells[k] = pointer_at_map->mappa[i][j].vertex_number;
 				k++;
+			} else {
+				if (pointer_at_map->mappa[i][j].crossings > top_cells[min_of_array(top_cells)]) {
+					top_cells[min_of_array(top_cells)] = pointer_at_map->mappa[i][j].vertex_number;
+				}
 			}
 		}
 	}
 	printf("\n");
-	/*
-	printf("Stampo il numero di taxi attivi sulla mappa \n");
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			printf("%i  ", pointer_at_map->mappa[i][j].active_taxis);
-		}
-	}
-	*/
-}
-
-void create_index(void **m, int rows, int cols, size_t sizeElement){
-	int i;  
-	size_t sizeRow = cols * sizeElement;
-	m[0] = m+rows;
-	for(i=1; i<rows; i++){      
-		m[i] = ((char *)m[i-1]+sizeRow);
-	}
-}
-
-unsigned int sizeof_dm(int rows, int cols, size_t sizeElement){
-    size_t size = rows * (sizeof(void *) + (cols * sizeElement));
-    return size;
-}
-
-/* Aggiunge gli archi */
-void addEdge(int ** pointer, int i, int j) {
-	pointer[i][j] = 1;
-}
-
-void createAdjacencyMatrix(){
-
-	int i, j;
-	int ** pointer;
-	size_t dimension = sizeof_dm(number_of_vertices, number_of_vertices, sizeof(int));
-
-	if (pointer_at_map == NULL){
-		perror("Master createAdjacencyMatrix: non riesco ad attaccarmi alla mappa. Termino \n");
-		kill_all();
-		exit(EXIT_FAILURE);
-	}
-
-	/* Creo il segmento di memoria condivisa per la matrice adiacente */
-	adjacency_matrix_shm_id = shmget(IPC_PRIVATE, dimension, 0600);
-	if (adjacency_matrix_shm_id < 0){
-		perror("Master createAdjacencyMatrix: non riesco a creare la memoria condivisa. Termino\n");
-		kill_all();
-		exit(EXIT_FAILURE);
-	}
-
-	/* Mi attacco come master alla matrice per inizializzarla */
-	pointer = shmat(adjacency_matrix_shm_id, NULL, SHM_FLG);
-	if (pointer == NULL){
-		perror("Master createAdjacencyMatrix: non riesco ad attaccarmi alla memoria condivisa con la matrice adiacente. Termino\n");
-		kill_all();
-		exit(EXIT_FAILURE);
-	}
-
-	create_index((void*)pointer, number_of_vertices, number_of_vertices, sizeof(int));
-
-	/* La inizializzo a 0 */
-	for (i = 0; i < number_of_vertices; i ++){
-		for (j = 0; j < number_of_vertices; j ++){
-			pointer[i][j] = 0;
-		}
-	}
-
-	/*
-	printf("Stampo la matrice adiacente dopo l'inizializzazione \n");
-	for (i = 0; i < number_of_vertices; i ++){
-		for (j = 0; j < number_of_vertices; j ++){
-			printf("%i ", pointer[i][j]);
-		}
-		printf("\n");
-	}
-	*/
-
-	/* Aggiungo tutti gli archi alla matrice adiacente  */
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			if (pointer_at_map->mappa[i][j].vertex_number != -1) { 
-
-				/* Aggiungo destra se esiste */
-				if (((j+1) < SO_WIDTH) && pointer_at_map->mappa[i][j+1].vertex_number != -1) {
-					addEdge(pointer, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j+1].vertex_number);
+	/* Stampare la mappa evidenziando top cells, sources */
+	k = 0;
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
+			if (pointer_at_map->mappa[i][j].cell_type == 0) {
+				printf("H  ");
+			} else { 
+				k = 0;
+				while (k < SO_TOP_CELLS) {
+					if (top_cells[k] == pointer_at_map->mappa[i][j].vertex_number && pointer_at_map->mappa[i][j].cell_type == 3) {
+						printf("S/T  ");
+						break;
+					} else if (top_cells[k] == pointer_at_map->mappa[i][j].vertex_number) {
+						printf("T  ");
+						break;
+					} else if (pointer_at_map->mappa[i][j].cell_type == 3){
+						printf("S  ");
+						break;
+					}  else {
+						k++;
+					}
 				}
-				/* Aggiungo sotto se esiste */
-				if (((i+1) < SO_HEIGHT) && pointer_at_map->mappa[i+1][j].vertex_number != -1) {
-					addEdge(pointer, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i+1][j].vertex_number);
+				if (k == SO_TOP_CELLS) {
+					printf("-  ");
 				}
-				/* Aggiungo sinistra se esiste */
-				if (((j-1) >= 0) && pointer_at_map->mappa[i][j-1].vertex_number != -1) {
-					addEdge(pointer, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i][j-1].vertex_number);
-				}
-				/* Aggiungo sopra se esiste */
-				if (((i-1) >= 0) && pointer_at_map->mappa[i-1][j].vertex_number != -1) {
-					addEdge(pointer, pointer_at_map->mappa[i][j].vertex_number, pointer_at_map->mappa[i-1][j].vertex_number);
-				}    
-			}   
-		}
-	}
-
-
-#ifdef PRINT_ADJACENCY_MATRIX   
-	/* stampo la matrice */
-	printf("Il valore di matrix dim è %i \n", number_of_vertices); 
-	printf("La matrica adiacente prima della chiamata è \n");
-	for(i = 0; i < number_of_vertices; i++){
-		for (j = 0; j < number_of_vertices; j++){
-			printf("%i ", pointer[i][j]);    
-		}       
-		printf("\n");
-	}
-#endif
-
-	/* Imposto gli zeri ad INFINITY cosi non lo devo fare ogni volta nei processi TAXI */
-	for (i = 0; i < number_of_vertices; i++){
-		for (j = 0; j < number_of_vertices; j++){
-			if (pointer[i][j] == 0){
-				pointer[i][j] = INFINITY;
 			}
 		}
+		printf("\n");
+	}
+	free(top_cells);
+	
+	for(i = 0; i < SO_TAXI; i++) {
+		if (pointer_at_info[i].longest_trip > max_longest_trip) {
+			max_longest_trip = pointer_at_info[i].longest_trip;
+			pid1 = pointer_at_info[i].pid;
+		}
 	}
 
-	/* Salvo l'id della matrice adiacente per i taxi */
-	adjacency_matrix_shm_id_execve = malloc(sizeof(int));
-	if(adjacency_matrix_shm_id_execve == NULL){
-		perror("Master createAdjacencyMatrix: non riesco a creare l'array per l'id della matrice adiancente. Termino\n");
-		kill_all();
-		exit(EXIT_FAILURE);
+	for(i = 0; i < SO_TAXI; i++) {
+		if (pointer_at_info[i].service_time > max_service_time) {
+			max_service_time = pointer_at_info[i].service_time;
+			pid2 = pointer_at_info[i].pid;
+		}
 	}
-    /*args_taxi[2] = adjacency_matrix_shm_id_execve;
-    sprintf(adjacency_matrix_shm_id_execve, "%d", adjacency_matrix_shm_id);
-	*/
+
+	for(i = 0; i < SO_TAXI; i++) {
+		if (pointer_at_info[i].served_clients > max_served_clients) {
+			max_served_clients = pointer_at_info[i].served_clients;
+			pid3 = pointer_at_info[i].pid;
+		}
+	}
+
+	printf("Pid del processo taxi che ha fatto piu' strada(celle): %i \n", pid1);
+	printf("Pid del processo taxi che ha fatto piu' strada(tempo): %i \n", pid2);
+	printf("Pid del processo taxi che ha avuto piu' clienti: %i \n", pid3);
 }
 
 void createIPC() {
@@ -781,7 +641,7 @@ void createIPC() {
 	/* Creo la memoria condivisa che contiene la mappa */
 	map_shm_id = shmget (IPC_PRIVATE, sizeof(map), SHM_FLG);
 	if (map_shm_id == -1) {
-		perror("Master createIPC: non riesco a creare la memoria condivisa. Termino\n");
+		perror("Master createIPC: non riesco a creare la memoria condivisa. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
@@ -789,7 +649,7 @@ void createIPC() {
 	/* Mi attacco come master alla mappa */
 	pointer_at_map = shmat(map_shm_id, NULL, SHM_FLG);
 	if (pointer_at_map == NULL) {
-		perror("Master createIPC: non riesco ad attaccarmi alla memoria condivisa con la mappa. Termino\n");
+		perror("Master createIPC: non riesco ad attaccarmi alla memoria condivisa con la mappa. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
@@ -799,11 +659,12 @@ void createIPC() {
 
 	/* Preparo gli argomenti per la execve */
     map_shm_id_execve = malloc(sizeof(int));
-    if (map_shm_id_execve == NULL){
+    if (map_shm_id_execve == NULL) {
     	perror("Master createIPC: non riesco a creare l'array per salvare l'id della mappa condivisa\n");
     	kill_all();
     	exit(EXIT_FAILURE);
     }
+    
     /* Sprintf sbagliata */
 	sprintf(map_shm_id_execve, "%i", map_shm_id);
 	args_source[1] = args_taxi[1] = map_shm_id_execve;
@@ -811,53 +672,49 @@ void createIPC() {
 
     /* Creo il semaforo mutex per l'assegnazione delle celle di SOURCE */
 	source_sem_id = semget(SOURCE_SEM_KEY, 1, 0600 | IPC_CREAT);
-	if (source_sem_id == -1){
-		perror("Master createIPC: non riesco a generare il semaforo per l'assegnazione delle Source. Termino\n");
+	if (source_sem_id == -1) {
+		perror("Master createIPC: non riesco a generare il semaforo per l'assegnazione delle Source. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	} 
 	
-	/* Imposto il semaforo con valore 1 -MUTEX */
+	/* Imposto il semaforo con valore 1 */
 	if (semctl(source_sem_id, 0, SETVAL, 1) == -1) {
-		perror("Master createIPC: non riesco a impostare il semaforo per Source. Termino\n");
+		perror("Master createIPC: non riesco a impostare il semaforo per Source. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
 	
-	/* Creo il semaforo per il go */
+	/* Creo il semaforo per il via */
 	start_sem_id = semget(START_SEM_KEY, 1, 0600 | IPC_CREAT);
-	if (start_sem_id == -1){
-		perror("Master createIPC: non riesco a generare il semaforo per il via. Termino \n");
+	if (start_sem_id == -1) {
+		perror("Master createIPC: non riesco a generare il semaforo per il via. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
+	
+	/* Imposto il semaforo con valore 0 */
 	if (semctl(start_sem_id, 0, SETVAL, 0) == -1) {
-		perror("Master createIPC: non riesco a impostare il semaforo per il via. Termino\n");
+		perror("Master createIPC: non riesco a impostare il semaforo per il via. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
 
 	/* Creo l'array di semafori per i TAXI, uno per ogni cella */
 	taxi_sem_id = semget(TAXI_SEM_KEY, TAXI_SEM_ARRAY_DIM, 0600 | IPC_CREAT);
-	if (taxi_sem_id == -1){
-		perror("Master createIPC: non riesco a generare il semaforo per i Taxi. Termino\n");
+	if (taxi_sem_id == -1) {
+		perror("Master createIPC: non riesco a generare il semaforo per i Taxi. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
 
 	/* Assegno il numero del semaforo Taxi di riferimento ad ogni cella */
 	counter = 0;
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
+	for (i = 0; i < SO_HEIGHT; i++) {
+		for (j = 0; j < SO_WIDTH; j++) {
 			if (pointer_at_map->mappa[i][j].cell_type != 0) {
-				/*
-				printf("ID ARRAY DI SEMAFORI: %i \n", taxi_sem_id);
-				printf("NUMERO SEMAFORO SU CUI LAVORO: %i \n", counter);
-				printf("VALORE A CUI VOGLIO IMPOSTARE IL SEMAFORO: %i \n", pointer_at_map->mappa[i][j].taxi_capacity);
-				*/
-				if(semctl(taxi_sem_id, counter, SETVAL, pointer_at_map->mappa[i][j].taxi_capacity) == -1 ){
-					TEST_ERROR
-					perror("Master createIPC: non riesco a impostare il semaforo per Taxi. Termino\n");
+				if(semctl(taxi_sem_id, counter, SETVAL, pointer_at_map->mappa[i][j].taxi_capacity) == -1 ) {
+					perror("Master createIPC: non riesco a impostare il semaforo per Taxi. Termino.\n");
 					kill_all();
 					exit(EXIT_FAILURE);
 				}
@@ -866,35 +723,26 @@ void createIPC() {
 			}
 		}
 	}
-	map_print();
+
 	/* Creiamo le code di messaggi per le celle source */
 	pointer_at_msgq = malloc(SO_SOURCES*sizeof(key_t));
 	if (pointer_at_msgq == NULL){
-		perror("Master createIPC: non riesco a creare l'array per salvare le key delle code di messaggi. Termino\n");
+		perror("Master createIPC: non riesco a creare l'array per salvare le key delle code di messaggi. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
 	for (i = 0; i < SO_SOURCES; i ++) {
 		pointer_at_msgq[i] = ftok(path, i+1);
-		TEST_ERROR
 		if(msgget(pointer_at_msgq[i], 0600 | IPC_CREAT | IPC_EXCL) == -1) {
-			perror("Master createIPC: non riesco a creare la coda di messaggi. Termino\n");
-			TEST_ERROR
+			perror("Master createIPC: non riesco a creare la coda di messaggi. Termino.\n");
 			kill_all();
 			exit(EXIT_FAILURE);
 		}
 	}
-	
-	/*
-	printf("STAMPA DI TEST DEL MASTER : STAMPO LE KEY CHE HO CREATO \n");
-	for (i = 0; i < SO_SOURCES; i++){
-		printf("%i \n", pointer_at_msgq[i]);
-	}
-	*/
 
 	/* Assegna al campo della cella il valore della sua coda di messaggi*/
 	counter = 0;
-	for (i = 0; i < SO_HEIGHT; i ++){
+	for (i = 0; i < SO_HEIGHT; i ++) {
 		for (j = 0; j < SO_WIDTH; j++) {
 			if (pointer_at_map->mappa[i][j].cell_type == 1) { 
 				pointer_at_map->mappa[i][j].message_queue_key = pointer_at_msgq[counter];
@@ -903,26 +751,24 @@ void createIPC() {
 		}
 	} 
 
-
 	/* Semaforo mutex per la scrittura delle statistiche */
 	info_taxi_sem_id = semget(INFO_SEM_KEY, 1, 0600 | IPC_CREAT);
-	if (info_taxi_sem_id == -1){
-		perror("Master createIPC: non riesco a generare il semaforo per il via. Termino \n");
+	if (info_taxi_sem_id == -1) {
+		perror("Master createIPC: non riesco a generare il semaforo per il via. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
 	if (semctl(info_taxi_sem_id, 0, SETVAL, 1) == -1) {
-		perror("Master createIPC: non riesco a impostare il semaforo per il via. Termino\n");
+		perror("Master createIPC: non riesco a impostare il semaforo per il via. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
-
 
 	/* Memoria condivisa per le statistiche */
 	info_taxi_id_execve = malloc(sizeof(int));
 	info_taxi_id = shmget (IPC_PRIVATE, sizeof(taxi_info)*SO_TAXI, SHM_FLG);
 	if (info_taxi_id == -1) {
-		perror("Master createIPC: non riesco a creare la memoria condivisa. Termino\n");
+		perror("Master createIPC: non riesco a creare la memoria condivisa. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
@@ -931,44 +777,22 @@ void createIPC() {
 	
 	pointer_at_info = shmat(info_taxi_id, NULL, SHM_FLG);
 	if (pointer_at_info == NULL) {
-		perror("Master createIPC: non riesco ad attaccarmi alla memoria condivisa con le statistiche. Termino\n");
+		perror("Master createIPC: non riesco ad attaccarmi alla memoria condivisa con le statistiche. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
-	
 
-	num_of_taxies = malloc(sizeof(int)*3);
-	printf("Il valore di SO_TAXI che scrivo vale %i \n", SO_TAXI);
-	printf("Il valore ritornato dalla sprintf e' %i \n, ", sprintf(num_of_taxies, "%d", SO_TAXI));
-	printf("%s \n", num_of_taxies);
-	args_taxi[2] = num_of_taxies;
-
-	/*
-	printf("Stampo la mappa \n");
-	map_print();
-	printf("Stampo le celle dove ho la coda di messaggi \n");
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			if (pointer_at_map->mappa[i][j].message_queue_key != 0){
-				printf("1 ");
-			} else {
-				printf("0 ");
-			}
-		}
-	printf("\n");
-	}
-	*/
+	num_of_taxis = malloc(sizeof(int)*3);
+	sprintf(num_of_taxis, "%d", SO_TAXI);
+	args_taxi[2] = num_of_taxis;
 }
 
+/* Funzione che  termina le risorse IPC e le memorie dinamiche allocate */
 void kill_all() {
-	/* Completare. Dovrà terminare le risorse IPC che allocheremo. */
 	int msgqid, i;
 	
 	/* Marco per la deallocazione la memoria condivisa con la mappa */
 	if (map_shm_id != 0) shmctl(map_shm_id, IPC_RMID, NULL);
-
-	/* Marco per la deallocazione la memoria condivisa con la matrice adiacente */
-	if (adjacency_matrix_shm_id != 0) shmctl(adjacency_matrix_shm_id, IPC_RMID, NULL);
 
 	/* Marco per la deallocazione la memoria condivisa per le statistiche */
 	if (info_taxi_id != 0) shmctl(info_taxi_id, IPC_RMID, NULL);
@@ -997,8 +821,6 @@ void kill_all() {
 	
 	if (pointer_at_msgq != NULL)free(pointer_at_msgq);
 
-	if (adjacency_matrix_shm_id_execve != NULL)free(adjacency_matrix_shm_id_execve);
-
 	if (map_shm_id_execve != NULL)free(map_shm_id_execve);
 	
 	if (child_source != NULL)free(child_source);
@@ -1007,7 +829,7 @@ void kill_all() {
 
 	free(info_taxi_id_execve);
 
-	free(num_of_taxies);
+	free(num_of_taxis);
 }
 
 void the_end_master(int signum) {
@@ -1016,7 +838,7 @@ void the_end_master(int signum) {
 	qbuf = &msqid_ds;
 	switch (signum) {
 		case SIGINT:
-			printf("ane dio Ho ricevuto un control c \n");
+			printf("Termino.\n");
    			for (i = 0; i < SO_TAXI; i++) {
 				kill(child_taxi[i], SIGINT);
 			}
@@ -1025,7 +847,7 @@ void the_end_master(int signum) {
 			}
 			simulation = 0;
 			kill_all();
-    		kill(getpid(), SIGKILL); /* Suicidio rituale */
+    		kill(getpid(), SIGKILL);
     		break;
 
 		case SIGALRM:
@@ -1038,8 +860,7 @@ void the_end_master(int signum) {
 				/* Ho tolto una test error ma succede qualcosa */
 				not_performed = not_performed + qbuf->msg_qnum;
 			}
-			map_print();
-			printf("Invio il segnale ai figli\n");
+			/* Invio il segnale ai figli*/
 			for (i = 0; i < SO_TAXI; i++) {
 				kill(child_taxi[i], SIGTERM);
 			}
@@ -1053,13 +874,10 @@ void the_end_master(int signum) {
 void handler_timeout(int sig, siginfo_t *info, void *ucontext) {
 
 	int i, child_pid;
-	printf("Un taxi non si e' mosso in tempo \n");
-	numero_taxi_che_non_si_muovono++;
 	signalPid = info->si_pid;
 	kill(signalPid, SIGKILL);
 	for (i = 0; i < SO_TAXI; i++) {
 		if (child_taxi[i] == signalPid) {
-			printf("L'ho trovato\n");
 			break;
 		}
 	}
@@ -1072,14 +890,11 @@ void handler_timeout(int sig, siginfo_t *info, void *ucontext) {
 			break;
 		case 0:
 			execve("Taxi", args_taxi, NULL);
-			TEST_ERROR;
 			break;
 		default:
-			/* Codice che voglio esegua il Master */
 			child_taxi[i] = child_pid;
 			break;
 		}
-
 }
 
 int min_of_array (int * p) {
@@ -1088,7 +903,7 @@ int min_of_array (int * p) {
 	
 	min = p[i];
 	
-	for (i = 1; i < SO_TOP_CELLS; i++){
+	for (i = 1; i < SO_TOP_CELLS; i++) {
 		if (p[i] < min) {
 			min = p[i];
 			index = i;
@@ -1097,33 +912,19 @@ int min_of_array (int * p) {
 	return index;
 }
 
-
 int main () {
 
-	int i, j, valore_fork_sources, valore_fork_taxi, k;
+	int i, j, valore_fork_sources, valore_fork_taxi;
 	
-	/* int era_top; */
-
-    /* Interi per la stampa */
-	int completed = 0, aborted = 0;
-
-	int pid1 = 0, pid2 = 0, pid3 = 0, max_service_time = 0, max_served_clients = 0, max_longest_trip = 0;
-
-	int * top_cells;
-
     struct timeval time;
 
     struct sembuf start; 
 	
     struct sigaction dead_taxi;
 
-    /* struct msqid_ds msqid_ds, *qbuf; */
-
     char so_duration[2];
     char * argomento_durata = so_duration;
     
-    /* qbuf = &msqid_ds; */
-
     set_handler(SIGINT, &the_end_master);
     set_handler(SIGALRM, &the_end_master);
     
@@ -1142,31 +943,28 @@ int main () {
 	/* Creo gli oggetti ipc */
 	createIPC();
 
-	/* Creo la matrice adiacente */
-	createAdjacencyMatrix();
-
 	/* Controlliamo che la mappa rispetti i valori inseriti */
 	map_check();
 
 	/* Creo l'array dove salvo i pid dei figli */
 	child_source = calloc(SO_SOURCES, sizeof(pid_t));
-	if (child_source == NULL){
-		perror("Master main: non riesco a crare l'array dove salvare le informazioni sui processi Source. Termino \n");
-		kill_all();
-		exit(EXIT_FAILURE);
-	}	
-	child_taxi = calloc(SO_TAXI, sizeof(pid_t));
-	if (child_taxi == NULL){
-		perror("Master main: non riesco a crere l'array dove salvare le informazioni sui processi Taxi. Termino \n");
+	if (child_source == NULL) {
+		perror("Master main: non riesco a crare l'array dove salvare le informazioni sui processi Source. Termino.\n");
 		kill_all();
 		exit(EXIT_FAILURE);
 	}
 	
-	/* Sprintf sbagliata  ?*/
+	child_taxi = calloc(SO_TAXI, sizeof(pid_t));
+	if (child_taxi == NULL) {
+		perror("Master main: non riesco a crere l'array dove salvare le informazioni sui processi Taxi. Termino.\n");
+		kill_all();
+		exit(EXIT_FAILURE);
+	}
+	
 	sprintf(so_duration, "%d", SO_TIMEOUT);
 	args_taxi[3] = argomento_durata;
 	
-	/* Creo processi SO_SOURCES. Sistema gli argomenti */
+	/* Creo i processi SOURCES passando gli argomenti */
 	for (i = 0; i < SO_SOURCES; i++) {
 		switch(valore_fork_sources = fork()) {
 			case -1:
@@ -1176,16 +974,14 @@ int main () {
 				break;
 			case 0:
 				execve("Source", args_source, NULL);
-				TEST_ERROR;
 				break;
 			default:
-				/* Codice che voglio esegua il Master */
 				child_source[i] = valore_fork_sources;
 				break;
 		}
 	}
 
-	/* Creo processi Taxi. Sistema gli argomenti */
+	/* Creo i processi Taxi passando gli argomenti */
 	for (j = 0; j < SO_TAXI; j++) {
 		switch(valore_fork_taxi = fork()) {
 			case -1:
@@ -1195,16 +991,14 @@ int main () {
 				break;
 			case 0:
 				execve("Taxi", args_taxi, NULL);
-				TEST_ERROR;
 				break;
 			default:
-				/* Codice che voglio esegua il Master */
 				child_taxi[j] = valore_fork_taxi;
 				break;
 		}
 	}
 	
-	printf("Faccio partire i figli \n");
+	/* Faccio partire i figli */
 	while (1) {
 		if ((semctl(start_sem_id, 0, GETNCNT)) == (SO_SOURCES+SO_TAXI))	{
 			start.sem_flg = 0;
@@ -1215,190 +1009,13 @@ int main () {
 		}
 	}
 
-	printf("Esco dal ciclo, aspetto SO_DURATION \n");
-	/* Aspetto la terminazione dei figli */
 	alarm(SO_DURATION);
-
-	while(simulation) {
-		/* system("clear"); */
-		
-		for (i = 0; i < SO_HEIGHT; i++){
-			for (j = 0; j < SO_WIDTH; j++){
-				if (pointer_at_map->mappa[i][j].cell_type == 0) {
-					 printf("H   "); 
-				} else printf("%i   ", pointer_at_map->mappa[i][j].active_taxis);
-			}
-			printf("\n");
-		}
-		printf("\n");
-		/*
-		for (i = 0; i < SO_HEIGHT; i++){
-			for (j = 0; j < SO_WIDTH; j++){
-				if (pointer_at_map->mappa[i][j].cell_type != 0) { 
-					printf("%i   ", semctl(taxi_sem_id, pointer_at_map->mappa[i][j].reference_sem_number, GETNCNT));
-				}
-			}
-			printf("\n");
-		}
-		*/
-		sleep(1);
-		
-	}
 	
-	printf("\n");
-	/*
-	printf("Stampo tutte le informazioni dei figli e se crasha \n");
-	for (i = 0; i < SO_SOURCES; i++){
-		printf("%i  ", child_source[i]);	
-	}
-	printf("\n");
-	*/
-	/*
-	for (i = 0; i < SO_TAXI; i++){
-		printf("%i  ", child_taxi[i]);
-	}
-	printf("\n");
-	*/
-	/*
-	printf("IL NUMERO DI TAXI ATTIVI \n");
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			printf("%i   ", pointer_at_map->mappa[i][j].active_taxis);
-		}
-		printf("\n");
-	}
-	*/
-	/*
-	printf("\n");
-	*/
-	printf("Il numero di taxi che non si sono mossi %i \n", numero_taxi_che_non_si_muovono);
-	/*
-	printf("Stampo la mappa prima di finire \n");
 	map_print();
-	printf("\n");
-	*/
-	/* Spostabile in una funzione a parte 
-	*/
-	/* system("clear"); */
-	printf("Stampo le statistiche \n");
-	/* Numero di viaggi eseguiti con successo, inevasi, abortiti */
-	/* Mappa con evidenziate SO_SOURCES e SO_TOP_CELLS piu' attraversate */
-	/* Il processo Taxi che ha fatto piu' strada come numero celle di tutti
-	   Quello che fatto il viaggio piu' lungo come tempo nel servire una richiesta 
-	   Quello che ha raccolto piu' richieste*/
-
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			completed =  completed + pointer_at_map->mappa[i][j].completed_trip;
-			aborted = aborted + pointer_at_map->mappa[i][j].aborted_trip;
-		}
-	}
-	printf("Numero viaggi completati: %i \n", completed);
-	printf("NUmero viaggi abortiti: %i \n", aborted);
-	printf("Numero viaggi inevasi: %i \n", not_performed);
-	k = 0;
-	top_cells = calloc (SO_TOP_CELLS, sizeof(int));
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			/* Inserisco i primi SO_TOP_CELLS valori nell'array */
-			if (pointer_at_map->mappa[i][j].crossings > top_cells[k] && k < SO_TOP_CELLS){
-				top_cells[k] = pointer_at_map->mappa[i][j].vertex_number;
-				k++;
-			} else {
-				if (pointer_at_map->mappa[i][j].crossings > top_cells[min_of_array(top_cells)]) {
-					top_cells[min_of_array(top_cells)] = pointer_at_map->mappa[i][j].vertex_number;
-				}
-			}
-		}
-	}
-	printf("Le top cells sono \n");
-	for (k = 0; k < SO_TOP_CELLS; k++){
-		printf("%i ", top_cells[k]);
-	}
-	printf("\n");
-	/* Stampare la mappa evidenziando top cells, sources */
-	k = 0;
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			if (pointer_at_map->mappa[i][j].cell_type == 0) {
-				printf("H  ");
-			} else { 
-				k = 0;
-				while (k < SO_TOP_CELLS){
-					if (top_cells[k] == pointer_at_map->mappa[i][j].vertex_number && pointer_at_map->mappa[i][j].cell_type == 3) {
-						printf("S/T  ");
-						break;
-					} else if (top_cells[k] == pointer_at_map->mappa[i][j].vertex_number) {
-						printf("T  ");
-						break;
-					} else if (pointer_at_map->mappa[i][j].cell_type == 3){
-						printf("S  ");
-						break;
-					}  else {
-						k++;
-					}
-
-				}
-				if (k == SO_TOP_CELLS) {
-					printf("-  ");
-				}
-				
-			}	
-			
-		}
-		printf("\n");
-	}
-	free(top_cells);
 	
-	/*
-	printf("Stampo il numero massimo di operazioni di ogni semaforo della mappa \n");
-	valore_fork_sources = 0;
-	for (i = 0; i < SO_HEIGHT; i++){
-		for (j = 0; j < SO_WIDTH; j++){
-			if (pointer_at_map->mappa[i][j].cell_type != 0) {
-				printf("%i  ", semctl(taxi_sem_id, valore_fork_sources, GETVAL));
-				valore_fork_sources++;
-			}
-		}
-	}
-	*/
-	
-	printf("Provo a stampare le informazioni immesse dai taxi \n");
-	for (i = 0; i < SO_TAXI; i++){
-		printf("Pid: %i \n", pointer_at_info[i].pid);
-		printf("Service_time: %i\n", pointer_at_info[i].service_time);
-		printf("Served_clients: %i \n", pointer_at_info[i].served_clients);
-		printf("Longest_trip: %i \n", pointer_at_info[i].longest_trip);
-		printf("\n");
-	}
-	
-
-	for(i = 0; i < SO_TAXI; i++) {
-		if (pointer_at_info[i].longest_trip > max_longest_trip){
-			max_longest_trip = pointer_at_info[i].longest_trip;
-			pid1 = pointer_at_info[i].pid;
-		}
-	}
-
-	for(i = 0; i < SO_TAXI; i++) {
-		if (pointer_at_info[i].service_time > max_service_time){
-			max_service_time = pointer_at_info[i].service_time;
-			pid2 = pointer_at_info[i].pid;
-		}
-	}
-
-	for(i = 0; i < SO_TAXI; i++) {
-		if (pointer_at_info[i].served_clients > max_served_clients){
-			max_served_clients = pointer_at_info[i].served_clients;
-			pid3 = pointer_at_info[i].pid;
-		}
-	}
-
-	printf("Pid del processo taxi che ha fatto piu' strada(celle): %i \n", pid1);
-	printf("Pid del processo taxi che ha fatto piu' strada(tempo): %i \n", pid2);
-	printf("Pid del processo taxi che ha avuto piu' clienti: %i \n", pid3);
-
-
+	map_print_stat();
+		
 	kill_all();
+
 	return 0;
 }

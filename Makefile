@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Werror -std=c89 -pedantic -fno-stack-protector -D_GNU_SOURCE
+CFLAGS=-Wall -Werror -std=c89 -fno-stack-protector -pedantic -D_GNU_SOURCE
 
 OPTIONS =
 
