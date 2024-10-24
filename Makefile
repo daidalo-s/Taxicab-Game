@@ -2,9 +2,9 @@ CFLAGS=-Wall -Werror -std=c89 -pedantic -fno-stack-protector -D_GNU_SOURCE
 
 OPTIONS =
 
-all: Master Source Taxi 
+all: Master Source Taxi
 
-Master: 
+Master:
 	gcc $(CFLAGS) Master.c -o Master
 
 Source:
